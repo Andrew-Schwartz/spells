@@ -17,14 +17,22 @@ pub enum Message {
     Undo,
     Redo,
     CharacterTab(usize),
+    AddSpell(usize),
 }
 
 pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
+    type Modifiers = (bool, bool, bool);
+    const CTRL: Modifiers = (true, false, false);
+    const CTRL_ALT: Modifiers = (true, true, false);
+    const CTRL_SHIFT: Modifiers = (true, false, true);
+    const NONE: Modifiers = (false, false, false);
+
     match event {
         keyboard::Event::KeyPressed { key_code, modifiers } => {
             let message = match (modifiers.control, modifiers.alt, modifiers.shift) {
-                // ctrl
-                (true, false, false) => match key_code {
+                CTRL => match key_code {
+                    // todo go to search tab
+                    // KeyCode::Grave => Some(Message::ToT)
                     KeyCode::Key1 => Some(Message::ToCharacter(1)),
                     KeyCode::Key2 => Some(Message::ToCharacter(2)),
                     KeyCode::Key3 => Some(Message::ToCharacter(3)),
@@ -43,20 +51,24 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::Y => Some(Message::Redo),
                     _ => None,
                 }
-                // alt
-                (false, true, false) => match key_code {
+                CTRL_ALT => match key_code {
+                    KeyCode::Key1 => Some(Message::AddSpell(0)),
+                    KeyCode::Key2 => Some(Message::AddSpell(1)),
+                    KeyCode::Key3 => Some(Message::AddSpell(2)),
+                    KeyCode::Key4 => Some(Message::AddSpell(3)),
+                    KeyCode::Key5 => Some(Message::AddSpell(4)),
+                    KeyCode::Key6 => Some(Message::AddSpell(5)),
+                    KeyCode::Key7 => Some(Message::AddSpell(6)),
                     KeyCode::Left => Some(Message::Move(Move::Left, false)),
                     KeyCode::Right => Some(Message::Move(Move::Right, false)),
                     _ => None,
                 }
-                // ctrl + shift
-                (true, false, true) => match key_code {
+                CTRL_SHIFT => match key_code {
                     KeyCode::Tab => Some(Message::Move(Move::Left, true)),
                     KeyCode::F | KeyCode::S => Some(Message::Find(true)),
                     _ => None,
                 }
-                // none
-                (false, false, false) => match key_code {
+                NONE => match key_code {
                     KeyCode::Grave | KeyCode::Key0 => Some(Message::CharacterTab(1)),
                     KeyCode::Key1 => Some(Message::CharacterTab(2)),
                     KeyCode::Key2 => Some(Message::CharacterTab(3)),

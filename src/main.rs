@@ -131,7 +131,7 @@ impl Window {
         let clone = || Arc::clone(&name);
         self.character_pages.insert(clone(), CharacterPage::new(clone()));
         self.characters.push(clone());
-        self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+        self.refresh_search();
         self.tabs.characters.push((clone(), Default::default()));
         self.tabs.state = Tab::Character(name);
         self.save().expect("failed to save");
@@ -139,7 +139,7 @@ impl Window {
 
     fn swap_characters(&mut self, a: usize, b: usize) {
         self.characters.swap(a, b);
-        self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+        self.refresh_search();
         self.tabs.characters.swap(a, b);
         self.save().expect("blah");
     }
@@ -150,7 +150,7 @@ impl Window {
             self.tabs.characters.remove(idx);
         }
         self.character_pages.remove(name);
-        self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+        self.refresh_search();
         self.save().expect("waa haa");
     }
 
@@ -237,6 +237,10 @@ impl Window {
         }
         Ok(())
     }
+
+    fn refresh_search(&mut self) {
+        self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+    }
 }
 
 impl Application for Window {
@@ -280,9 +284,10 @@ impl Application for Window {
                 if add {
                     self.search_page.state.focus();
                     // have to update after adding the spell
-                    self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+                    self.refresh_search();
                 }
                 if let Some(true) = must_save {
+                    self.refresh_search();
                     self.save().expect("todo #2");
                 }
             }
@@ -318,7 +323,7 @@ impl Application for Window {
                         match (main_page, &self.tabs.state) {
                             (true, _) | (false, Tab::New) | (false, Tab::Search) => {
                                 self.tabs.state = Tab::Search;
-                                self.search_page.update(search::Message::Refresh, &self.characters, &self.character_pages);
+                                self.refresh_search();
                             }
                             (false, Tab::Character(name)) => {
                                 if let Some(page) = self.character_pages.get_mut(name) {
@@ -390,60 +395,6 @@ impl Application for Window {
                                 }
                             }
                         }
-
-                        // if tab_only || matches!(self.tabs.state, Tab::Search | Tab::New) {
-                        //     let idx = match &self.tabs.state {
-                        //         Tab::Search => 0,
-                        //         Tab::Character(name) => self.characters.iter()
-                        //             .position(|c| c == name)
-                        //             .unwrap() + 1,
-                        //         Tab::New => self.characters.len() + 1,
-                        //     };
-                        //     let idx = match dir {
-                        //         Move::Left => min(idx.wrapping_sub(1), self.characters.len() + 1),
-                        //         Move::Right => {
-                        //             let idx = idx + 1;
-                        //             if idx > self.characters.len() + 1 { 0 } else { idx }
-                        //         }
-                        //     };
-                        //     self.tabs.state = match idx {
-                        //         0 => Tab::Search,
-                        //         idx if idx <= self.characters.len() => {
-                        //             let name = self.characters.get(idx - 1).unwrap();
-                        //             Tab::Character(Arc::clone(name))
-                        //         }
-                        //         _ => Tab::New,
-                        //     }
-                        // } else if let Tab::Character(name) = &self.tabs.state {
-                        //     let new_tab_idx = self.character_pages.len() * character::TABS + 1;
-                        //     let character_idx = self.characters.iter()
-                        //         .position(|c| c == name)
-                        //         .unwrap();
-                        //     let character_tab = self.character_pages.get(name).unwrap().tab;
-                        //     let idx = 1 + // first tab of first char is index 1
-                        //         character::TABS * character_idx + // 11 tabs in each character
-                        //         character_tab;
-                        //     let idx = match dir {
-                        //         Move::Left => min(idx.wrapping_sub(1), new_tab_idx),
-                        //         Move::Right => {
-                        //             let idx = idx + 1;
-                        //             if idx > new_tab_idx { 0 } else { idx }
-                        //         }
-                        //     };
-                        //     match idx {
-                        //         0 => self.tabs.state = Tab::Search,
-                        //         new_tab if new_tab == new_tab_idx => self.tabs.state = Tab::New,
-                        //         idx => {
-                        //             let character = (idx - 1) / character::TABS;
-                        //             let character = &self.characters[character];
-                        //             let tab = (idx - 1) % character::TABS;
-                        //             if character != name {
-                        //                 self.tabs.state = Tab::Character(Arc::clone(character));
-                        //             }
-                        //             self.character_pages.get_mut(character).unwrap().tab = tab;
-                        //         }
-                        //     }
-                        // }
                     }
                     Message::Undo => {
                         let orig_idx = self.state;
@@ -475,6 +426,17 @@ impl Application for Window {
                         if let Tab::Character(name) = &self.tabs.state {
                             if let Some(page) = self.character_pages.get_mut(name) {
                                 page.tab = tab;
+                            }
+                        }
+                    }
+                    Message::AddSpell(idx) => {
+                        if let Some(spell) = self.search_page.spells.first().map(|s| s.spell.id()) {
+                            let character = self.characters.get(idx)
+                                .cloned()
+                                .and_then(|c| self.character_pages.get_mut(&c));
+                            if let Some(character) = character {
+                                character.add_spell(spell);
+                                self.refresh_search();
                             }
                         }
                     }

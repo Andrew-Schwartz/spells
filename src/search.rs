@@ -282,7 +282,7 @@ pub struct SearchPage {
     ritual_search: Option<RitualSearch>,
     text_search: Option<TextSearch>,
     scroll: scrollable::State,
-    spells: Vec<Spell>,
+    pub spells: Vec<Spell>,
 }
 
 impl Default for SearchPage {
@@ -302,8 +302,8 @@ impl Default for SearchPage {
     }
 }
 
-struct Spell {
-    spell: &'static crate::Spell,
+pub struct Spell {
+    pub spell: &'static crate::Spell,
     buttons: Vec<(Arc<str>, button::State, bool)>,
 }
 
@@ -455,11 +455,11 @@ impl SearchPage {
             .fold(Row::new().spacing(8), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
-        let mut scroll = Scrollable::new(&mut self.scroll);
-        for spell in &mut self.spells {
-            scroll = scroll.push(spell.spell.view(CharacterButtons(&mut spell.buttons), style))
-                .push(Space::with_height(Length::Units(40)));
-        }
+        let scroll = self.spells.iter_mut()
+            .fold(Scrollable::new(&mut self.scroll), |scroll, spell|
+                scroll.push(spell.spell.view(CharacterButtons(&mut spell.buttons), style))
+                    .push(Space::with_height(Length::Units(40))),
+            );
 
         let column = Column::new()
             .push(Row::new()

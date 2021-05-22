@@ -65,6 +65,12 @@ pub struct Spell {
     down: button::State,
 }
 
+impl PartialEq for Spell {
+    fn eq(&self, other: &Self) -> bool {
+        self.spell == other.spell
+    }
+}
+
 impl From<&'static crate::Spell> for Spell {
     fn from(spell: &'static crate::Spell) -> Self {
         Self {
@@ -98,6 +104,15 @@ impl CharacterPage {
         }
     }
 
+    pub fn add_spell(&mut self, spell: SpellId) {
+        let spell = SPELLS.iter().find(|s| **s == spell).unwrap();
+        let level = spell.level;
+        let spell = spell.into();
+        if !self.spells[level].contains(&spell) {
+            self.spells[level].push(spell);
+        }
+    }
+
     /// returns true if the character should be saved now
     pub fn update(&mut self, message: Message, num_cols: usize) -> bool {
         match message {
@@ -106,8 +121,7 @@ impl CharacterPage {
                 false
             }
             Message::AddSpell(id) => {
-                let spell = SPELLS.iter().find(|spell| **spell == id).unwrap();
-                self.spells[spell.level].push(spell.into());
+                self.add_spell(id);
                 true
             }
             Message::RemoveSpell(id) => {
