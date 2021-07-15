@@ -31,8 +31,7 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
         keyboard::Event::KeyPressed { key_code, modifiers } => {
             let message = match (modifiers.control, modifiers.alt, modifiers.shift) {
                 CTRL => match key_code {
-                    // todo go to search tab
-                    // KeyCode::Grave => Some(Message::ToT)
+                    KeyCode::Grave => Some(Message::Find(true)),
                     KeyCode::Key1 => Some(Message::ToCharacter(1)),
                     KeyCode::Key2 => Some(Message::ToCharacter(2)),
                     KeyCode::Key3 => Some(Message::ToCharacter(3)),

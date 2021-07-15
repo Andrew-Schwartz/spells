@@ -1,7 +1,8 @@
 use std::ops::Sub;
 use std::time::Instant;
 
-use iced::mouse::{self, Button, Event};
+use iced::mouse::{self, Button, Event, ScrollDelta};
+use iced::Point;
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct State {
@@ -50,31 +51,34 @@ pub enum StateMessage {
     MoveTo(Pt),
     ButtonPress(fn(Instant, Pt) -> ButtonPress),
     ButtonRelease(iced::mouse::Button),
+    Scroll(ScrollDelta)
 }
 
 pub fn handle(event: mouse::Event) -> Option<crate::Message> {
     // println!("event = {:?}", event);
     match event {
         Event::CursorEntered | Event::CursorLeft => None,
-        Event::CursorMoved { x, y } => Some(crate::Message::MouseState(StateMessage::MoveTo(Pt(x, y)))),
+        Event::CursorMoved { position: Point { x, y } } => Some(StateMessage::MoveTo(Pt(x, y))),
         Event::ButtonPressed(button) => match button {
             Button::Left => Some(ButtonPress::Left as fn(Instant, Pt) -> ButtonPress),
             Button::Right => Some(ButtonPress::Right as fn(Instant, Pt) -> ButtonPress),
             Button::Middle => Some(ButtonPress::Middle as fn(Instant, Pt) -> ButtonPress),
             Button::Other(_) => None,
-        }.map(|ctor| crate::Message::MouseState(StateMessage::ButtonPress(ctor))),
-        Event::ButtonReleased(button) => Some(crate::Message::MouseState(StateMessage::ButtonRelease(button))),
-        Event::WheelScrolled { .. } => None,
-    }
+        }.map(|ctor| StateMessage::ButtonPress(ctor)),
+        Event::ButtonReleased(button) => Some(StateMessage::ButtonRelease(button)),
+        Event::WheelScrolled { delta } => Some(StateMessage::Scroll(delta))
+    }.map(crate::Message::MouseState)
 }
 
 pub fn gesture(delta: Pt) -> Option<crate::Message> {
-    // pixels/second
     let Pt(x, y) = delta;
-    if (y / x).abs() < 0.3 {
+    if (x / y).abs() > 5.0 {
         use crate::hotkey::{Message, Move};
         let delta = if x.is_sign_positive() { Move::Right } else { Move::Left };
-        Some(crate::Message::Hotkey(Message::Move(delta, false)))
+        // if the gesture is big enough move to next character
+        // todo make a sensitivity slider somwehere
+        let tab_only = x.abs() > 200.0;
+        Some(crate::Message::Hotkey(Message::Move(delta, tab_only)))
     } else {
         None
     }

@@ -1,16 +1,16 @@
-use std::collections::{BTreeSet, HashMap};
-use std::convert::identity;
+use std::collections::BTreeSet;
 use std::fmt::{self, Display};
 use std::sync::Arc;
 
-use iced::{button, Button, Checkbox, Column, Container, Element, Length, pick_list, PickList, Row, Scrollable, Space, Text, TextInput};
+use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, pick_list, PickList, Row, Scrollable, Text, TextInput};
 use iced::widget::{scrollable, text_input};
 use itertools::Itertools;
 use levenshtein::levenshtein;
 
-use crate::{character, Class, School, SpellButtonTrait, SpellId, SPELLS};
+use crate::{character, Class, CustomSpell, School, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
 use crate::character::CharacterPage;
 use crate::style::Style;
+use crate::utils::SpacingExt;
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -30,16 +30,25 @@ pub trait PLNone {
 
 /// `PickListOption`, meant to be used as the title for a `PickList` but not in the set of items
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum PLOption<T: PLNone + Display + Eq> {
+pub enum PLOption<T> {
     None,
     Some(T),
 }
 
-impl<T: PLNone + Display + Eq> PLOption<T> {
+impl<T> PLOption<T> {
     pub fn unwrap(self) -> T {
         match self {
             PLOption::Some(t) => t,
             PLOption::None => panic!("called `PLOption::unwrap()` on a `None` value"),
+        }
+    }
+}
+
+impl<T: PLNone + Display + Eq> From<Option<T>> for PLOption<T> {
+    fn from(option: Option<T>) -> Self {
+        match option {
+            Some(t) => Self::Some(t),
+            None => Self::None,
         }
     }
 }
@@ -135,7 +144,7 @@ impl Display for PickListLevel {
 trait Searcher {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message>;
 
-    fn matches(&self, spell: &crate::Spell) -> bool;
+    fn matches(&self, spell: &StaticCustomSpell) -> bool;
 }
 
 #[derive(Debug, Default)]
@@ -157,8 +166,8 @@ impl Searcher for LevelSearch {
         row.push(pick_list).push(text)
     }
 
-    fn matches(&self, spell: &crate::Spell) -> bool {
-        let bit = 1 << spell.level;
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        let bit = 1 << spell.level();
         self.bitmask & bit == bit
     }
 }
@@ -193,8 +202,8 @@ impl Searcher for ClassSearch {
         row.push(pick_list).push(text)
     }
 
-    fn matches(&self, spell: &crate::Spell) -> bool {
-        spell.classes.iter()
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        spell.classes().iter()
             .any(|s| self.classes.contains(s))
     }
 }
@@ -209,7 +218,7 @@ impl Searcher for SchoolSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let pick_list = PickList::new(
             &mut self.state,
-            &School::ALL[..],
+            &School::PL_ALL[..],
             Some(PLOption::None),
             |s| crate::Message::Search(Message::PickSchool(s.unwrap())),
         ).style(style).text_size(14);
@@ -217,8 +226,8 @@ impl Searcher for SchoolSearch {
         row.push(pick_list).push(text)
     }
 
-    fn matches(&self, spell: &crate::Spell) -> bool {
-        self.schools.contains(&spell.school)
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        self.schools.contains(&spell.school())
     }
 }
 
@@ -237,8 +246,8 @@ impl Searcher for RitualSearch {
         row.push(checkbox)
     }
 
-    fn matches(&self, spell: &crate::Spell) -> bool {
-        spell.ritual == self.ritual
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        spell.ritual() == self.ritual
     }
 }
 
@@ -260,17 +269,39 @@ impl Searcher for TextSearch {
         row.push(text).push(input)
     }
 
-    fn matches(&self, spell: &crate::Spell) -> bool {
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
         self.text.split('|')
             .any(|search|
-                spell.desc_lower.contains(search) ||
-                    spell.higher_levels_lower
+                spell.desc_lower().contains(search) ||
+                    spell.higher_levels_lower()
                         .as_ref()
                         .filter(|lower| lower.contains(search))
                         .is_some()
             )
     }
 }
+
+// #[derive(Debug, Default)]
+// struct CastingTimeSearch {
+//     text: String,
+//     state: text_input::State,
+// }
+//
+// impl Searcher for CastingTimeSearch {
+//     fn add_to_row<'a>(&'a mut self, row: Row<'a, Message>, style: Style) -> Row<'a, Message> {
+//         let text = Text::new("Casting Time:");
+//         let input = TextInput::new(
+//             &mut self.state,
+//             "",
+//             &self.text,
+//             |s| crate::Message::Search(Message::SearchCastingTime(s))
+//         )
+//     }
+//
+//     fn matches(&self, spell: &Spell) -> bool {
+//         todo!()
+//     }
+// }
 
 pub struct SearchPage {
     pub state: text_input::State,
@@ -281,7 +312,7 @@ pub struct SearchPage {
     school_search: Option<SchoolSearch>,
     ritual_search: Option<RitualSearch>,
     text_search: Option<TextSearch>,
-    scroll: scrollable::State,
+    pub scroll: scrollable::State,
     pub spells: Vec<Spell>,
 }
 
@@ -303,32 +334,26 @@ impl Default for SearchPage {
 }
 
 pub struct Spell {
-    pub spell: &'static crate::Spell,
+    pub spell: StaticCustomSpell,
     buttons: Vec<(Arc<str>, button::State, bool)>,
 }
 
 impl Spell {
-    fn from(spell: &'static crate::Spell, characters: &[Arc<str>], map: &HashMap<Arc<str>, CharacterPage>) -> Self {
-        Self {
-            spell,
-            buttons: characters.iter()
-                .map(|c| {
-                    let active = map.get(c)
-                        .map_or(
-                            true,
-                            |page| !page.spells.iter()
-                                .flatten()
-                                .any(|s| s.spell == spell),
-                        );
-                    (Arc::clone(c), Default::default(), active)
-                })
-                .collect(),
-        }
+    fn from(spell: StaticCustomSpell, characters: &[CharacterPage]) -> Self {
+        let buttons = characters.iter()
+            .map(|page| {
+                let active = !page.character.spells.iter()
+                    .flatten()
+                    .any(|(s, _)| s.spell == spell);
+                (Arc::clone(&page.character.name), Default::default(), active)
+            })
+            .collect();
+        Self { spell, buttons }
     }
 }
 
 impl SearchPage {
-    pub fn update(&mut self, message: Message, characters: &[Arc<str>], map: &HashMap<Arc<str>, CharacterPage>) {
+    pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) {
         fn toggle<T: Ord>(map: &mut BTreeSet<T>, entry: T) {
             if map.contains(&entry) {
                 map.remove(&entry);
@@ -340,9 +365,9 @@ impl SearchPage {
         match message {
             Message::Search(needle) => {
                 self.search = needle.to_lowercase();
-                self.search(characters, map);
+                self.search(custom, characters);
             }
-            Message::Refresh => self.search(characters, map),
+            Message::Refresh => self.search(custom, characters),
             Message::PickMode(mode) => {
                 fn toggle_search<T: Default>(search: &mut Option<T>) {
                     *search = match search {
@@ -358,7 +383,7 @@ impl SearchPage {
                     Mode::Ritual => {
                         toggle_search(&mut self.ritual_search);
                         // the default (false) will still match spells, so redo the search
-                        self.search(characters, map);
+                        self.search(custom, characters);
                     }
                     Mode::Text => toggle_search(&mut self.text_search),
                 }
@@ -371,37 +396,37 @@ impl SearchPage {
                     } else {
                         levels.bitmask |= bit;
                     }
-                    self.search(characters, map);
+                    self.search(custom, characters);
                 }
             }
             Message::PickClass(class) => {
                 if let Some(classes) = &mut self.class_search {
                     toggle(&mut classes.classes, class);
-                    self.search(characters, map);
+                    self.search(custom, characters);
                 }
             }
             Message::PickSchool(school) => {
                 if let Some(schools) = &mut self.school_search {
                     toggle(&mut schools.schools, school);
-                    self.search(characters, map);
+                    self.search(custom, characters);
                 }
             }
             Message::ToggleRitual(ritual) => {
                 if let Some(search) = &mut self.ritual_search {
                     search.ritual = ritual;
-                    self.search(characters, map);
+                    self.search(custom, characters);
                 }
             }
             Message::SearchText(text) => {
                 if let Some(search) = &mut self.text_search {
                     search.text = text.to_lowercase();
-                    self.search(characters, map);
+                    self.search(custom, characters);
                 }
             }
         }
     }
 
-    fn search(&mut self, characters: &[Arc<str>], map: &HashMap<Arc<str>, CharacterPage>) {
+    fn search(&mut self, custom: &[CustomSpell], characters: &[CharacterPage]) {
         let needle = &self.search;
         let searches: [Option<&dyn Searcher>; 5] = [
             self.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
@@ -411,18 +436,23 @@ impl SearchPage {
             self.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
         ];
         self.spells = SPELLS.iter()
-            .filter(|spell| searches.iter()
-                .filter_map(|o| *o)
+            .map(StaticCustomSpell::Static)
+            .chain(custom.iter()
+                // todo not clone them
+                .cloned()
+                .map(StaticCustomSpell::Custom))
+            .filter(|spell| std::array::IntoIter::new(searches)
+                .flatten()
                 .all(|searcher| searcher.matches(spell)))
-            .map(|spell| (spell.name.to_lowercase(), spell))
-            .filter(|(name, _)| name.contains(needle))
-            .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
+            // .map(|spell| (spell.name_lower().clone(), spell))
+            .filter(|spell| spell.name_lower().contains(needle))
+            .sorted_unstable_by_key(|spell| levenshtein(spell.name_lower(), needle))
+            .map(|spell| Spell::from(spell, characters))
             .take(100)
-            .map(|(_, spell)| spell).map(|spell| Spell::from(spell, characters, map))
             .collect();
     }
 
-    pub fn view(&mut self, style: Style) -> Element<crate::Message> {
+    pub fn view(&mut self, style: Style) -> Container<crate::Message> {
         if !matches!(&self.text_search, Some(ts) if ts.state.is_focused()) {
             self.state.focus();
         }
@@ -451,53 +481,64 @@ impl SearchPage {
             self.text_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
         ];
         let advanced_search = std::array::IntoIter::new(searchers)
-            .filter_map(identity)
+            .flatten()
             .fold(Row::new().spacing(8), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
         let scroll = self.spells.iter_mut()
             .fold(Scrollable::new(&mut self.scroll), |scroll, spell|
-                scroll.push(spell.spell.view(CharacterButtons(&mut spell.buttons), style))
-                    .push(Space::with_height(Length::Units(40))),
+                // todo make an option to collapse all spells here
+                scroll.push(spell.spell.view(SearchPageButtons(&mut spell.buttons), (), false, style))
+                    .push_space(40),
             );
 
         let column = Column::new()
+            .spacing(6)
+            .push_space(10)
             .push(Row::new()
-                .push(Space::with_width(Length::FillPortion(1)))
+                .push_space(Length::Fill)
                 .push(search)
-                .push(Space::with_width(Length::Units(3)))
+                .push_space(3)
                 .push(mode)
-                .push(Space::with_width(Length::FillPortion(1))))
+                .push_space(Length::Fill)
+                .align_items(Align::Center))
             .push(Row::new()
-                .push(Space::with_width(Length::Fill))
+                .push_space(Length::Fill)
                 .push(advanced_search.width(Length::FillPortion(18)))
-                .push(Space::with_width(Length::Fill)))
+                .push_space(Length::Fill))
             .push(scroll);
 
         Container::new(column)
-            .into()
     }
 }
 
-struct CharacterButtons<'a>(&'a mut [(Arc<str>, button::State, bool)]);
+struct SearchPageButtons<'a>(&'a mut [(Arc<str>, button::State, bool)]);
 
-impl<'a> SpellButtonTrait<'a> for CharacterButtons<'a> {
-    fn view(self, id: SpellId, style: Style) -> Row<'a, crate::Message> {
+impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
+    type Data = ();
+
+    fn view(self, id: SpellId, (): (), style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
         let mut buttons = Row::new();
         if !self.0.is_empty() {
             buttons = buttons.push(Text::new("Add to:"))
-                .push(Space::with_width(Length::Units(15)));
+                .push_space(15);
         }
-        self.0.iter_mut()
-            .fold(buttons, |row, (name, state, active)|
+        let buttons = self.0.iter_mut()
+            .enumerate()
+            .fold(buttons, |row, (character, (name, state, active))|
                 row.push({
                     let mut button = Button::new(state, Text::new(name.as_ref()).size(12))
                         .style(style);
                     if *active {
-                        button = button.on_press(crate::Message::Character(Arc::clone(name), character::Message::AddSpell(id)));
+                        button = button.on_press(crate::Message::Character(character, character::Message::AddSpell(id.clone())));
                     }
                     button
-                }).push(Space::with_width(Length::Units(5))),
-            )
+                }).push_space(5),
+            );
+        let name = Text::new(&*id.name)
+            .size(36)
+            .width(Length::FillPortion(18))
+            .into();
+        (buttons, name)
     }
 }
