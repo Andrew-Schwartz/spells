@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, pick_list, PickList, Row, Scrollable, Text, TextInput};
 use iced::widget::{scrollable, text_input};
+use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use levenshtein::levenshtein;
 
@@ -15,6 +16,8 @@ use crate::utils::SpacingExt;
 #[derive(Clone, Debug)]
 pub enum Message {
     Refresh,
+    CollapseAll,
+    Collapse(SpellId),
     Search(String),
     PickMode(Mode),
     PickLevel(u8),
@@ -281,6 +284,7 @@ impl Searcher for TextSearch {
     }
 }
 
+// todo
 // #[derive(Debug, Default)]
 // struct CastingTimeSearch {
 //     text: String,
@@ -304,6 +308,8 @@ impl Searcher for TextSearch {
 // }
 
 pub struct SearchPage {
+    collapse_state: button::State,
+    collapse: bool,
     pub state: text_input::State,
     search: String,
     mode_state: pick_list::State<PLOption<Mode>>,
@@ -319,6 +325,8 @@ pub struct SearchPage {
 impl Default for SearchPage {
     fn default() -> Self {
         Self {
+            collapse_state: Default::default(),
+            collapse: false,
             state: text_input::State::focused(),
             search: Default::default(),
             mode_state: Default::default(),
@@ -335,6 +343,8 @@ impl Default for SearchPage {
 
 pub struct Spell {
     pub spell: StaticCustomSpell,
+    collapse: Option<bool>,
+    name: button::State,
     buttons: Vec<(Arc<str>, button::State, bool)>,
 }
 
@@ -348,7 +358,12 @@ impl Spell {
                 (Arc::clone(&page.character.name), Default::default(), active)
             })
             .collect();
-        Self { spell, buttons }
+        Self {
+            spell,
+            collapse: None,
+            name: Default::default(),
+            buttons,
+        }
     }
 }
 
@@ -423,6 +438,20 @@ impl SearchPage {
                     self.search(custom, characters);
                 }
             }
+            Message::CollapseAll => {
+                self.collapse = !self.collapse;
+                self.spells.iter_mut().for_each(|spell| spell.collapse = None);
+            }
+            Message::Collapse(id) => {
+                if let Some(spell) = self.spells.iter_mut()
+                    .find(|spell| spell.spell.id() == id) {
+                    if let Some(collapse) = &mut spell.collapse {
+                        *collapse = !*collapse;
+                    } else {
+                        spell.collapse = Some(!self.collapse);
+                    }
+                }
+            }
         }
     }
 
@@ -456,6 +485,14 @@ impl SearchPage {
         if !matches!(&self.text_search, Some(ts) if ts.state.is_focused()) {
             self.state.focus();
         }
+
+        let collapse_button = Button::new(
+            &mut self.collapse_state,
+            Text::new(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
+                .font(ICON_FONT)
+                .size(15),
+        ).style(style)
+            .on_press(crate::Message::Search(Message::CollapseAll));
         let search = TextInput::new(
             &mut self.state,
             "search for a spell",
@@ -485,18 +522,26 @@ impl SearchPage {
             .fold(Row::new().spacing(8), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
+        let collapse_all = self.collapse;
         let scroll = self.spells.iter_mut()
-            .fold(Scrollable::new(&mut self.scroll), |scroll, spell|
-                // todo make an option to collapse all spells here
-                scroll.push(spell.spell.view(SearchPageButtons(&mut spell.buttons), (), false, style))
-                    .push_space(40),
+            .fold(Scrollable::new(&mut self.scroll), |scroll, spell| {
+                let collapse = match spell.collapse {
+                    Some(collapse) => collapse,
+                    None => collapse_all,
+                };
+                scroll.push(spell.spell.view(SearchPageButtons(&mut spell.name, &mut spell.buttons), (), collapse, style))
+                    .push_space(40)
+            },
             );
 
         let column = Column::new()
+            .align_items(Align::Center)
             .spacing(6)
             .push_space(10)
             .push(Row::new()
                 .push_space(Length::Fill)
+                .push(collapse_button)
+                .push_space(4)
                 .push(search)
                 .push_space(3)
                 .push(mode)
@@ -512,18 +557,18 @@ impl SearchPage {
     }
 }
 
-struct SearchPageButtons<'a>(&'a mut [(Arc<str>, button::State, bool)]);
+struct SearchPageButtons<'a>(&'a mut button::State, &'a mut [(Arc<str>, button::State, bool)]);
 
 impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
     type Data = ();
 
     fn view(self, id: SpellId, (): (), style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
         let mut buttons = Row::new();
-        if !self.0.is_empty() {
+        if !self.1.is_empty() {
             buttons = buttons.push(Text::new("Add to:"))
                 .push_space(15);
         }
-        let buttons = self.0.iter_mut()
+        let buttons = self.1.iter_mut()
             .enumerate()
             .fold(buttons, |row, (character, (name, state, active))|
                 row.push({
@@ -535,9 +580,13 @@ impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
                     button
                 }).push_space(5),
             );
-        let name = Text::new(&*id.name)
-            .size(36)
-            .width(Length::FillPortion(18))
+        let name = Button::new(
+            self.0,
+            Text::new(&*id.name)
+                .size(36),
+        ).width(Length::FillPortion(18))
+            .on_press(crate::Message::Search(Message::Collapse(id)))
+            .style(style.background())
             .into();
         (buttons, name)
     }

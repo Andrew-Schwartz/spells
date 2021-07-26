@@ -34,7 +34,8 @@ impl MoveSpell {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    ToggleCollapsed,
+    ToggleCollapse,
+    ToggleCollapseAll,
     Prepare(SpellId),
     PrepareAll(bool),
     SpellTab(usize),
@@ -91,6 +92,8 @@ pub struct SerializeCharacter {
 
 pub struct CharacterPage {
     pub character: Character,
+    should_collapse_all: bool,
+    collapse_all: button::State,
     should_collapse_unprepared: bool,
     collapse_unprepared: button::State,
     prepare_all: button::State,
@@ -148,7 +151,9 @@ impl From<Character> for CharacterPage {
     fn from(character: Character) -> Self {
         Self {
             character,
-            should_collapse_unprepared: false,
+            should_collapse_all: false,
+            collapse_all: Default::default(),
+            should_collapse_unprepared: true,
             collapse_unprepared: Default::default(),
             prepare_all: Default::default(),
             unprepare_all: Default::default(),
@@ -177,8 +182,12 @@ impl CharacterPage {
     /// returns true if the character should be saved now
     pub fn update(&mut self, message: Message, custom: &[CustomSpell], num_cols: usize) -> bool {
         match message {
-            Message::ToggleCollapsed => {
+            Message::ToggleCollapse => {
                 self.should_collapse_unprepared = !self.should_collapse_unprepared;
+                false
+            }
+            Message::ToggleCollapseAll => {
+                self.should_collapse_all = !self.should_collapse_all;
                 false
             }
             Message::Prepare(id) => {
@@ -187,7 +196,6 @@ impl CharacterPage {
                     .position(|(spell, _)| spell.spell.name() == &*id.name);
                 idx.map_or(false, |idx| {
                     spells[idx].1 = !spells[idx].1;
-                    println!("spells[idx].1 = {:?}", spells[idx].1);
                     true
                 })
             }
@@ -246,6 +254,8 @@ impl CharacterPage {
                 name,
                 spells,
             },
+            should_collapse_all,
+            collapse_all,
             should_collapse_unprepared,
             collapse_unprepared,
             prepare_all,
@@ -268,11 +278,21 @@ impl CharacterPage {
             .push_space(Length::Fill)
             .push(Tooltip::new(
                 Button::new(
-                    collapse_unprepared,
-                    Text::new(if *should_collapse_unprepared { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
+                    collapse_all,
+                    Text::new(if *should_collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                         .font(ICON_FONT))
                     .style(style)
-                    .on_press(crate::Message::Character(index, Message::ToggleCollapsed)),
+                    .on_press(crate::Message::Character(index, Message::ToggleCollapseAll)),
+                if *should_collapse_all { "Expand all spells" } else { "Collapse all spells" },
+                Position::FollowCursor,
+            ))
+            .push(Tooltip::new(
+                Button::new(
+                    collapse_unprepared,
+                    Text::new(if *should_collapse_unprepared { Icon::ChevronExpand } else { Icon::ChevronContract })
+                        .font(ICON_FONT))
+                    .style(style)
+                    .on_press(crate::Message::Character(index, Message::ToggleCollapse)),
                 if *should_collapse_unprepared { "Expand unprepared spells" } else { "Collapse unprepared spells" },
                 Position::FollowCursor))
             .push(Tooltip::new(
@@ -394,7 +414,7 @@ impl CharacterPage {
                                     bottom_start_idx - 1
                                 } { None } else { Some(&mut spell.down) },
                             };
-                            let collapse = *should_collapse_unprepared && !*prepared;
+                            let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
                             row.push(spell.spell.view(button, *prepared, collapse, style).width(Length::Fill))
                         } else {
                             row.push_space(Length::Fill)

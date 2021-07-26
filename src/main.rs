@@ -85,9 +85,11 @@ static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| {
     path
 });
 
-// default window size is 1024, want two columns for that
+const WIDTH: u32 = 1100;
+
+/// want two columns for starting window size with a bit of room to expand
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-const COLUMN_WIDTH: f32 = (1024 / 2) as _;
+const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
 fn main() -> iced::Result {
     let icon = {
@@ -102,6 +104,8 @@ fn main() -> iced::Result {
     DndSpells::run(Settings {
         window: iced::window::Settings {
             min_size: Some((1024 / 2, 500)),
+            // default: (1024, 768)
+            size: (WIDTH, 768),
             icon: Some(icon),
             ..Default::default()
         },
@@ -169,7 +173,6 @@ impl DndSpells {
     fn swap_characters(&mut self, a: usize, b: usize) {
         self.characters.swap(a, b);
         self.refresh_search();
-        // self.tabs.characters.swap(a, b);
         self.save().expect("blah");
     }
 
@@ -337,12 +340,10 @@ impl Application for DndSpells {
                 Style::Dark => Style::Light,
             },
             Message::SetColScale(mult) => {
+                println!("mult = {:?}", mult);
                 self.col_scale = mult;
                 self.set_num_columns();
             },
-            // Message::SwitchTab(tab) => {
-            //     self.tabs.update(tab, &mut self.search_page, &mut self.new_page);
-            // }
             Message::Search(msg) => self.search_page.update(msg, &self.custom_spells, &self.characters),
             Message::Settings(message) => {
                 use settings::Message;

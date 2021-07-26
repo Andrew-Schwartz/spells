@@ -7,7 +7,10 @@ edition = "2018"
 [dependencies.iced]
 version = "0.3.0"
 default-features = false
-features = ["glow", "debug"]
+# for release
+features = ["glow"]
+# for debug
+#features = ["glow", "debug"]
 
 [dependencies.iced_aw]
 git = "https://github.com/iced-rs/iced_aw"
