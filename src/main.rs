@@ -15,8 +15,8 @@
 //! @formatter:on
 
 use std::cmp::min;
-use std::convert::{Infallible, TryFrom};
-use std::fmt::{self, Debug, Display};
+use std::convert::TryFrom;
+use std::fmt::{self, Debug, Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, ErrorKind, Write};
 use std::mem;
@@ -33,6 +33,7 @@ use iced_aw::{ICON_FONT, TabLabel, Tabs};
 use iced_native::{Event, Subscription, window};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::Error;
 
 use search::SearchPage;
 use utils::IterExt;
@@ -416,7 +417,7 @@ impl Application for DndSpells {
                             match edit {
                                 Edit::School(school) => spell.school = school,
                                 Edit::Level(level) => spell.level = level,
-                                Edit::CastingTime(time) => spell.casting_time = time,
+                                Edit::CastingTime(time) => spell.casting_time = todo!(),
                                 Edit::Range(range) => spell.range = range,
                                 Edit::Components(components) => spell.components = components,
                                 Edit::Duration(duration) => spell.duration = duration,
@@ -523,7 +524,12 @@ impl Application for DndSpells {
                         match (main_page, self.tab) {
                             (true, _) | (false, Tab::Settings | Tab::Search) => {
                                 self.tab = Tab::Search;
-                                self.refresh_search();
+                                self.search_page.update(
+                                    crate::search::Message::Search(String::new()),
+                                    &self.custom_spells,
+                                    &self.characters,
+                                );
+                                // self.refresh_search();
                             }
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
@@ -904,14 +910,102 @@ impl From<School> for String {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd, Serialize)]
+pub enum CastingTime {
+    Special,
+    Action,
+    BonusAction,
+    Reaction(Option<StArc<str>>),
+    Minute(usize),
+    Hour(usize),
+}
+
+impl CastingTime {
+    const REACTION_PHRASE: &'static str = ", which you take when ";
+
+    fn from_static(str: &'static str) -> Result<Self, String> {
+        let space_idx = str.find(" ");
+        let get_num = || {
+            let space_idx = space_idx.ok_or_else(|| format!("No number specified in casting time \"{}\"", str))?;
+            let num = &str[..space_idx];
+            num.parse()
+                .map_err(|_| format!("{} is not a positive integer", num))
+        };
+        let comma = str.find(",").unwrap_or(str.len());
+        let rest = &str[space_idx.map(|i| i + 1).unwrap_or(0)..comma];
+        match rest {
+            "Special" => Ok(Self::Special),
+            "Action" => Ok(Self::Action),
+            "Bonus Action" => Ok(Self::BonusAction),
+            "Reaction" => {
+                if str[comma..].starts_with(Self::REACTION_PHRASE) {
+                    Ok(Self::Reaction(Some(str[comma + Self::REACTION_PHRASE.len()..].into())))
+                } else {
+                    Err(String::from("No reaction when phrase"))
+                }
+            },
+            "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
+            "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
+            _ => Err(format!("{} is not a casting time", rest))
+        }
+    }
+}
+
+impl Display for CastingTime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Special => f.write_str("Special"),
+            Self::Action => f.write_str("1 Action"),
+            Self::BonusAction => f.write_str("1 Bonus Action"),
+            Self::Reaction(when) => if let Some(when) = when {
+                write!(f, "1 Reaction, which you take when {}", when)
+            } else {
+                f.write_str("1 Reaction")
+            }
+            &Self::Minute(n) => write!(f, "{} Minute{}", n, if n == 1 { "" } else { "s" }),
+            &Self::Hour(n) => write!(f, "{} Hour{}", n, if n == 1 { "" } else { "s" }),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CastingTime {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let str = <&'de str>::deserialize(d)?;
+        let space_idx = str.find(" ");
+        let get_num = || {
+            let space_idx = space_idx.ok_or_else(|| D::Error::custom(format!("No number specified in casting time \"{}\"", str)))?;
+            let num = &str[..space_idx];
+            num.parse()
+                .map_err(|_| D::Error::custom(format!("{} is not a positive integer", num)))
+        };
+        let comma = str.find(",").unwrap_or(str.len());
+        let rest = &str[space_idx.map(|i| i + 1).unwrap_or(0)..comma];
+        match rest {
+            "Special" => Ok(Self::Special),
+            "Action" => Ok(Self::Action),
+            "Bonus Action" => Ok(Self::BonusAction),
+            "Reaction" => {
+                if str[comma..].starts_with(Self::REACTION_PHRASE) {
+                    Ok(Self::Reaction(Some(StArc::Arc(Arc::from(&str[comma + Self::REACTION_PHRASE.len()..])))))
+                } else {
+                    Err(D::Error::custom("No reaction when phrase"))
+                }
+            },
+            "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
+            "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
+            _ => Err(D::Error::custom(format!("{} is not a casting time", rest)))
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(try_from = "DeserializeSpell")]
 pub struct Spell {
     name: &'static str,
     #[serde(skip_serializing)]
     name_lower: &'static str,
     level: usize,
-    casting_time: &'static str,
+    casting_time: CastingTime,
     range: &'static str,
     duration: &'static str,
     components: &'static str,
@@ -948,7 +1042,7 @@ struct DeserializeSpell {
 }
 
 impl TryFrom<DeserializeSpell> for Spell {
-    type Error = Infallible;
+    type Error = String;
 
     fn try_from(value: DeserializeSpell) -> Result<Self, Self::Error> {
         // we leak stuff since it will be around for the entire time the gui is open
@@ -965,7 +1059,7 @@ impl TryFrom<DeserializeSpell> for Spell {
             name: value.name,
             name_lower,
             level: value.level,
-            casting_time: value.casting_time,
+            casting_time: CastingTime::from_static(value.casting_time).map_err(|e| format!("{}", e))?,
             range: value.range,
             duration: value.duration,
             components: value.components,
@@ -1013,7 +1107,7 @@ pub struct CustomSpell {
     level: usize,
     #[serde(skip)]
     level_state: pick_list::State<usize>,
-    casting_time: String,
+    casting_time: CastingTime,
     #[serde(skip)]
     casting_time_state: text_input::State,
     range: String,
@@ -1066,7 +1160,7 @@ impl CustomSpell {
             name_state: Default::default(),
             level: 0,
             level_state: Default::default(),
-            casting_time: String::new(),
+            casting_time: CastingTime::Action,
             casting_time_state: Default::default(),
             range: String::new(),
             range_state: Default::default(),
@@ -1320,6 +1414,15 @@ impl<'a, T: ?Sized + PartialEq> PartialEq<&'a T> for StArc<T> {
 //     }
 // }
 
+impl<T: ?Sized> Display for StArc<T> where T: Display {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            StArc::Static(t) => t.fmt(f),
+            StArc::Arc(t) => (&**t).fmt(f),
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct SpellId {
     name: StArc<str>,
@@ -1376,10 +1479,6 @@ impl StaticCustomSpell {
     }
 
     pub fn name_lower(&self) -> &str {
-        // match self {
-        //     Self::Static(spell) => spell.name_lower.into(),
-        //     Self::Custom(spell) => spell.name_lower.into(),
-        // }
         delegate!(self, ref name_lower)
     }
 
@@ -1391,6 +1490,13 @@ impl StaticCustomSpell {
         match self {
             Self::Static(spell) => spell.higher_levels_lower,
             Self::Custom(spell) => spell.higher_levels_lower.as_deref(),
+        }
+    }
+
+    pub fn casting_time(&self) -> &CastingTime {
+        match self {
+            Self::Static(spell) => &spell.casting_time,
+            Self::Custom(spell) => &spell.casting_time,
         }
     }
 

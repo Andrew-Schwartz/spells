@@ -8,7 +8,7 @@ use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use levenshtein::levenshtein;
 
-use crate::{character, Class, CustomSpell, School, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
+use crate::{CastingTime, character, Class, CustomSpell, School, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
 use crate::character::CharacterPage;
 use crate::style::Style;
 use crate::utils::SpacingExt;
@@ -21,6 +21,7 @@ pub enum Message {
     Search(String),
     PickMode(Mode),
     PickLevel(u8),
+    PickCastingTime(CastingTime),
     PickClass(Class),
     PickSchool(School),
     ToggleRitual(bool),
@@ -78,6 +79,7 @@ pub enum Mode {
     Level,
     Class,
     School,
+    CastingTime,
     Ritual,
     Text,
 }
@@ -86,10 +88,11 @@ plopt!(Class, "Class");
 plopt!(School, "School");
 
 impl Mode {
-    const ALL: [PLOption<Self>; 5] = [
+    const ALL: [PLOption<Self>; 6] = [
         PLOption::Some(Self::Level),
         PLOption::Some(Self::Class),
         PLOption::Some(Self::School),
+        PLOption::Some(Self::CastingTime),
         PLOption::Some(Self::Ritual),
         PLOption::Some(Self::Text),
     ];
@@ -101,6 +104,7 @@ impl Display for Mode {
             Mode::Level => "Level",
             Mode::Class => "Class",
             Mode::School => "School",
+            Mode::CastingTime => "Casting Time",
             Mode::Ritual => "Ritual",
             Mode::Text => "Text",
         })
@@ -159,13 +163,13 @@ struct LevelSearch {
 
 impl Searcher for LevelSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
-        let text = Text::new(self.to_string()).size(14);
         let pick_list = PickList::new(
             &mut self.state,
             &PickListLevel::ALL[..],
             Some(PickListLevel::NONE),
             |pll| crate::Message::Search(Message::PickLevel(pll.unwrap())),
         ).style(style).text_size(14);
+        let text = Text::new(self.to_string()).size(14);
         row.push(pick_list).push(text)
     }
 
@@ -208,6 +212,46 @@ impl Searcher for ClassSearch {
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         spell.classes().iter()
             .any(|s| self.classes.contains(s))
+    }
+}
+
+plopt!(CastingTime, "Casting Time");
+
+#[derive(Debug, Default)]
+struct CastingTimeSearch {
+    times: BTreeSet<CastingTime>,
+    state: pick_list::State<PLOption<CastingTime>>,
+}
+
+impl Searcher for CastingTimeSearch {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+        use CastingTime::*;
+        // todo filter based on what's not selected
+        const DURATIONS: [PLOption<CastingTime>; 10] = [
+            PLOption::Some(Action),
+            PLOption::Some(BonusAction),
+            PLOption::Some(Reaction(None)),
+            PLOption::Some(Minute(1)),
+            PLOption::Some(Minute(10)),
+            PLOption::Some(Hour(1)),
+            PLOption::Some(Hour(8)),
+            PLOption::Some(Hour(12)),
+            PLOption::Some(Hour(24)),
+            PLOption::Some(Special),
+        ];
+
+        let pick_list = PickList::new(
+            &mut self.state,
+            &DURATIONS[..],
+            Some(PLOption::None),
+            |s| crate::Message::Search(Message::PickCastingTime(s.unwrap())),
+        ).style(style).text_size(14);
+        let text = Text::new(self.times.iter().join(", ")).size(14);
+        row.push(pick_list).push(text)
+    }
+
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        self.times.contains(spell.casting_time())
     }
 }
 
@@ -313,8 +357,10 @@ pub struct SearchPage {
     pub state: text_input::State,
     search: String,
     mode_state: pick_list::State<PLOption<Mode>>,
+    // todo make them always appear?
     level_search: Option<LevelSearch>,
     class_search: Option<ClassSearch>,
+    casting_time_search: Option<CastingTimeSearch>,
     school_search: Option<SchoolSearch>,
     ritual_search: Option<RitualSearch>,
     text_search: Option<TextSearch>,
@@ -332,6 +378,7 @@ impl Default for SearchPage {
             mode_state: Default::default(),
             level_search: None,
             class_search: None,
+            casting_time_search: None,
             school_search: None,
             ritual_search: None,
             text_search: None,
@@ -395,6 +442,7 @@ impl SearchPage {
                     Mode::Level => toggle_search(&mut self.level_search),
                     Mode::Class => toggle_search(&mut self.class_search),
                     Mode::School => toggle_search(&mut self.school_search),
+                    Mode::CastingTime => toggle_search(&mut self.casting_time_search),
                     Mode::Ritual => {
                         toggle_search(&mut self.ritual_search);
                         // the default (false) will still match spells, so redo the search
@@ -423,6 +471,12 @@ impl SearchPage {
             Message::PickSchool(school) => {
                 if let Some(schools) = &mut self.school_search {
                     toggle(&mut schools.schools, school);
+                    self.search(custom, characters);
+                }
+            }
+            Message::PickCastingTime(casting_time) => {
+                if let Some(casting_times) = &mut self.casting_time_search {
+                    toggle(&mut casting_times.times, casting_time);
                     self.search(custom, characters);
                 }
             }
@@ -457,10 +511,11 @@ impl SearchPage {
 
     fn search(&mut self, custom: &[CustomSpell], characters: &[CharacterPage]) {
         let needle = &self.search;
-        let searches: [Option<&dyn Searcher>; 5] = [
+        let searches: [Option<&dyn Searcher>; 6] = [
             self.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
             self.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
             self.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+            self.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
             self.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
             self.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
         ];
@@ -510,16 +565,17 @@ impl SearchPage {
             .text_size(15);
 
         // additional search stuff
-        let searchers: [Option<&mut dyn Searcher>; 5] = [
+        let searchers: [Option<&mut dyn Searcher>; 6] = [
             self.level_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
             self.class_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
             self.school_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
+            self.casting_time_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
             self.ritual_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
             self.text_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
         ];
         let advanced_search = std::array::IntoIter::new(searchers)
             .flatten()
-            .fold(Row::new().spacing(8), |row, searcher| searcher.add_to_row(row, style));
+            .fold(Row::new().spacing(8).align_items(Align::Center), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
         let collapse_all = self.collapse;

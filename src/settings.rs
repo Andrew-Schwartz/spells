@@ -312,7 +312,7 @@ impl SettingsPage {
                 let casting_time = TextInput::new(
                     &mut spell.casting_time_state,
                     "",
-                    &spell.casting_time,
+                    &spell.casting_time.to_string(),
                     edit_message(Edit::CastingTime),
                 ).style(style);
 
