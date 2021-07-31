@@ -1,7 +1,7 @@
 use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Text, text_input, TextInput};
 use itertools::Itertools;
 
-use crate::{Class, CustomSpell, School};
+use crate::{Class, CustomSpell, School, CastingTime};
 use crate::character::Character;
 use crate::search::PLOption;
 use crate::settings::Message::SubmitSpell;
@@ -27,6 +27,8 @@ pub enum Edit {
     School(School),
     Level(usize),
     CastingTime(String),
+    CastingTime2(CastingTime),
+    CastingTimeSubmit,
     Range(String),
     Components(String),
     Duration(String),
@@ -314,6 +316,15 @@ impl SettingsPage {
                     "",
                     &spell.casting_time.to_string(),
                     edit_message(Edit::CastingTime),
+                ).style(style)
+                    .on_submit(crate::Message::Settings(Message::EditSpell(Edit::CastingTimeSubmit)));
+
+                const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
+                let casting_time = PickList::new(
+                    &mut spell.casting_time_state2,
+                    CASTING_TIMES,
+                    None,
+                    edit_message(Edit::CastingTime2)
                 ).style(style);
 
                 let range = TextInput::new(

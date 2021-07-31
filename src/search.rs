@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::cmp::Ordering;
 use std::fmt::{self, Display};
 use std::sync::Arc;
 
@@ -149,15 +149,68 @@ impl Display for PickListLevel {
 }
 
 trait Searcher {
+    // type SearchWidget;
+    // fn elements(& mut self, style: Style) -> (Self::SearchWidget, )
+
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message>;
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool;
 }
 
+#[derive(Debug)]
+struct WithButton<T> {
+    t: T,
+    state: button::State,
+}
+
+impl<T> WithButton<T> {
+    fn new(t: T) -> Self {
+        Self { t, state: Default::default() }
+    }
+}
+
+impl<T: PartialEq> PartialEq for WithButton<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.t == other.t
+    }
+}
+
+impl<T: Eq> Eq for WithButton<T> {}
+
+impl<T: PartialOrd> PartialOrd for WithButton<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.t.partial_cmp(&other.t)
+    }
+}
+
+impl<T: Ord> Ord for WithButton<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.t.cmp(&other.t)
+    }
+}
+
+fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
+    vec: &'a mut Vec<WithButton<T>>,
+    on_press: F,
+    style: Style,
+    row: Row<'a, crate::Message>,
+) -> Row<'a, crate::Message> {
+    let len = vec.len();
+    vec.iter_mut()
+        .enumerate()
+        .map(|(i, WithButton { t, state })| Button::new(
+            state,
+            Text::new(format!("{}{}", *t, if i + 1 != len { ", " } else { "" })).size(13),
+        ).on_press(crate::Message::Search(on_press(t.clone())))
+            .style(style.background())
+            .padding(0)
+        )
+        .fold(row, |row, btn| row.push(btn))
+}
+
 #[derive(Debug, Default)]
 struct LevelSearch {
-    /// [bool; 10]
-    bitmask: u16,
+    levels: Vec<WithButton<u8>>,
     state: pick_list::State<PickListLevel>,
 }
 
@@ -169,31 +222,17 @@ impl Searcher for LevelSearch {
             Some(PickListLevel::NONE),
             |pll| crate::Message::Search(Message::PickLevel(pll.unwrap())),
         ).style(style).text_size(14);
-        let text = Text::new(self.to_string()).size(14);
-        row.push(pick_list).push(text)
+        add_buttons(&mut self.levels, Message::PickLevel, style, row.push(pick_list))
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        let bit = 1 << spell.level();
-        self.bitmask & bit == bit
-    }
-}
-
-impl Display for LevelSearch {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for pll in &PickListLevel::ALL {
-            let bit = 1 << pll.0;
-            if self.bitmask & bit == bit {
-                write!(f, "{}", pll.0)?;
-            }
-        }
-        Ok(())
+        self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
     }
 }
 
 #[derive(Debug, Default)]
 struct ClassSearch {
-    classes: BTreeSet<Class>,
+    classes: Vec<WithButton<Class>>,
     state: pick_list::State<PLOption<Class>>,
 }
 
@@ -205,13 +244,12 @@ impl Searcher for ClassSearch {
             Some(PLOption::None),
             |c| crate::Message::Search(Message::PickClass(c.unwrap())),
         ).style(style).text_size(14);
-        let text = Text::new(self.classes.iter().join(", ")).size(14);
-        row.push(pick_list).push(text)
+        add_buttons(&mut self.classes, Message::PickClass, style, row.push(pick_list))
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         spell.classes().iter()
-            .any(|s| self.classes.contains(s))
+            .any(|class| self.classes.iter().any(|WithButton { t, .. }| class == t))
     }
 }
 
@@ -219,7 +257,7 @@ plopt!(CastingTime, "Casting Time");
 
 #[derive(Debug, Default)]
 struct CastingTimeSearch {
-    times: BTreeSet<CastingTime>,
+    times: Vec<WithButton<CastingTime>>,
     state: pick_list::State<PLOption<CastingTime>>,
 }
 
@@ -246,18 +284,17 @@ impl Searcher for CastingTimeSearch {
             Some(PLOption::None),
             |s| crate::Message::Search(Message::PickCastingTime(s.unwrap())),
         ).style(style).text_size(14);
-        let text = Text::new(self.times.iter().join(", ")).size(14);
-        row.push(pick_list).push(text)
+        add_buttons(&mut self.times, Message::PickCastingTime, style, row.push(pick_list))
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.times.contains(spell.casting_time())
+        self.times.iter().any(|WithButton { t, .. }| t == spell.casting_time())
     }
 }
 
 #[derive(Debug, Default)]
 struct SchoolSearch {
-    schools: BTreeSet<School>,
+    schools: Vec<WithButton<School>>,
     state: pick_list::State<PLOption<School>>,
 }
 
@@ -269,12 +306,11 @@ impl Searcher for SchoolSearch {
             Some(PLOption::None),
             |s| crate::Message::Search(Message::PickSchool(s.unwrap())),
         ).style(style).text_size(14);
-        let text = Text::new(self.schools.iter().join(", ")).size(14);
-        row.push(pick_list).push(text)
+        add_buttons(&mut self.schools, Message::PickSchool, style, row.push(pick_list))
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.schools.contains(&spell.school())
+        self.schools.iter().any(|WithButton { t, .. }| *t == spell.school())
     }
 }
 
@@ -416,11 +452,12 @@ impl Spell {
 
 impl SearchPage {
     pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) {
-        fn toggle<T: Ord>(map: &mut BTreeSet<T>, entry: T) {
-            if map.contains(&entry) {
-                map.remove(&entry);
+        fn toggle<T: Ord>(vec: &mut Vec<WithButton<T>>, entry: T) {
+            if let Some(idx) = vec.iter().position(|WithButton { t, .. }| *t == entry) {
+                vec.remove(idx);
             } else {
-                map.insert(entry);
+                vec.push(WithButton::new(entry));
+                vec.sort()
             }
         }
 
@@ -453,12 +490,7 @@ impl SearchPage {
             }
             Message::PickLevel(level) => {
                 if let Some(levels) = &mut self.level_search {
-                    let bit = 1 << level;
-                    if levels.bitmask & (bit) == bit {
-                        levels.bitmask -= bit;
-                    } else {
-                        levels.bitmask |= bit;
-                    }
+                    toggle(&mut levels.levels, level);
                     self.search(custom, characters);
                 }
             }
@@ -575,7 +607,7 @@ impl SearchPage {
         ];
         let advanced_search = std::array::IntoIter::new(searchers)
             .flatten()
-            .fold(Row::new().spacing(8).align_items(Align::Center), |row, searcher| searcher.add_to_row(row, style));
+            .fold(Row::new()/*.spacing(2)*/.align_items(Align::Center), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
         let collapse_all = self.collapse;

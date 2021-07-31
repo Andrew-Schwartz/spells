@@ -418,6 +418,10 @@ impl Application for DndSpells {
                                 Edit::School(school) => spell.school = school,
                                 Edit::Level(level) => spell.level = level,
                                 Edit::CastingTime(time) => spell.casting_time = todo!(),
+                                Edit::CastingTime2(time) => spell.casting_time = time,
+                                Edit::CastingTimeSubmit => {
+                                    println!("casting time submitted");
+                                }
                                 Edit::Range(range) => spell.range = range,
                                 Edit::Components(components) => spell.components = components,
                                 Edit::Duration(duration) => spell.duration = duration,
@@ -910,6 +914,12 @@ impl From<School> for String {
     }
 }
 
+struct TVector3 {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
 #[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd, Serialize)]
 pub enum CastingTime {
     Special,
@@ -921,6 +931,15 @@ pub enum CastingTime {
 }
 
 impl CastingTime {
+    pub const ALL: [Self; 6] = [
+        Self::Action,
+        Self::BonusAction,
+        Self::Reaction(None),
+        Self::Minute(1),
+        Self::Hour(1),
+        Self::Special,
+    ];
+
     const REACTION_PHRASE: &'static str = ", which you take when ";
 
     fn from_static(str: &'static str) -> Result<Self, String> {
@@ -1109,6 +1128,8 @@ pub struct CustomSpell {
     level_state: pick_list::State<usize>,
     casting_time: CastingTime,
     #[serde(skip)]
+    casting_time_state2: pick_list::State<CastingTime>,
+    #[serde(skip)]
     casting_time_state: text_input::State,
     range: String,
     #[serde(skip)]
@@ -1161,6 +1182,7 @@ impl CustomSpell {
             level: 0,
             level_state: Default::default(),
             casting_time: CastingTime::Action,
+            casting_time_state2: Default::default(),
             casting_time_state: Default::default(),
             range: String::new(),
             range_state: Default::default(),
@@ -1455,6 +1477,7 @@ impl StaticCustomSpell {
         delegate!(self, id())
     }
 
+    // todo level should really be an enum
     pub fn level(&self) -> usize {
         delegate!(self, level)
     }
