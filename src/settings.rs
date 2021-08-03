@@ -6,7 +6,7 @@ use crate::character::Character;
 use crate::search::PLOption;
 use crate::settings::Message::SubmitSpell;
 use crate::style::Style;
-use crate::utils::{IterExt, SpacingExt};
+use crate::utils::{IterExt, SpacingExt, Tap};
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -420,19 +420,18 @@ impl SettingsPage {
                     edit_message(Edit::Page),
                 ).style(style);
 
-                let mut column = Column::new()
+                let column = Column::new()
                     .spacing(3)
                     .push(row("", title))
                     .push(Rule::horizontal(8))
                     .push(row("", school))
                     .push_space(2)
                     .push(row("Level:", level))
-                    .push(row("Casting Time:", casting_time));
-                // todo tap
-                if let Some(casting_time_extra) = casting_time_extra {
-                    column = column.push(casting_time_extra);
-                }
-                column = column.push(row("Range:", range))
+                    .push(row("Casting Time:", casting_time))
+                    .tap(|col| match casting_time_extra {
+                        Some(casting_time_extra) => col.push(casting_time_extra),
+                        None => col,
+                    }).push(row("Range:", range))
                     .push(row("Components:", components))
                     .push(row("Duration:", duration))
                     .push(row("Ritual?", ritual))

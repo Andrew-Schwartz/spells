@@ -91,3 +91,11 @@ pub trait IterExt: ExactSizeIterator + Sized {
 }
 
 impl<T: Display, I: ExactSizeIterator<Item=T>> IterExt for I {}
+
+pub trait Tap: Sized {
+    fn tap<F: FnOnce(Self) -> Self>(self, f: F) -> Self {
+        f(self)
+    }
+}
+
+impl<T: Sized> Tap for T {}
