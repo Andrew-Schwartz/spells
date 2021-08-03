@@ -170,8 +170,7 @@ impl From<Character> for CharacterPage {
 }
 
 impl CharacterPage {
-    pub fn add_spell(&mut self, spell: StaticCustomSpell, custom: &[CustomSpell]) {
-        let spell = find_spell(&spell.name(), custom).unwrap();
+    pub fn add_spell(&mut self, spell: StaticCustomSpell) {
         let level = spell.level();
         let spell = spell.into();
         if !self.character.spells[level].iter().any(|(s, _)| *s == spell) {
@@ -205,7 +204,7 @@ impl CharacterPage {
             }
             Message::AddSpell(id) => {
                 let spell = find_spell(&id.name, custom).unwrap();
-                self.add_spell(spell, custom);
+                self.add_spell(spell);
                 true
             }
             Message::RemoveSpell(id) => {
@@ -239,7 +238,7 @@ impl CharacterPage {
             Message::PrepareAll(prepare) => {
                 match self.tab {
                     0 => &mut self.character.spells[..],
-                    t => &mut self.character.spells[t - 1..=t - 1],
+                    t => &mut self.character.spells[t - 1..t],
                 }.iter_mut()
                     .flatten()
                     .for_each(|(_, prepared)| *prepared = prepare);
@@ -378,7 +377,7 @@ impl CharacterPage {
                 .push(TextInput::new(
                     search_state,
                     "search for a spell",
-                    &search,
+                    search,
                     move |s| crate::Message::Character(index, Message::Search(s)),
                 ).style(style).width(Length::FillPortion(4)))
                 .push_space(Length::Fill)
@@ -391,6 +390,7 @@ impl CharacterPage {
 
         let len = spells.len();
 
+        #[allow(clippy::if_not_else)]
         let spells_col = if num_cols != 0 {
             (&spells.into_iter().enumerate().chunks(num_cols))
                 .into_iter()

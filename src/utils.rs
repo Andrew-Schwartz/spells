@@ -59,7 +59,7 @@ pub trait TryRemoveExt<T> {
 
 impl<T> TryRemoveExt<T> for Vec<T> {
     fn try_remove(&mut self, index: usize) -> Option<T> {
-        if self.len() >= index + 1 {
+        if self.len() > index {
             Some(self.remove(index))
         } else {
             None

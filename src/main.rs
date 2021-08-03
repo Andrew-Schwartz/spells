@@ -4,13 +4,16 @@
 #![warn(clippy::pedantic)]
 //! @formatter:off
 #![allow(
-    clippy::module_name_repetitions,
-    clippy::items_after_statements,
-    clippy::too_many_lines,
-    clippy::default_trait_access,
-    clippy::cast_sign_loss,
-    clippy::option_if_let_else,
-    clippy::shadow_unrelated,
+clippy::module_name_repetitions,
+clippy::items_after_statements,
+clippy::too_many_lines,
+clippy::default_trait_access,
+clippy::cast_sign_loss,
+clippy::option_if_let_else,
+clippy::shadow_unrelated,
+clippy::redundant_static_lifetimes,
+clippy::wildcard_imports,
+clippy::enum_glob_use,
 )]
 //! @formatter:on
 
@@ -59,7 +62,7 @@ mod utils;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
-pub static SPELLS: Lazy<Vec<Spell>> = Lazy::new(|| serde_json::from_str(&JSON).expect("json error in `data/spells.json`"));
+pub static SPELLS: Lazy<Vec<Spell>> = Lazy::new(|| serde_json::from_str(JSON).expect("json error in `data/spells.json`"));
 
 static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let mut path = dirs::data_local_dir().unwrap_or_default();
@@ -234,7 +237,7 @@ impl DndSpells {
                 File::create(file)?;
                 Ok(Vec::default())
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -253,7 +256,7 @@ impl DndSpells {
                 File::create(file)?;
                 Ok(Vec::new())
             }
-            Err(e) => return Err(e.into()),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -344,7 +347,7 @@ impl Application for DndSpells {
                 println!("mult = {:?}", mult);
                 self.col_scale = mult;
                 self.set_num_columns();
-            },
+            }
             Message::Search(msg) => self.search_page.update(msg, &self.custom_spells, &self.characters),
             Message::Settings(message) => {
                 use settings::Message;
@@ -417,11 +420,18 @@ impl Application for DndSpells {
                             match edit {
                                 Edit::School(school) => spell.school = school,
                                 Edit::Level(level) => spell.level = level,
-                                Edit::CastingTime(time) => spell.casting_time = todo!(),
-                                Edit::CastingTime2(time) => spell.casting_time = time,
-                                Edit::CastingTimeSubmit => {
-                                    println!("casting time submitted");
+                                Edit::CastingTime(time) => spell.casting_time = time,
+                                Edit::CastingTimeN(new) => {
+                                    if let Ok(new) = new.parse() {
+                                        match &mut spell.casting_time {
+                                            CastingTime::Minute(n) | CastingTime::Hour(n) => *n = new,
+                                            _ => {}
+                                        }
+                                    }
                                 }
+                                Edit::CastingTimeWhen(new) => if let CastingTime::Reaction(when) = &mut spell.casting_time {
+                                    *when = Some(StArc::Arc(Arc::from(new)));
+                                },
                                 Edit::Range(range) => spell.range = range,
                                 Edit::Components(components) => spell.components = components,
                                 Edit::Duration(duration) => spell.duration = duration,
@@ -429,15 +439,15 @@ impl Application for DndSpells {
                                 Edit::Concentration(conc) => spell.conc = conc,
                                 Edit::Description(mut desc) => {
                                     loop {
-                                        const NEWLINE: &'static str = "\\n";
+                                        const NEWLINE: &str = "\\n";
                                         if let Some(idx) = desc.find(NEWLINE) {
                                             desc.replace_range(idx..(idx + NEWLINE.len()), "\n");
                                         } else {
-                                            break
+                                            break;
                                         }
                                     }
-                                    spell.description = desc
-                                },
+                                    spell.description = desc;
+                                }
                                 // Edit::DescEnter => {
                                 //     spell.description_state.cursor().
                                 //     println!("spell.description = {:?}", spell.description);
@@ -612,7 +622,7 @@ impl Application for DndSpells {
                             idx
                         };
                         if orig_idx != Some(idx) {
-                            self.load_state(idx)
+                            self.load_state(idx);
                         }
                     }
                     Message::Redo => {
@@ -638,7 +648,7 @@ impl Application for DndSpells {
                         if let Some(spell) = self.search_page.spells.first().map(|s| s.spell.id()) {
                             if let Some(character) = self.characters.get_mut(idx) {
                                 let spell = find_spell(&spell.name, &self.custom_spells).unwrap();
-                                character.add_spell(spell, &self.custom_spells);
+                                character.add_spell(spell);
                                 self.refresh_search();
                             }
                         }
@@ -662,18 +672,18 @@ impl Application for DndSpells {
                                 return Command::from(async move {
                                     println!("pt = {:?}", pt);
                                     Message::ScrollIGuessHopefully(pt)
-                                })
+                                });
                             }
                             ButtonPress::Left(_, _)
                             | ButtonPress::Right(_, _) => {}
                             ButtonPress::None => unreachable!("Pressed a non-existent button?!?"),
                         }
-                    },
+                    }
                     hotmouse::StateMessage::ButtonRelease(button) => {
                         use iced::mouse::Button as Button;
                         if let (Button::Right, ButtonPress::Right(_, pt)) = (button, self.mouse.press) {
                             if let Some(message) = hotmouse::gesture(self.mouse.pt - pt) {
-                                return self.update(message, clipboard)
+                                return self.update(message, clipboard);
                             }
                         };
                         if self.mouse.press == button {
@@ -683,8 +693,8 @@ impl Application for DndSpells {
                     hotmouse::StateMessage::Scroll(delta) => {
                         if self.control_pressed {
                             let delta = match delta {
-                                ScrollDelta::Lines { y, .. } => y,
-                                ScrollDelta::Pixels { y, .. } => y,
+                                ScrollDelta::Lines { y, .. }
+                                | ScrollDelta::Pixels { y, .. } => y,
                             };
                             println!("delta = {:?}", delta);
                             self.col_scale += delta;
@@ -701,7 +711,7 @@ impl Application for DndSpells {
                     last if last == self.characters.len() + 1 => Tab::Settings,
                     index => Tab::Character { index: index - 1 }
                 }
-            },
+            }
             Message::CloseTab(tab) => {
                 println!("close tab = {:?}", tab);
             }
@@ -756,6 +766,8 @@ impl Application for DndSpells {
                 .vertical_alignment(VerticalAlignment::Center)
                 .size(12),
         ).style(style.settings_bar());
+        // set to exactly 1.0 in code so it's fine
+        #[allow(clippy::float_cmp)]
         if self.col_scale != 1.0 {
             col_slider_reset = col_slider_reset.on_press(crate::Message::SetColScale(1.0));
         }
@@ -914,13 +926,7 @@ impl From<School> for String {
     }
 }
 
-struct TVector3 {
-    x: f64,
-    y: f64,
-    z: f64,
-}
-
-#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd, Serialize)]
+#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd)]
 pub enum CastingTime {
     Special,
     Action,
@@ -943,15 +949,15 @@ impl CastingTime {
     const REACTION_PHRASE: &'static str = ", which you take when ";
 
     fn from_static(str: &'static str) -> Result<Self, String> {
-        let space_idx = str.find(" ");
+        let space_idx = str.find(' ');
         let get_num = || {
             let space_idx = space_idx.ok_or_else(|| format!("No number specified in casting time \"{}\"", str))?;
             let num = &str[..space_idx];
             num.parse()
                 .map_err(|_| format!("{} is not a positive integer", num))
         };
-        let comma = str.find(",").unwrap_or(str.len());
-        let rest = &str[space_idx.map(|i| i + 1).unwrap_or(0)..comma];
+        let comma = str.find(',').unwrap_or(str.len());
+        let rest = &str[space_idx.map_or(0, |i| i + 1)..comma];
         match rest {
             "Special" => Ok(Self::Special),
             "Action" => Ok(Self::Action),
@@ -962,7 +968,7 @@ impl CastingTime {
                 } else {
                     Err(String::from("No reaction when phrase"))
                 }
-            },
+            }
             "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
             "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
             _ => Err(format!("{} is not a casting time", rest))
@@ -990,29 +996,50 @@ impl Display for CastingTime {
 impl<'de> Deserialize<'de> for CastingTime {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let str = <&'de str>::deserialize(d)?;
-        let space_idx = str.find(" ");
+        let space_idx = str.find(' ');
         let get_num = || {
             let space_idx = space_idx.ok_or_else(|| D::Error::custom(format!("No number specified in casting time \"{}\"", str)))?;
             let num = &str[..space_idx];
             num.parse()
                 .map_err(|_| D::Error::custom(format!("{} is not a positive integer", num)))
         };
-        let comma = str.find(",").unwrap_or(str.len());
-        let rest = &str[space_idx.map(|i| i + 1).unwrap_or(0)..comma];
+        let comma = str.find(',').unwrap_or(str.len());
+        let rest = &str[space_idx.map_or(0, |i| i + 1)..comma];
         match rest {
             "Special" => Ok(Self::Special),
             "Action" => Ok(Self::Action),
             "Bonus Action" => Ok(Self::BonusAction),
             "Reaction" => {
-                if str[comma..].starts_with(Self::REACTION_PHRASE) {
-                    Ok(Self::Reaction(Some(StArc::Arc(Arc::from(&str[comma + Self::REACTION_PHRASE.len()..])))))
-                } else {
-                    Err(D::Error::custom("No reaction when phrase"))
-                }
-            },
+                Ok(Self::Reaction(
+                    str[comma..].starts_with(Self::REACTION_PHRASE)
+                        .then(|| StArc::Arc(Arc::from(&str[comma + Self::REACTION_PHRASE.len()..])))
+                ))
+            }
             "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
             "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
             _ => Err(D::Error::custom(format!("{} is not a casting time", rest)))
+        }
+    }
+}
+
+impl Serialize for CastingTime {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Special => "Special".serialize(s),
+            Self::Action => "1 Action".serialize(s),
+            Self::BonusAction => "1 Bonus Action".serialize(s),
+            Self::Reaction(None) => "1 Reaction".serialize(s),
+            Self::Reaction(Some(when)) => format!("1 Reaction{}{}", Self::REACTION_PHRASE, when).serialize(s),
+            &Self::Minute(n) => if n == 1 {
+                "1 Minute".serialize(s)
+            } else {
+                format!("{} Minutes", n).serialize(s)
+            },
+            &Self::Hour(n) => if n == 1 {
+                "1 Hour".serialize(s)
+            } else {
+                format!("{} Hours", n).serialize(s)
+            },
         }
     }
 }
@@ -1078,7 +1105,7 @@ impl TryFrom<DeserializeSpell> for Spell {
             name: value.name,
             name_lower,
             level: value.level,
-            casting_time: CastingTime::from_static(value.casting_time).map_err(|e| format!("{}", e))?,
+            casting_time: CastingTime::from_static(value.casting_time)?,
             range: value.range,
             duration: value.duration,
             components: value.components,
@@ -1128,9 +1155,11 @@ pub struct CustomSpell {
     level_state: pick_list::State<usize>,
     casting_time: CastingTime,
     #[serde(skip)]
-    casting_time_state2: pick_list::State<CastingTime>,
+    casting_time_state: pick_list::State<CastingTime>,
     #[serde(skip)]
-    casting_time_state: text_input::State,
+    casting_time_extra_state: text_input::State,
+    // #[serde(skip)]
+    // casting_time_state: text_input::State,
     range: String,
     #[serde(skip)]
     range_state: text_input::State,
@@ -1173,6 +1202,7 @@ impl PartialEq for CustomSpell {
 }
 
 impl CustomSpell {
+    #[must_use]
     pub fn new(name: String) -> Self {
         let name_lower = name.to_lowercase();
         Self {
@@ -1182,8 +1212,8 @@ impl CustomSpell {
             level: 0,
             level_state: Default::default(),
             casting_time: CastingTime::Action,
-            casting_time_state2: Default::default(),
             casting_time_state: Default::default(),
+            casting_time_extra_state: Default::default(),
             range: String::new(),
             range_state: Default::default(),
             duration: String::new(),
@@ -1209,6 +1239,7 @@ impl CustomSpell {
         }
     }
 
+    #[must_use]
     pub fn id(&self) -> SpellId {
         SpellId {
             name: self.name.clone().into(),
@@ -1269,8 +1300,9 @@ impl CustomSpell {
                     .push(text(higher));
             }
             let classes = self.classes.iter().list_grammatically();
-            //
-            let about = format!(
+
+            #[allow(clippy::if_not_else)]
+                let about = format!(
                 "A {}{}spell{}{}{}{}{}",
                 classes,
                 if !classes.is_empty() { " " } else { "" },
@@ -1297,6 +1329,7 @@ pub trait SpellButtons<'a> {
 }
 
 impl Spell {
+    #[must_use]
     pub fn id(&self) -> SpellId {
         SpellId {
             name: self.name.into(),
@@ -1376,7 +1409,7 @@ impl<T: ?Sized> Deref for StArc<T> {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Static(t) => t,
-            Self::Arc(t) => &t,
+            Self::Arc(t) => t,
         }
     }
 }
@@ -1426,7 +1459,7 @@ impl<T: ?Sized + Serialize> Serialize for StArc<T> {
 
 impl<'a, T: ?Sized + PartialEq> PartialEq<&'a T> for StArc<T> {
     fn eq(&self, other: &&'a T) -> bool {
-        (&**self) == (&**other)
+        **self == **other
     }
 }
 
@@ -1473,27 +1506,33 @@ macro_rules! delegate {
 }
 
 impl StaticCustomSpell {
+    #[must_use]
     pub fn id(&self) -> SpellId {
         delegate!(self, id())
     }
 
     // todo level should really be an enum
+    #[must_use]
     pub fn level(&self) -> usize {
         delegate!(self, level)
     }
 
+    #[must_use]
     pub fn classes(&self) -> &[Class] {
         delegate!(self, ref classes)
     }
 
+    #[must_use]
     pub fn school(&self) -> School {
         delegate!(self, school)
     }
 
+    #[must_use]
     pub fn ritual(&self) -> bool {
         delegate!(self, ritual)
     }
 
+    #[must_use]
     pub fn name(&self) -> StArc<str> {
         match self {
             Self::Static(spell) => spell.name.into(),
@@ -1501,14 +1540,17 @@ impl StaticCustomSpell {
         }
     }
 
+    #[must_use]
     pub fn name_lower(&self) -> &str {
         delegate!(self, ref name_lower)
     }
 
+    #[must_use]
     pub fn desc_lower(&self) -> &str {
         delegate!(self, ref desc_lower)
     }
 
+    #[must_use]
     pub fn higher_levels_lower(&self) -> Option<&str> {
         match self {
             Self::Static(spell) => spell.higher_levels_lower,
@@ -1516,6 +1558,7 @@ impl StaticCustomSpell {
         }
     }
 
+    #[must_use]
     pub fn casting_time(&self) -> &CastingTime {
         match self {
             Self::Static(spell) => &spell.casting_time,
@@ -1531,6 +1574,7 @@ impl StaticCustomSpell {
     }
 }
 
+#[must_use]
 pub fn find_spell(spell: &str, custom: &[CustomSpell]) -> Option<StaticCustomSpell> {
     SPELLS.iter()
         .find(|s| &*s.name == spell)

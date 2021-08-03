@@ -64,7 +64,7 @@ pub fn handle(event: mouse::Event) -> Option<crate::Message> {
             Button::Right => Some(ButtonPress::Right as fn(Instant, Pt) -> ButtonPress),
             Button::Middle => Some(ButtonPress::Middle as fn(Instant, Pt) -> ButtonPress),
             Button::Other(_) => None,
-        }.map(|ctor| StateMessage::ButtonPress(ctor)),
+        }.map(StateMessage::ButtonPress),
         Event::ButtonReleased(button) => Some(StateMessage::ButtonRelease(button)),
         Event::WheelScrolled { delta } => Some(StateMessage::Scroll(delta))
     }.map(crate::Message::MouseState)

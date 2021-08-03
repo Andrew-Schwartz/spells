@@ -1,7 +1,7 @@
 use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Text, text_input, TextInput};
 use itertools::Itertools;
 
-use crate::{Class, CustomSpell, School, CastingTime};
+use crate::{CastingTime, Class, CustomSpell, School};
 use crate::character::Character;
 use crate::search::PLOption;
 use crate::settings::Message::SubmitSpell;
@@ -26,9 +26,9 @@ pub enum Message {
 pub enum Edit {
     School(School),
     Level(usize),
-    CastingTime(String),
-    CastingTime2(CastingTime),
-    CastingTimeSubmit,
+    CastingTime(CastingTime),
+    CastingTimeN(String),
+    CastingTimeWhen(String),
     Range(String),
     Components(String),
     Duration(String),
@@ -99,10 +99,10 @@ pub enum SpellEditor {
 impl SpellEditor {
     pub fn searching(needle: &str, spells: &[CustomSpell]) -> Self {
         use levenshtein::levenshtein;
-        let spells = spells.into_iter()
+        let spells = spells.iter()
             .map(|spell| (&spell.name_lower, spell))
             .filter(|(name, _)| name.contains(&needle))
-            .sorted_unstable_by_key(|(name, _)| levenshtein(name, &needle))
+            .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
             .map(|(_, spell)| spell)
             .take(20)
             .map(|spell| (spell.clone(), Default::default(), Default::default(), Default::default()))
@@ -140,6 +140,7 @@ impl SettingsPage {
             Text::new("Create").size(16),
         ).style(style)
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
         let text_width = (width as f32 / 2.0
             - PADDING as f32
             - RULE_SPACING as f32
@@ -263,7 +264,7 @@ impl SettingsPage {
                     let mut row = Row::new()
                         .push(Text::new(label).size(16));
                     if labeled {
-                        row = row.push_space(Length::Fill)
+                        row = row.push_space(Length::Fill);
                         // row = row.push_space(Length::Units(16))
                     }
                     let row = row
@@ -311,21 +312,43 @@ impl SettingsPage {
                     edit_message(Edit::Level),
                 ).style(style).text_size(14);
 
-                let casting_time = TextInput::new(
-                    &mut spell.casting_time_state,
-                    "",
-                    &spell.casting_time.to_string(),
-                    edit_message(Edit::CastingTime),
-                ).style(style)
-                    .on_submit(crate::Message::Settings(Message::EditSpell(Edit::CastingTimeSubmit)));
+                // let casting_time = TextInput::new(
+                //     &mut spell.casting_time_state,
+                //     "",
+                //     &spell.casting_time.to_string(),
+                //     edit_message(Edit::CastingTime),
+                // ).style(style)
+                //     .on_submit(crate::Message::Settings(Message::EditSpell(Edit::CastingTimeSubmit)));
 
                 const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
                 let casting_time = PickList::new(
-                    &mut spell.casting_time_state2,
+                    &mut spell.casting_time_state,
                     CASTING_TIMES,
-                    None,
-                    edit_message(Edit::CastingTime2)
+                    Some(spell.casting_time.clone()),
+                    edit_message(Edit::CastingTime),
                 ).style(style);
+
+                let casting_time_extra = match &spell.casting_time {
+                    CastingTime::Special | CastingTime::Action | CastingTime::BonusAction => None,
+                    CastingTime::Reaction(when) => Some(row(
+                        "Which you take when:",
+                        TextInput::new(
+                            &mut spell.casting_time_extra_state,
+                            "",
+                            when.as_deref().unwrap_or(""),
+                            edit_message(Edit::CastingTimeWhen),
+                        ).style(style),
+                    )),
+                    &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(row(
+                        if matches!(&spell.casting_time, CastingTime::Minute(_)) { "Minutes:" } else { "Hours:" },
+                        TextInput::new(
+                            &mut spell.casting_time_extra_state,
+                            "",
+                            &n.to_string(),
+                            edit_message(Edit::CastingTimeN),
+                        ).style(style),
+                    )),
+                };
 
                 let range = TextInput::new(
                     &mut spell.range_state,
@@ -393,19 +416,23 @@ impl SettingsPage {
                 let page = TextInput::new(
                     &mut spell.page_state,
                     "278",
-                    &spell.page.map(|p| p.to_string()).unwrap_or_else(String::new),
+                    &spell.page.map_or_else(String::new, |p| p.to_string()),
                     edit_message(Edit::Page),
                 ).style(style);
 
-                let column = Column::new()
+                let mut column = Column::new()
                     .spacing(3)
                     .push(row("", title))
                     .push(Rule::horizontal(8))
                     .push(row("", school))
                     .push_space(2)
                     .push(row("Level:", level))
-                    .push(row("Casting Time:", casting_time))
-                    .push(row("Range:", range))
+                    .push(row("Casting Time:", casting_time));
+                // todo tap
+                if let Some(casting_time_extra) = casting_time_extra {
+                    column = column.push(casting_time_extra);
+                }
+                column = column.push(row("Range:", range))
                     .push(row("Components:", components))
                     .push(row("Duration:", duration))
                     .push(row("Ritual?", ritual))
@@ -420,7 +447,7 @@ impl SettingsPage {
                     .push(Rule::horizontal(8))
                     .push(row("Source:", source))
                     .push(row("Page:", page))
-                    ;
+                ;
                 spells_col.push(column)
             }
         };

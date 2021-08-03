@@ -200,12 +200,12 @@ fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
         .enumerate()
         .map(|(i, WithButton { t, state })| Button::new(
             state,
-            Text::new(format!("{}{}", *t, if i + 1 != len { ", " } else { "" })).size(13),
+            Text::new(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13),
         ).on_press(crate::Message::Search(on_press(t.clone())))
             .style(style.background())
             .padding(0)
         )
-        .fold(row, |row, btn| row.push(btn))
+        .fold(row, Row::push)
 }
 
 #[derive(Debug, Default)]
@@ -225,6 +225,7 @@ impl Searcher for LevelSearch {
         add_buttons(&mut self.levels, Message::PickLevel, style, row.push(pick_list))
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
     }
@@ -457,7 +458,7 @@ impl SearchPage {
                 vec.remove(idx);
             } else {
                 vec.push(WithButton::new(entry));
-                vec.sort()
+                vec.sort();
             }
         }
 

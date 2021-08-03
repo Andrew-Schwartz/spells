@@ -30,6 +30,7 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
     match event {
         keyboard::Event::KeyPressed { key_code, modifiers } => {
             let message = match (modifiers.control, modifiers.alt, modifiers.shift) {
+                #[allow(clippy::match_same_arms)]
                 CTRL => match key_code {
                     KeyCode::Grave => Some(Message::Find(true)),
                     KeyCode::Key1 => Some(Message::ToCharacter(1)),
