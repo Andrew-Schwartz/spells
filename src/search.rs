@@ -11,7 +11,7 @@ use levenshtein::levenshtein;
 use crate::{CastingTime, character, Class, CustomSpell, School, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
 use crate::character::CharacterPage;
 use crate::style::Style;
-use crate::utils::SpacingExt;
+use crate::utils::{ArrayIterTemp, IterExt, SpacingExt};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -216,9 +216,13 @@ struct LevelSearch {
 
 impl Searcher for LevelSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+        let levels = PickListLevel::ALL.array_iter()
+            .filter(|lvl| self.levels.iter().none(|wb| wb.t == lvl.0))
+            .collect_vec();
+
         let pick_list = PickList::new(
             &mut self.state,
-            &PickListLevel::ALL[..],
+            levels,
             Some(PickListLevel::NONE),
             |pll| crate::Message::Search(Message::PickLevel(pll.unwrap())),
         ).style(style).text_size(14);
@@ -239,9 +243,14 @@ struct ClassSearch {
 
 impl Searcher for ClassSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+        let classes = Class::ALL.array_iter()
+            .filter(|class| self.classes.iter().none(|wb| wb.t == *class))
+            .map(PLOption::Some)
+            .collect_vec();
+
         let pick_list = PickList::new(
             &mut self.state,
-            &Class::ALL[..],
+            classes,
             Some(PLOption::None),
             |c| crate::Message::Search(Message::PickClass(c.unwrap())),
         ).style(style).text_size(14);
@@ -265,23 +274,26 @@ struct CastingTimeSearch {
 impl Searcher for CastingTimeSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         use CastingTime::*;
-        // todo filter based on what's not selected
-        const DURATIONS: [PLOption<CastingTime>; 10] = [
-            PLOption::Some(Action),
-            PLOption::Some(BonusAction),
-            PLOption::Some(Reaction(None)),
-            PLOption::Some(Minute(1)),
-            PLOption::Some(Minute(10)),
-            PLOption::Some(Hour(1)),
-            PLOption::Some(Hour(8)),
-            PLOption::Some(Hour(12)),
-            PLOption::Some(Hour(24)),
-            PLOption::Some(Special),
-        ];
+
+        let durations = [
+            Action,
+            BonusAction,
+            Reaction(None),
+            Minute(1),
+            Minute(10),
+            Hour(1),
+            Hour(8),
+            Hour(12),
+            Hour(24),
+            Special,
+        ].array_iter()
+            .filter(|ct| self.times.iter().none(|t| t.t == *ct))
+            .map(PLOption::Some)
+            .collect_vec();
 
         let pick_list = PickList::new(
             &mut self.state,
-            &DURATIONS[..],
+            durations,
             Some(PLOption::None),
             |s| crate::Message::Search(Message::PickCastingTime(s.unwrap())),
         ).style(style).text_size(14);
@@ -301,9 +313,14 @@ struct SchoolSearch {
 
 impl Searcher for SchoolSearch {
     fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+        let schools = School::ALL.array_iter()
+            .filter(|school| self.schools.iter().none(|wb| wb.t == *school))
+            .map(PLOption::Some)
+            .collect_vec();
+
         let pick_list = PickList::new(
             &mut self.state,
-            &School::PL_ALL[..],
+            schools,
             Some(PLOption::None),
             |s| crate::Message::Search(Message::PickSchool(s.unwrap())),
         ).style(style).text_size(14);
@@ -364,29 +381,6 @@ impl Searcher for TextSearch {
             )
     }
 }
-
-// todo
-// #[derive(Debug, Default)]
-// struct CastingTimeSearch {
-//     text: String,
-//     state: text_input::State,
-// }
-//
-// impl Searcher for CastingTimeSearch {
-//     fn add_to_row<'a>(&'a mut self, row: Row<'a, Message>, style: Style) -> Row<'a, Message> {
-//         let text = Text::new("Casting Time:");
-//         let input = TextInput::new(
-//             &mut self.state,
-//             "",
-//             &self.text,
-//             |s| crate::Message::Search(Message::SearchCastingTime(s))
-//         )
-//     }
-//
-//     fn matches(&self, spell: &Spell) -> bool {
-//         todo!()
-//     }
-// }
 
 pub struct SearchPage {
     collapse_state: button::State,
@@ -558,7 +552,7 @@ impl SearchPage {
                 // todo not clone them
                 .cloned()
                 .map(StaticCustomSpell::Custom))
-            .filter(|spell| std::array::IntoIter::new(searches)
+            .filter(|spell| searches.array_iter()
                 .flatten()
                 .all(|searcher| searcher.matches(spell)))
             // .map(|spell| (spell.name_lower().clone(), spell))
@@ -606,9 +600,9 @@ impl SearchPage {
             self.ritual_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
             self.text_search.as_mut().map::<&mut dyn Searcher, _>(|s| s),
         ];
-        let advanced_search = std::array::IntoIter::new(searchers)
+        let advanced_search = searchers.array_iter()
             .flatten()
-            .fold(Row::new()/*.spacing(2)*/.align_items(Align::Center), |row, searcher| searcher.add_to_row(row, style));
+            .fold(Row::new().align_items(Align::Center), |row, searcher| searcher.add_to_row(row, style));
 
         // scroll bar of spells
         let collapse_all = self.collapse;
@@ -620,8 +614,7 @@ impl SearchPage {
                 };
                 scroll.push(spell.spell.view(SearchPageButtons(&mut spell.name, &mut spell.buttons), (), collapse, style))
                     .push_space(40)
-            },
-            );
+            });
 
         let column = Column::new()
             .align_items(Align::Center)

@@ -2,7 +2,7 @@
 #![windows_subsystem = "windows"]
 
 #![warn(clippy::pedantic)]
-//! @formatter:off
+// @formatter:off
 #![allow(
 clippy::module_name_repetitions,
 clippy::items_after_statements,
@@ -15,7 +15,7 @@ clippy::redundant_static_lifetimes,
 clippy::wildcard_imports,
 clippy::enum_glob_use,
 )]
-//! @formatter:on
+// @formatter:on
 
 use std::cmp::min;
 use std::convert::TryFrom;
@@ -39,7 +39,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
 
 use search::SearchPage;
-use utils::IterExt;
+use utils::ListGrammaticallyExt;
 
 use crate::character::{Character, CharacterPage, SerializeCharacter};
 use crate::hotkey::Move;
@@ -184,7 +184,7 @@ impl DndSpells {
         let character = self.characters.remove(character);
         self.tab = match self.tab {
             Tab::Character { index } if index >= self.characters.len() => Tab::Character {
-                index: self.characters.len() - 1
+                index: self.characters.len().saturating_sub(1)
             },
             tab => tab,
         };
@@ -193,7 +193,7 @@ impl DndSpells {
         self.save().expect("waa haa");
     }
 
-    // todo figure out how these play with spells
+    // todo spells save state, they keybinds should do that when the spell editor is open3
     fn save_state(&mut self) {
         if let Some(idx) = self.state.take() {
             self.save_states.truncate(idx + 1);
@@ -356,7 +356,7 @@ impl Application for DndSpells {
                         self.settings_page.name = name;
                     }
                     Message::SubmitCharacter => {
-                        self.settings_page.state.focus();
+                        self.settings_page.character_name_state.focus();
                         let name = &mut self.settings_page.name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
@@ -384,7 +384,6 @@ impl Application for DndSpells {
                         if let Some(spell) = self.custom_spells.iter()
                             .find(|spell| spell.name_lower == name)
                             .cloned() {
-                            println!("spell = {:?}", spell);
                             self.settings_page.spell_editor = SpellEditor::Editing { spell }
                         } else {
                             self.settings_page.spell_editor = SpellEditor::searching(&name, &self.custom_spells);
@@ -534,16 +533,18 @@ impl Application for DndSpells {
                         // }
                     }
                     Message::Find(main_page) => {
-                        // todo
                         match (main_page, self.tab) {
-                            (true, _) | (false, Tab::Settings | Tab::Search) => {
+                            (true, _) => {
                                 self.tab = Tab::Search;
                                 self.search_page.update(
                                     crate::search::Message::Search(String::new()),
                                     &self.custom_spells,
                                     &self.characters,
                                 );
-                                // self.refresh_search();
+                            }
+                            (false, Tab::Settings | Tab::Search) => {
+                                self.tab = Tab::Search;
+                                self.refresh_search();
                             }
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
@@ -650,6 +651,39 @@ impl Application for DndSpells {
                                 let spell = find_spell(&spell.name, &self.custom_spells).unwrap();
                                 character.add_spell(spell);
                                 self.refresh_search();
+                            }
+                        }
+                    }
+                    Message::CustomSpellNextField(forwards) => {
+                        if let Tab::Settings = self.tab {
+                            let mut states = vec![
+                                &mut self.settings_page.character_name_state,
+                                &mut self.settings_page.spell_name_state,
+                            ];
+                            if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
+                                states.extend(vec![
+                                    &mut spell.casting_time_extra_state,
+                                    &mut spell.range_state,
+                                    &mut spell.components_state,
+                                    &mut spell.duration_state,
+                                    &mut spell.description_state,
+                                    &mut spell.higher_levels_state,
+                                    &mut spell.source_state,
+                                    &mut spell.page_state
+                                ]);
+                            }
+                            for i in 0..states.len() {
+                                if states[i].is_focused() {
+                                    if forwards && i != states.len() - 1 {
+                                        states[i].unfocus();
+                                        states[i + 1].focus();
+                                        break;
+                                    } else if !forwards && i != 0 {
+                                        states[i].unfocus();
+                                        states[i - 1].focus();
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -841,7 +875,18 @@ pub enum Class {
 }
 
 impl Class {
-    pub const ALL: [PLOption<Self>; 8] = [
+    pub const ALL: [Self; 8] = [
+        Self::Bard,
+        Self::Cleric,
+        Self::Druid,
+        Self::Paladin,
+        Self::Ranger,
+        Self::Sorcerer,
+        Self::Warlock,
+        Self::Wizard,
+    ];
+
+    pub const PL_ALL: [PLOption<Self>; 8] = [
         PLOption::Some(Self::Bard),
         PLOption::Some(Self::Cleric),
         PLOption::Some(Self::Druid),
@@ -1157,18 +1202,18 @@ pub struct CustomSpell {
     #[serde(skip)]
     casting_time_state: pick_list::State<CastingTime>,
     #[serde(skip)]
-    casting_time_extra_state: text_input::State,
+    pub casting_time_extra_state: text_input::State,
     // #[serde(skip)]
     // casting_time_state: text_input::State,
     range: String,
     #[serde(skip)]
-    range_state: text_input::State,
+    pub range_state: text_input::State,
     components: String,
     #[serde(skip)]
-    components_state: text_input::State,
+    pub components_state: text_input::State,
     duration: String,
     #[serde(skip)]
-    duration_state: text_input::State,
+    pub duration_state: text_input::State,
     school: School,
     #[serde(skip)]
     school_state: pick_list::State<School>,
@@ -1179,20 +1224,20 @@ pub struct CustomSpell {
     description: String,
     desc_lower: String,
     #[serde(skip)]
-    description_state: text_input::State,
+    pub description_state: text_input::State,
     higher_levels: Option<String>,
     higher_levels_lower: Option<String>,
     #[serde(skip)]
-    higher_levels_state: text_input::State,
+    pub higher_levels_state: text_input::State,
     classes: Vec<Class>,
     #[serde(skip)]
-    classes_state: pick_list::State<PLOption<Class>>,
+    pub classes_state: pick_list::State<PLOption<Class>>,
     source: String,
     #[serde(skip)]
-    source_state: text_input::State,
+    pub source_state: text_input::State,
     page: Option<u32>,
     #[serde(skip)]
-    page_state: text_input::State,
+    pub page_state: text_input::State,
 }
 
 impl PartialEq for CustomSpell {

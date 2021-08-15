@@ -18,11 +18,14 @@ pub enum Message {
     Redo,
     CharacterTab(usize),
     AddSpell(usize),
+    /// true -> forwards, false -> backwards
+    CustomSpellNextField(bool),
 }
 
 pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
     type Modifiers = (bool, bool, bool);
     const CTRL: Modifiers = (true, false, false);
+    const SHIFT: Modifiers = (false, false, true);
     const CTRL_ALT: Modifiers = (true, true, false);
     const CTRL_SHIFT: Modifiers = (true, false, true);
     const NONE: Modifiers = (false, false, false);
@@ -68,6 +71,10 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::F | KeyCode::S => Some(Message::Find(true)),
                     _ => None,
                 }
+                SHIFT => match key_code {
+                    KeyCode::Tab | KeyCode::Enter | KeyCode::NumpadEnter => Some(Message::CustomSpellNextField(false)),
+                    _ => None,
+                }
                 NONE => match key_code {
                     KeyCode::Grave | KeyCode::Key0 => Some(Message::CharacterTab(1)),
                     KeyCode::Key1 => Some(Message::CharacterTab(2)),
@@ -80,6 +87,7 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::Key8 => Some(Message::CharacterTab(9)),
                     KeyCode::Key9 => Some(Message::CharacterTab(10)),
                     KeyCode::A => Some(Message::CharacterTab(0)),
+                    KeyCode::Tab | KeyCode::Enter | KeyCode::NumpadEnter => Some(Message::CustomSpellNextField(true)),
                     _ => None,
                 }
                 _ => None

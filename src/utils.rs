@@ -1,3 +1,4 @@
+use std::array::IntoIter;
 use std::fmt::Display;
 
 use iced::{Color, Column, Length, Row, Scrollable, Space};
@@ -67,9 +68,9 @@ impl<T> TryRemoveExt<T> for Vec<T> {
     }
 }
 
-pub trait IterExt: ExactSizeIterator + Sized {
+pub trait ListGrammaticallyExt: ExactSizeIterator + Sized {
     fn list_grammatically(self) -> String where Self::Item: Display {
-        if self.len() == 0 { return String::new() }
+        if self.len() == 0 { return String::new(); }
         let last = self.len() - 1;
         self.enumerate()
             .fold(String::new(), |mut acc, (i, new)| {
@@ -90,7 +91,7 @@ pub trait IterExt: ExactSizeIterator + Sized {
     }
 }
 
-impl<T: Display, I: ExactSizeIterator<Item=T>> IterExt for I {}
+impl<T: Display, I: ExactSizeIterator<Item=T>> ListGrammaticallyExt for I {}
 
 pub trait Tap: Sized {
     fn tap<F: FnOnce(Self) -> Self>(self, f: F) -> Self {
@@ -99,3 +100,22 @@ pub trait Tap: Sized {
 }
 
 impl<T: Sized> Tap for T {}
+
+pub trait IterExt: Iterator + Sized {
+    fn none<P: FnMut(Self::Item) -> bool>(mut self, predicate: P) -> bool {
+        !self.any(predicate)
+    }
+}
+
+impl<I: Iterator + Sized> IterExt for I {}
+
+// todo remove in edition 2021
+pub trait ArrayIterTemp<T, const N: usize> {
+    fn array_iter(self) -> std::array::IntoIter<T, N>;
+}
+
+impl<T, const N: usize> ArrayIterTemp<T, N> for [T; N] {
+    fn array_iter(self) -> IntoIter<T, N> {
+        std::array::IntoIter::new(self)
+    }
+}

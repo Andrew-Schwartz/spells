@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CustomSpell, find_spell, SpellButtons, SpellId, StArc, StaticCustomSpell};
 use crate::style::Style;
-use crate::utils::SpacingExt;
+use crate::utils::{ArrayIterTemp, SpacingExt};
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveSpell {
@@ -321,8 +321,6 @@ impl CharacterPage {
             .push(Tooltip::new(
                 Button::new(delete, Text::new(Icon::Archive).font(ICON_FONT))
                     .style(style)
-                    // todo apparently when you close the last character it gets angry
-                    //  thread 'main' panicked at 'attempt to subtract with overflow', src\main.rs:180:24
                     .on_press(crate::Message::CloseCharacter(index)),
                 "Close character",
                 Position::FollowCursor))
@@ -391,7 +389,7 @@ impl CharacterPage {
         let len = spells.len();
 
         #[allow(clippy::if_not_else)]
-        let spells_col = if num_cols != 0 {
+            let spells_col = if num_cols != 0 {
             (&spells.into_iter().enumerate().chunks(num_cols))
                 .into_iter()
                 .fold(Column::new().spacing(18), |spells_col, mut chunk| {
@@ -461,21 +459,22 @@ impl<'a> SpellButtons<'a> for CharacterPageButtons<'a> {
 
     fn view(self, id: SpellId, is_prepared: bool, style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
         let character = self.character;
-        let buttons = std::array::IntoIter::new([
+        let buttons = [
             (self.left, Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
             (self.up, Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
             (Some(self.prepare), if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
             (Some(self.remove), Icon::Trash, Message::RemoveSpell(id.clone())),
             (self.down, Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
             (self.right, Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
-        ]).fold(Row::new().spacing(2), |row, (state, icon, msg)|
-            if let Some(state) = state {
-                row.push(Button::new(state, Text::new(icon).size(12).font(ICON_FONT))
-                    .style(style)
-                    .on_press(crate::Message::Character(character, msg)))
-            } else {
-                row
-            });
+        ].array_iter()
+            .fold(Row::new().spacing(2), |row, (state, icon, msg)|
+                if let Some(state) = state {
+                    row.push(Button::new(state, Text::new(icon).size(12).font(ICON_FONT))
+                        .style(style)
+                        .on_press(crate::Message::Character(character, msg)))
+                } else {
+                    row
+                });
         let name = Button::new(
             self.name,
             Text::new(&*id.name).size(36),

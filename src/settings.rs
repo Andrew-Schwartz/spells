@@ -6,7 +6,7 @@ use crate::character::Character;
 use crate::search::PLOption;
 use crate::settings::Message::SubmitSpell;
 use crate::style::Style;
-use crate::utils::{IterExt, SpacingExt, Tap};
+use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -62,10 +62,10 @@ impl From<Character> for ClosedCharacter {
 
 pub struct SettingsPage {
     pub name: String,
-    pub state: text_input::State,
+    pub character_name_state: text_input::State,
     create_character: button::State,
     pub spell_name: String,
-    spell_name_state: text_input::State,
+    pub spell_name_state: text_input::State,
     create_spell: button::State,
     pub spell_editor: SpellEditor,
     close_spell_state: button::State,
@@ -75,7 +75,7 @@ impl SettingsPage {
     pub fn new(custom_spells: &[CustomSpell]) -> Self {
         Self {
             name: Default::default(),
-            state: Default::default(),
+            character_name_state: Default::default(),
             create_character: Default::default(),
             spell_name: Default::default(),
             spell_name_state: Default::default(),
@@ -129,7 +129,7 @@ impl SettingsPage {
             .push_space(Length::Fill);
 
         let character_name_input = TextInput::new(
-            &mut self.state,
+            &mut self.character_name_state,
             "Character Name",
             &self.name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
@@ -324,7 +324,10 @@ impl SettingsPage {
                 let casting_time = PickList::new(
                     &mut spell.casting_time_state,
                     CASTING_TIMES,
-                    Some(spell.casting_time.clone()),
+                    Some(match &spell.casting_time {
+                        CastingTime::Reaction(_) => CastingTime::Reaction(None),
+                        other => other.clone(),
+                    }),
                     edit_message(Edit::CastingTime),
                 ).style(style);
 
@@ -401,7 +404,7 @@ impl SettingsPage {
 
                 let classes = PickList::new(
                     &mut spell.classes_state,
-                    &Class::ALL[..],
+                    &Class::PL_ALL[..],
                     Some(PLOption::None),
                     edit_message(Edit::Class),
                 ).style(style);
