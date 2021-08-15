@@ -20,6 +20,7 @@ pub enum Message {
     Collapse(SpellId),
     Search(String),
     PickMode(Mode),
+    ClearSearchers,
     PickLevel(u8),
     PickCastingTime(CastingTime),
     PickClass(Class),
@@ -205,7 +206,8 @@ fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
             .style(style.background())
             .padding(0)
         )
-        .fold(row, Row::push)
+        .fold(row.push_space(3), Row::push)
+        .push_space(5)
 }
 
 #[derive(Debug, Default)]
@@ -344,7 +346,7 @@ impl Searcher for RitualSearch {
             "Ritual",
             |b| crate::Message::Search(Message::ToggleRitual(b)),
         ).style(style);
-        row.push(checkbox)
+        row.push(checkbox).push_space(5)
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
@@ -367,7 +369,7 @@ impl Searcher for TextSearch {
             &self.text,
             |s| crate::Message::Search(Message::SearchText(s)),
         ).style(style);
-        row.push(text).push(input)
+        row.push(text).push_space(4).push(input)
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
@@ -388,6 +390,7 @@ pub struct SearchPage {
     pub state: text_input::State,
     search: String,
     mode_state: pick_list::State<PLOption<Mode>>,
+    clear_searchers: button::State,
     // todo make them always appear?
     level_search: Option<LevelSearch>,
     class_search: Option<ClassSearch>,
@@ -407,6 +410,7 @@ impl Default for SearchPage {
             state: text_input::State::focused(),
             search: Default::default(),
             mode_state: Default::default(),
+            clear_searchers: Default::default(),
             level_search: None,
             class_search: None,
             casting_time_search: None,
@@ -482,6 +486,15 @@ impl SearchPage {
                     }
                     Mode::Text => toggle_search(&mut self.text_search),
                 }
+            }
+            Message::ClearSearchers => {
+                self.level_search = None;
+                self.class_search = None;
+                self.casting_time_search = None;
+                self.school_search = None;
+                self.ritual_search = None;
+                self.text_search = None;
+                self.search(custom, characters);
             }
             Message::PickLevel(level) => {
                 if let Some(levels) = &mut self.level_search {
@@ -590,6 +603,11 @@ impl SearchPage {
         ).style(style)
             .width(Length::Units(114))
             .text_size(15);
+        let clear_searchers = Button::new(
+            &mut self.clear_searchers,
+            Text::new("Clear").size(14),
+        ).style(style)
+            .on_press(crate::Message::Search(Message::ClearSearchers));
 
         // additional search stuff
         let searchers: [Option<&mut dyn Searcher>; 6] = [
@@ -627,6 +645,8 @@ impl SearchPage {
                 .push(search)
                 .push_space(3)
                 .push(mode)
+                .push_space(3)
+                .push(clear_searchers)
                 .push_space(Length::Fill)
                 .align_items(Align::Center))
             .push(Row::new()

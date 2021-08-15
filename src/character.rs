@@ -58,7 +58,6 @@ impl Character {
     pub fn from_serialized(serialized: &SerializeCharacter, custom: &[CustomSpell]) -> Self {
         let mut spells: [Vec<(Spell, bool)>; 10] = Default::default();
         serialized.spells.iter()
-            // .filter_map(|name| SPELLS.iter().find(|spell| spell.name == *name))
             .filter_map(|(name, prepared)| {
                 find_spell(name, custom)
                     .map(Spell::from)
