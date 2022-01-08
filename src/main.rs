@@ -495,7 +495,7 @@ impl Application for DndSpells {
                 // let must_save = self.character_pages.get_mut(&name)
                 //     .map(|c| c.update(msg, num_cols));
                 if add {
-                    self.search_page.state.focus();
+                    self.search_page.search.state.focus();
                     // have to update after adding the spell
                     self.refresh_search();
                 }
@@ -549,7 +549,7 @@ impl Application for DndSpells {
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
                                     page.tab = 0;
-                                    page.search_state.focus();
+                                    page.search.state.focus();
                                 }
                             }
                         }

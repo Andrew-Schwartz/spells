@@ -1,13 +1,14 @@
 use std::cmp::min;
 use std::sync::Arc;
 
-use iced::{Align, button, Button, Column, Container, Element, Length, Row, Scrollable, scrollable, Text, text_input, TextInput, Tooltip};
+use iced::{Align, button, Button, Column, Container, Element, Length, Row, Scrollable, scrollable, Text, Tooltip};
 use iced::tooltip::Position;
 use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{CustomSpell, find_spell, SpellButtons, SpellId, StArc, StaticCustomSpell};
+use crate::search::{Mode, SearchOptions};
 use crate::style::Style;
 use crate::utils::{ArrayIterTemp, SpacingExt};
 
@@ -44,6 +45,8 @@ pub enum Message {
     /// delta to move the spell
     MoveSpell(SpellId, MoveSpell),
     Search(String),
+    PickMode(Mode),
+    ResetModes,
 }
 
 pub const TABS: usize = 11;
@@ -103,8 +106,7 @@ pub struct CharacterPage {
     pub tab: usize,
     tabs: [button::State; TABS],
     scroll: scrollable::State,
-    pub search_state: text_input::State,
-    search: String,
+    pub search: SearchOptions,
 }
 
 #[derive(Debug)]
@@ -162,7 +164,6 @@ impl From<Character> for CharacterPage {
             tab: 0,
             tabs: Default::default(),
             scroll: Default::default(),
-            search_state: text_input::State::focused(),
             search: Default::default(),
         }
     }
@@ -231,7 +232,7 @@ impl CharacterPage {
                 })
             }
             Message::Search(search) => {
-                self.search = search;
+                self.search.search = search;
                 false
             }
             Message::PrepareAll(prepare) => {
@@ -243,10 +244,37 @@ impl CharacterPage {
                     .for_each(|(_, prepared)| *prepared = prepare);
                 true
             }
+            Message::PickMode(mode) => {
+                match mode {
+                    Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
+                    Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
+                    Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
+                    Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
+                    Mode::Ritual => {
+                        SearchOptions::toggle_mode(&mut self.search.ritual_search);
+                        // the default (false) will still match spells, so redo the search
+                        // self.spells = self.search.search(custom, characters);
+                    }
+                    Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
+                }
+                false
+            }
+            Message::ResetModes => {
+                self.search.level_search = None;
+                self.search.class_search = None;
+                self.search.casting_time_search = None;
+                self.search.school_search = None;
+                self.search.ritual_search = None;
+                self.search.text_search = None;
+                // self.spells = self.search.search(custom, characters);
+                false
+            }
         }
     }
 
     pub fn view(&mut self, index: usize, num_cols: usize, style: Style) -> Container<crate::Message> {
+        let message = move |message: Message| crate::Message::Character(index, message);
+
         let Self {
             character: Character {
                 name,
@@ -264,7 +292,6 @@ impl CharacterPage {
             tab,
             tabs,
             scroll,
-            search_state,
             search
         } = self;
         let selected_level = *tab;
@@ -280,7 +307,7 @@ impl CharacterPage {
                     Text::new(if *should_collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                         .font(ICON_FONT))
                     .style(style)
-                    .on_press(crate::Message::Character(index, Message::ToggleCollapseAll)),
+                    .on_press(message(Message::ToggleCollapseAll)),
                 if *should_collapse_all { "Expand all spells" } else { "Collapse all spells" },
                 Position::FollowCursor,
             ))
@@ -290,19 +317,19 @@ impl CharacterPage {
                     Text::new(if *should_collapse_unprepared { Icon::ChevronExpand } else { Icon::ChevronContract })
                         .font(ICON_FONT))
                     .style(style)
-                    .on_press(crate::Message::Character(index, Message::ToggleCollapse)),
+                    .on_press(message(Message::ToggleCollapse)),
                 if *should_collapse_unprepared { "Expand unprepared spells" } else { "Collapse unprepared spells" },
                 Position::FollowCursor))
             .push(Tooltip::new(
                 Button::new(prepare_all, Text::new(Icon::Check).font(ICON_FONT))
                     .style(style)
-                    .on_press(crate::Message::Character(index, Message::PrepareAll(true))),
+                    .on_press(message(Message::PrepareAll(true))),
                 "Prepare All",
                 Position::FollowCursor))
             .push(Tooltip::new(
                 Button::new(unprepare_all, Text::new(Icon::X).font(ICON_FONT))
                     .style(style)
-                    .on_press(crate::Message::Character(index, Message::PrepareAll(false))),
+                    .on_press(message(Message::PrepareAll(false))),
                 "Unprepare All",
                 Position::FollowCursor))
             .push(Tooltip::new(
@@ -330,12 +357,11 @@ impl CharacterPage {
             let mut button = Button::new(state, Text::new(name))
                 .style(style.tab_button());
             if level != selected_level {
-                button = button.on_press(crate::Message::Character(index, Message::SpellTab(level)));
+                button = button.on_press(message(Message::SpellTab(level)));
             }
             button
         };
         let mut tabs_row = Row::new()
-            // .spacing(2)
             .push_space(Length::Fill);
 
         // iterate through tabs, allowing for specific handling for "all" and "cantrip" tabs
@@ -346,55 +372,52 @@ impl CharacterPage {
         tabs_row = tabs_row.push(make_button(all, "All".into(), 0));
 
         // attach spell levels
-        let mut iter = iter.enumerate();
         // name cantrip tab
-        let (_, cantrip) = iter.next().unwrap();
+        let cantrip = iter.next().unwrap();
         tabs_row = tabs_row.push(make_button(cantrip, "Cantrip".to_string(), 1));
 
         // generic spell tab with some `level`
-        for (level, state) in iter {
+        for (level, state) in iter.enumerate() {
+            let level = level + 1;
             // spaces to pad the tab width
             tabs_row = tabs_row.push(make_button(state, format!(" {} ", level), level + 1));
         }
         let tabs_row = tabs_row.push_space(Length::Fill);
 
         // slightly cursed way to flatten spells if we're in the `all` tab
-        let mut mut_spells = Vec::new();
-        let search_row = if selected_level == 0 {
-            let needle = search.to_lowercase();
-            mut_spells.extend(
-                spells.iter_mut()
-                    .flatten()
-                    .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
-            );
+        let (spells, search_col) = if selected_level == 0 {
+            let needle = search.search.to_lowercase();
+            let spells = spells.iter_mut()
+                .flatten()
+                .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
+                .collect_vec();
             // only thing to focus on
-            search_state.focus();
-            Row::new()
-                .push_space(Length::Fill)
-                .push(TextInput::new(
-                    search_state,
-                    "search for a spell",
-                    search,
-                    move |s| crate::Message::Character(index, Message::Search(s)),
-                ).style(style).width(Length::FillPortion(4)))
-                .push_space(Length::Fill)
+            search.state.focus();
+            let search_col = Column::new()
+                .align_items(Align::Center)
+                .push(search.view(
+                    None,
+                    move |s| message(Message::Search(s)),
+                    move |m| message(Message::PickMode(m)),
+                    message(Message::ResetModes),
+                    style,
+                ));
+            (spells, search_col)
         } else {
-            mut_spells.extend(&mut spells[selected_level - 1]);
-            Row::new()
+            (spells[selected_level - 1].iter_mut().collect(), Column::new())
         };
-        // let spells = &mut spells[selected_level];
-        let spells = mut_spells;
 
         let len = spells.len();
 
-        #[allow(clippy::if_not_else)]
-            let spells_col = if num_cols != 0 {
+        let spells_col = if num_cols == 0 {
+            Column::new()
+        } else {
             (&spells.into_iter().enumerate().chunks(num_cols))
                 .into_iter()
                 .fold(Column::new().spacing(18), |spells_col, mut chunk| {
                     let row = (0..num_cols).fold(Row::new(), |row, _| {
                         if let Some((idx, (spell, prepared))) = chunk.next() {
-                            // let mut spell: Spell = spell;
+                            let spell: &mut Spell = spell;
                             let all_tab = selected_level == 0;
                             let button = CharacterPageButtons {
                                 character: index,
@@ -419,8 +442,6 @@ impl CharacterPage {
                     });
                     spells_col.push(row)
                 })
-        } else {
-            Column::new()
         };
 
         let scroll = Scrollable::new(scroll)
@@ -435,7 +456,7 @@ impl CharacterPage {
             .push(name_text)
             .push(buttons_row)
             .push(tabs_row)
-            .push(search_row)
+            .push(search_col)
             .push(scroll)
         )
     }
