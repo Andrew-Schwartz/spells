@@ -153,17 +153,8 @@ pub trait Searcher {
     fn is_empty(&self) -> bool;
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool;
-}
 
-pub trait AddableSearcher: Searcher {
-    type Event;
-
-    fn add_to_row<'a, F: 'static + Fn(Self::Event) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message>;
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message>;
 }
 
 #[derive(Debug)]
@@ -233,17 +224,8 @@ impl Searcher for LevelSearch {
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
     }
-}
 
-impl AddableSearcher for LevelSearch {
-    type Event = u8;
-
-    fn add_to_row<'a, F: 'static + Fn(u8) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let levels = PickListLevel::ALL.array_iter()
             .filter(|lvl| self.levels.iter().none(|wb| wb.t == lvl.0))
             .collect_vec();
@@ -252,7 +234,7 @@ impl AddableSearcher for LevelSearch {
             &mut self.state,
             levels,
             Some(PickListLevel::NONE),
-            |pll| message(pll.unwrap()),
+            |pll| crate::Message::Search(Message::PickLevel(pll.unwrap())),
         ).style(style).text_size(14);
         add_buttons(&mut self.levels, Message::PickLevel, style, row.push(pick_list))
     }
@@ -273,17 +255,8 @@ impl Searcher for ClassSearch {
         spell.classes().iter()
             .any(|class| self.classes.iter().any(|WithButton { t, .. }| class == t))
     }
-}
 
-impl AddableSearcher for ClassSearch {
-    type Event = Class;
-
-    fn add_to_row<'a, F: 'static + Fn(Class) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let classes = Class::ALL.array_iter()
             .filter(|class| self.classes.iter().none(|wb| wb.t == *class))
             .map(PLOption::Some)
@@ -293,7 +266,7 @@ impl AddableSearcher for ClassSearch {
             &mut self.state,
             classes,
             Some(PLOption::None),
-            |c| message(c.unwrap()),
+            |c| crate::Message::Search(Message::PickClass(c.unwrap())),
         ).style(style).text_size(14);
         add_buttons(&mut self.classes, Message::PickClass, style, row.push(pick_list))
     }
@@ -315,31 +288,20 @@ impl Searcher for CastingTimeSearch {
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         self.times.iter().any(|WithButton { t, .. }| t == spell.casting_time())
     }
-}
 
-impl AddableSearcher for CastingTimeSearch {
-    type Event = CastingTime;
-
-    fn add_to_row<'a, F: 'static + Fn(CastingTime) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
-        use CastingTime::*;
-
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let durations = [
-            Action,
-            BonusAction,
-            Reaction(None),
-            Minute(1),
-            Minute(10),
-            Hour(1),
-            Hour(8),
-            Hour(12),
-            Hour(24),
-            Special,
-        ].array_iter()
+            CastingTime::Action,
+            CastingTime::BonusAction,
+            CastingTime::Reaction(None),
+            CastingTime::Minute(1),
+            CastingTime::Minute(10),
+            CastingTime::Hour(1),
+            CastingTime::Hour(8),
+            CastingTime::Hour(12),
+            CastingTime::Hour(24),
+            CastingTime::Special,
+        ].into_iter()
             .filter(|ct| self.times.iter().none(|t| t.t == *ct))
             .map(PLOption::Some)
             .collect_vec();
@@ -348,7 +310,7 @@ impl AddableSearcher for CastingTimeSearch {
             &mut self.state,
             durations,
             Some(PLOption::None),
-            |s| message(s.unwrap()),
+            |s| crate::Message::Search(Message::PickCastingTime(s.unwrap())),
         ).style(style).text_size(14);
         add_buttons(&mut self.times, Message::PickCastingTime, style, row.push(pick_list))
     }
@@ -368,17 +330,8 @@ impl Searcher for SchoolSearch {
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         self.schools.iter().any(|WithButton { t, .. }| *t == spell.school())
     }
-}
 
-impl AddableSearcher for SchoolSearch {
-    type Event = School;
-
-    fn add_to_row<'a, F: 'static + Fn(School) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let schools = School::ALL.array_iter()
             .filter(|school| self.schools.iter().none(|wb| wb.t == *school))
             .map(PLOption::Some)
@@ -388,7 +341,7 @@ impl AddableSearcher for SchoolSearch {
             &mut self.state,
             schools,
             Some(PLOption::None),
-            |s| message(s.unwrap()),
+            |s| crate::Message::Search(Message::PickSchool(s.unwrap())),
         ).style(style).text_size(14);
         add_buttons(&mut self.schools, Message::PickSchool, style, row.push(pick_list))
     }
@@ -407,21 +360,12 @@ impl Searcher for RitualSearch {
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         spell.ritual() == self.ritual
     }
-}
 
-impl AddableSearcher for RitualSearch {
-    type Event = bool;
-
-    fn add_to_row<'a, F: 'static + Fn(bool) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let checkbox = Checkbox::new(
             self.ritual,
             "Ritual",
-            |b| message(b),
+            |b| crate::Message::Search(Message::ToggleRitual(b)),
         ).style(style);
         row.push(checkbox).push_space(5)
     }
@@ -448,17 +392,8 @@ impl Searcher for TextSearch {
                         .is_some()
             )
     }
-}
 
-impl AddableSearcher for TextSearch {
-    type Event = String;
-
-    fn add_to_row<'a, F: 'static + Fn(String) -> crate::Message>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
-        message: F,
-        style: Style,
-    ) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
         let text = Text::new("Spell Text:");
         let input = TextInput::new(
             &mut self.state,
@@ -508,7 +443,7 @@ impl SearchOptions {
                 self.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            ].array_iter()
+            ].into_iter()
                 .flatten()
                 .filter(|searcher| !searcher.is_empty())
                 .all(|searcher| searcher.matches(spell)))

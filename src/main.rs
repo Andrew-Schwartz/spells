@@ -864,6 +864,7 @@ impl Application for DndSpells {
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Class {
+    Artificer,
     Bard,
     Cleric,
     Druid,
@@ -875,7 +876,8 @@ pub enum Class {
 }
 
 impl Class {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
+        Self::Artificer,
         Self::Bard,
         Self::Cleric,
         Self::Druid,
@@ -886,7 +888,8 @@ impl Class {
         Self::Wizard,
     ];
 
-    pub const PL_ALL: [PLOption<Self>; 8] = [
+    pub const PL_ALL: [PLOption<Self>; 9] = [
+        PLOption::Some(Self::Artificer),
         PLOption::Some(Self::Bard),
         PLOption::Some(Self::Cleric),
         PLOption::Some(Self::Druid),
@@ -901,6 +904,7 @@ impl Class {
 impl Display for Class {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
+            Self::Artificer => "Artificer",
             Self::Bard => "Bard",
             Self::Cleric => "Cleric",
             Self::Druid => "Druid",

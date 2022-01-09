@@ -12,6 +12,7 @@
     "description": "You hurl a bubble of acid.\nChoose one creature within range, or choose two creatures within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage.",
     "higher_levels": "This spell’s damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -31,6 +32,7 @@
     "description": "Your spell bolsters your allies with toughness and resolve.\nChoose up to three creatures within range. Each target's hit point maximum and current hit points increase by 5 for the duration.",
     "higher_levels": "When you cast this spell using a spell slot of 3rd level or higher, a target’s hit points increase by an additional 5 for each slot level above 2nd.",
     "classes": [
+      "Artificer",
       "Cleric",
       "Paladin"
     ],
@@ -50,6 +52,7 @@
     "description": "You set an alarm against unwanted intrusion.\nChoose a door, a window, or an area within range that is no larger than a 20-foot cube. Until the spell ends, an alarm alerts you whenever a tiny or larger creature touches or enters the warded area. When you cast the spell, you can designate creatures that won’t set off the alarm. You also choose whether the alarm is mental or audible.\n\nA mental alarm alerts you with a ping in your mind if you are within 1 mile of the warded area. This ping awakens you if you are sleeping.\nAn audible alarm produces the sound of a hand bell for 10 seconds within 60 feet.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Ranger",
       "Wizard"
     ],
@@ -69,6 +72,7 @@
     "description": "You assume a different form.\nWhen you cast the spell, choose one of the following options, the effects of which last for the duration of the spell. While the spell lasts, you can end one option as an action to gain the benefits of a different one.\n\nAquatic Adaptation. You adapt your body to an aquatic environment, sprouting gills, and growing webbing between your fingers. You can breathe underwater and gain a swimming speed equal to your walking speed.\n\nChange Appearance. You transform your appearance. You decide what you look like, including your height, weight, facial features, sound of your voice, hair length, coloration, and distinguishing characteristics, if any. You can make yourself appear as a member of another race, though none of your statistics change. You also don’t appear as a creature of a different size than you, and your basic shape stays the same; if you're bipedal, you can’t use this spell to become quadrupedal, for instance. At any time for the duration of the spell, you can use your action to change your appearance in this way again.\n\nNatural Weapons. You grow claws, fangs, spines, horns, or a different natural weapon of your choice. Your unarmed strikes deal 1d6 bludgeoning, piercing, or slashing damage, as appropriate to the natural weapon you chose, and you are proficient with your unarmed strikes. Finally, the natural weapon is magic and you have a +1 bonus to the attack and damage rolls you make using it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -165,6 +169,7 @@
     "description": "Objects come to life at your command.\nChoose up to ten nonmagical objects within range that are not being worn or carried. Medium targets count as two objects, Large targets count as four objects, Huge targets count as eight objects. You can’t animate any object larger than Huge. Each target animates and becomes a creature under your control until the spell ends or until reduced to 0 hit points.\n\nAs a bonus action, you can mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any or all of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move during its next turn, or you can issue a general command, such as to guard a particular chamber or corridor. If you issue no commands, the creature only defends itself against hostile creatures. Once given an order, the creature continues to follow it until its task is complete.\n\nAnimated Object Statistics\nTiny – HP: 20, AC: 18, Attack: +8 to hit, 1d4 + 4 damage, Str: 4, Dex: 18\nSmall – HP: 25, AC: 16, Attack: +6 to hit, 1d8 + 2 damage, Str: 6, Dex: 14\nMedium – HP: 40, AC: 13, Attack: +5 to hit, 2d6 + 1 damage, Str: 10, Dex: 12\nLarge – HP: 50, AC: 10, Attack: +6 to hit, 2d10 + 2 damage, Str: 14, Dex: 10\nHuge – HP: 80, AC: 10, Attack: +8 to hit, 2d12 + 4 damage, Str: 18, Dex: 6\n\nAn animated object is a construct with AC, hit points, attacks, Strength, and Dexterity determine by its size. Its Constitution is 10 and its Intelligence and Wisdom are 3, and its Charisma is 1. Its speed is 30 feet; if the objects lack legs or other appendages it can use for locomotion, it instead has a flying speed of 30 feet and can hover. If the object is securely attached to a surface or larger object, such as a chain bolted to a wall, its speed is 0. It has blindsight with a radius of 30 feet and is blind beyond that distance. When the animated object drops to 0 hit points, it reverts to its original object form, and any remaining damage carries over to its original object form.\n\nIf you command an object to attack, it can make a single melee attack against a creature within 5 feet of it. It makes a slam attack with an attack bonus and bludgeoning damage determine by its size. The DM might rule that a specific object inflicts slashing or piercing damage based on its form.",
     "higher_levels": "If you cast this spell using a spell slot of 6th level or higher, you can animate two additional objects for each slot level above 5th.",
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -241,6 +246,7 @@
     "description": "You create an invisible, magical eye within range that hovers in the air for the duration.\nYou mentally receive visual information from the eye, which has normal vision and darkvision out to 30 feet. The eye can look in every direction.\nAs an action, you can move the eye up to 30 feet in any direction. There is no limit to how far away from you the eye can move, but it can’t enter another plane of existence. A solid barrier blocks the eye’s movement, but the eye can pass through an opening as small as 1 inch in diameter.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -279,6 +285,7 @@
     "description": "You touch a closed door, window, gate, chest, or other entryway, and it becomes locked for the duration.\nYou and the creatures you designate when you cast this spell can open the object normally. You can also set a password that, when spoken within 5 feet of the object, suppresses this spell for 1 minute. Otherwise, it is impassable until it is broken or the spell is dispelled or suppressed. Casting knock on the object suppresses arcane lock for 10 minutes.\n\nWhile affected by this spell, the object is more difficult to break or force open; the DC to break it or pick any locks on it increases by 10.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -579,6 +586,7 @@
     "description": "You create a Large hand of shimmering, translucent force in an unoccupied space that you can see within range. The hand lasts for the spell’s duration, and it moves at your command, mimicking the movements of your own hand.\n\nThe hand is an object that has AC 20 and hit points equal to your hit point maximum. If it drops to 0 hit points, the spell ends. It has a Strength of 26 (+8) and a Dexterity of 10 (+0). The hand doesn’t fill its space.\n\nWhen you cast the spell and as a bonus action on your subsequent turns, you can move the hand up to 60 feet and then cause one of the following effects with it.\n\nClenched Fist\nThe hand strikes one creature or object within 5 feet of it. Make a melee spell attack for the hand using your game statistics. On a hit, the target takes 4d8 force damage.\n\nForceful Hand\nThe hand attempts to push a creature within 5 feet of it in a direction you choose. Make a check with the hand’s Strength contested by the Strength (Athletics) check of the target. If the target is Medium or smaller, you have advantage on the check. If you succeed, the hand pushes the target up to 5 feet plus a number of feet equal to five times your spellcasting ability modifier. The hand moves with the target to remain within 5 feet of it.\n\nGrasping Hand\nThe hand attempts to grapple a Huge or smaller creature within 5 feet of it. You use the hand’s Strength score to resolve the grapple. If the target is Medium or smaller, you have advantage on the check. While the hand is grappling the target, you can use a bonus action to have the hand crush it. When you do so, the target takes bludgeoning damage equal to 2d6 + your spellcasting ability modifier.\n\nInterposing Hand\nThe hand interposes itself between you and a creature you choose until you give the hand a different command. The hand moves to stay between you and the target, providing you with half cover against the target. The target can’t move through the hand’s space if its Strength score is less than or equal to the hand’s Strength score. If its Strength score is higher than the hand’s Strength score, the target can move toward you through the hand’s space, but that space is difficult terrain for the target.",
     "higher_levels": "When you cast this spell using a spell slot of 6th level or higher, the damage from the clenched fist option increases by 2d8 and the damage from the grasping hand increases by 2d6 for each slot level above 5th.",
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -715,6 +723,7 @@
     "description": "Roll a d20 at the end of each of your turns for the duration of the spell. On a roll of 11 or higher, you vanish from your current plane of existence and appear in the Ethereal Plane (the spell fails and the casting is wasted if you were already on that plane).\n\nAt the start of you next turn, and when the spell ends if you are on the Ethereal Plane, you return to an unoccupied space of your choice that you can see within 10 feet of the space you vanished from. If no unoccupied space is available within that range, you appear in the nearest unoccupied space (chosen at random if more that one space is equally near). You can dismiss this spell as an action.\n\nWhile on the Ethereal Plane, you can see and hear the plane you originated from, which is cast in shades of gray, and you can’t see anything more than 60 feet away.You can only affect and be affected by other creatures on the Ethereal Plane. Creature that aren’t there can’t perceive you or interact with you, unless they have the ability to do so.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -734,6 +743,7 @@
     "description": "Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesnt rely on sight, as with blindsight, or can see through illusions, as with truesight.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -1401,6 +1411,7 @@
     "description": "A flame, equivalent in brightness to a torch, springs forth from an object that you touch.\nThe effect looks like a regular flame, but it creates no heat and doesn’t use oxygen. A continual flame can be covered or hidden but not smothered or quenched.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Wizard"
     ],
@@ -1498,6 +1509,7 @@
     "description": "You create 45 pounds of food and 30 gallons of water on the ground or in containers within range, enough to sustain up to fifteen humanoids or five steeds for 24 hours. The food is bland but nourishing, and spoils if uneaten after 24 hours. The water is clean and doesn’t go bad.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Paladin"
     ],
@@ -1556,6 +1568,7 @@
     "description": "You pull wisps of shadow material from the Shadowfell to create a nonliving object of vegetable matter within range: soft goods, rope, wood, or something similar. You can also use this spell to create mineral objects such as stone, crystal, or metal. The object created must be no larger than a 5-foot cube, and the object must be of a form and material that you have seen before.\n\nThe duration depends on the object’s material. If the object is composed of multiple materials, use the shortest duration.\n\nMaterial — Duration\nVegetable matter — 1 day\nStone/crystal — 12 hours\nPrecious metals — 1 hour\nGems — 10 minutes\nAdamantine/Mithral — 1 minute\n\nUsing any material created by this spell as another spell’s material component causes that spell to fail.",
     "higher_levels": "When you cast this spell using a spell slot of 6th level or higher, the cube increases by 5 feet for each slot level above 5th.",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -1614,6 +1627,7 @@
     "description": "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
     "higher_levels": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.",
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -1636,6 +1650,7 @@
     "description": "You create up to four torch-sized lights within range, making them appear as torches, lanterns, or glowing orbs that hover in the air for the duration.\nYou can also combine the four lights into one glowing vaguely humanoid form of Medium size. Whichever form you choose, each light sheds dim light in a 10-foot radius.\n\nAs a bonus action on your turn, you can move the lights up to 60 feet to a new spot within range. A light must be within 20 feet of another light created by this spell, and a light winks out if it exceeds the spell’s range.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -1676,6 +1691,7 @@
     "description": "You touch a willing creature to grant it the ability to see in the dark.\nFor the duration, that creature has darkvision out to a range of 60 feet.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -1813,6 +1829,7 @@
     "description": "For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic, and you learn its school of magic, if any.\n\nThe spell can penetrate most barriers, but is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -1899,6 +1916,7 @@
     "description": "You make yourself – including your clothing, armor, weapons, and other belongings on your person – look different until the spell ends or until you use your action to dismiss it.\nYou can seem  1 foot shorter or taller and can appear thin, fat, or in between. You can’t change your body type, so you must adopt a form that has the same basic arrangement of limbs. Otherwise, the extent of the illusion is up to you.\n\nThe changes wrought by this spell fail to hold up to physical inspection. For example, if you use this spell to add a hat to your outfit, objects pass through the hat, and anyone who touches it would feel nothing or would feel your head and hair. If you use this spell to appear thinner than you are, the hand of someone who reaches out to touch you would bump into you while it was seemingly still in midair. To discern that you are disguised, a creature can use its action to inspect your appearance and must succeed on an Intelligence (Investigation) check against your spell save DC.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -1957,6 +1975,7 @@
     "description": "Choose any creature, object, or magical effect within range. Any spell of 3rd level or lower on the target ends. For each spell of 4th level or higher on the target, make an ability check using your spellcasting ability. The DC equals 10 + the spell’s level. On a successful check, the spell ends.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, you automatically end the effects of a spell on the target if the spell’s level is equal to or less than the level of the spell slot you used.",
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -2101,7 +2120,7 @@
     "page": 235
   },
   {
-    "name": "Drawmij’s Instant Summons (Ritual)",
+    "name": "Drawmij’s Instant Summons",
     "level": 6,
     "casting_time": "1 Minute",
     "range": "Touch",
@@ -2207,6 +2226,7 @@
     "description": "A nonmagical weapon you touch becomes a magic weapon.\nChoose one of the following damage types: acid, cold, fire, lightning, or thunder. For the duration, the weapon has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type when it hits.",
     "higher_levels": "When you cast this spell using a spell slot of 5th or 6th level, the bonus to attack rolls increases to +2 and the extra damage increases to 2d4.\nWhen you use a spell slot of 7th level or higher, the bonus increases to +3 and the extra damage increases to 3d4.",
     "classes": [
+      "Artificer",
       "Paladin"
     ],
     "source": "Players Handbook",
@@ -2225,6 +2245,7 @@
     "description": "You touch a creature and bestow upon it a magical enhancement. Choose one of the following effects: the target gains the effect until the spell ends.\n- Bear’s Endurance. The target has advantage on Constitution checks. It also gains 2d6 temporary hit points, which are lost when the spell ends.\n- Bull’s Strength. The target has advantage on Strength checks, and his or her carrying capacity doubles.\n- Cat’s Grace. The target has advantage on Dexterity checks. It also doesn’t take damage from falling 20 feet or less if it isn’t incapacitated.\n- Eagle’s Splendor. The target has advantage on Charisma checks.\n- Fox’s Cunning. The target has advantage on Intelligence checks.\n- Owl’s Wisdom. The target has advantage on Wisdom checks.",
     "higher_levels": "When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd.",
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -2246,6 +2267,7 @@
     "description": "You cause a creature or an object you can see within range to grow larger or smaller for the duration. Choose either a creature or an object that is neither worn nor carried. If the target is unwilling, it can make a Constitution saving throw. On a success, the spell has no effect.\n\nIf the target is a creature, everything it is wearing and carrying changes size with it. Any item dropped by an affected creature returns to normal size at once.\n\nEnlarge\nThe target’s size doubles in all dimensions, and its weight is multiplied by eight. This growth increases its size by one category – from Medium to Large, for example. If there isn’t enough room for the target to double its size, the creature or object attains the maximum possible size in the space available. Until the spell ends, the target also has advantage on Strength checks and Strength saving throws. The target’s weapons also grow to match its new size. While these weapons are enlarged, the target’s attack with them deal 1d4 extra damage.\n\nReduce\nThe target’s size is halved in all dimensions, and its weight is reduced to one-eighth of normal. This reduction decreases its size by one category – from Medium to Small, for example. Until the spell ends, the target also has disadvantage on Strength checks and Strength saving throws. The target’s weapons also shrink to match its new size. While these weapons are reduced, the target’s attacks with them deal 1d4 less damage (this can’t reduce the damage below 1).",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -2360,6 +2382,7 @@
     "description": "This spell allows you to move at an incredible pace. When you cast this spell, and then as a bonus action on each of your turns until the spell ends, you can take the Dash action.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
@@ -2401,6 +2424,7 @@
     "description": "You convert raw materials into products of the same material.\nFor example, you can fabricate a wooden bridge from a clump of trees, a rope from a patch of hemp, and clothes from flax or wool.\n\nChoose raw materials that you can see within range. You can fabricate a Large or smaller object (contained within a 10-foot cube, or eight connected 5-foot cubes), given a sufficient quantity of raw material. If you are working with metal, stone, or another mineral substance, however, the fabricated object can be no larger than Medium (contained within a single 5-foot cube). The quality of objects made by the spell is commensurate with the quality of the raw materials.\n\nCreatures or magic items can’t be created or transmuted by this spell. You also can’t use it to create items that ordinarily require a high degree of craftsmanship, such as jewelry, weapons, glass, or armor, unless you have proficiency with the type of artisan’s tools used to craft such objects.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -2419,6 +2443,7 @@
     "description": "Each object in a 20-foot cube within range is outlined in blue, green, or violet light (your choice).\nAny creature in the area when the spell is cast is also outlined in light if it fails a Dexterity saving throw. For the duration, objects and affected creatures shed dim light in a 10-foot radius.\n\nAny attack roll against an affected creature or object has advantage if the attacker can see it, and the affected creature or object can’t benefit from being invisible.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Druid"
     ],
@@ -2438,6 +2463,7 @@
     "description": "Bolstering yourself with a necromantic facsimile of life, you gain 1d4 + 4 temporary hit points for the duration.",
     "higher_levels": "When you cast this spell using a spell slot of 2nd level or higher, you gain 5 additional temporary hit points for each slot level above 1st.",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -2478,6 +2504,7 @@
     "description": "Choose up to five falling creatures within range. A falling creature’s rate of descent slows to 60 feet per round until the spell ends. If the creature lands before the spell ends, it takes no falling damage and can land on its feet, and the spell ends for that creature.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -2636,6 +2663,7 @@
     "description": "You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn’t being worn or carried.",
     "higher_levels": "This spell’s damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -2786,6 +2814,7 @@
     "description": "You touch a willing creature. The target gains a flying speed of 60 feet for the duration. When the spell ends, the target falls if it is still aloft, unless it can stop the fall.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd.",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
@@ -2886,6 +2915,7 @@
     "description": "You touch a willing creature. For the duration, the target’s movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target’s speed nor cause the target to be paralyzed or restrained.\n\nThe target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target’s movement or attacks.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -3065,6 +3095,7 @@
     "description": "When you cast this spell, you inscribe a glyph that harms other creatures, either upon a surface (such as a table or a section of floor or wall) or within an object that can be closed (such as a book, a scroll, or a treasure chest) to conceal the glyph.\nIf you choose a surface, the glyph can cover an area of the surface no larger than 10 feet in diameter. If you choose an object, that object must remain in its place; if the object is moved more than 10 feet from where you cast this spell, the glyph is broken, and the spell ends without being triggered.\n\nThe glyph is nearly invisible and requires a successful Intelligence (Investigation) check against your spell save DC to be found.\n\nYou decide what triggers the glyph when you cast the spell. For glyphs inscribed on a surface, the most typical triggers include touching or standing on the glyph, removing another object covering the glyph, approaching within a certain distance of the glyph, or manipulating the object on which the glyph is inscribed. For glyphs inscribed within an object, the most common triggers include opening that object, approaching within a certain distance of the object, or seeing or reading the glyph. Once a glyph is triggered, this spell ends.\n\nYou can further refine the trigger so the spell activates only under certain circumstances or according to physical characteristics (such as height or weight), creature kind (for example, the ward could be set to affect aberrations or drow), or alignment. You can also set conditions for creatures that don’t trigger the glyph, such as those who say a certain password.\n\nWhen you inscribe the glyph, choose explosive runes or a spell glyph.\n\nExplosive Runes\nWhen triggered, the glyph erupts with magical energy in a 20-foot-radius sphere centered on the glyph. The sphere spreads around corners. Each creature in the area must make a Dexterity saving throw. A creature takes 5d8 acid, cold, fire, lightning, or thunder damage on a failed saving throw (your choice when you create the glyph), or half as much damage on a successful one.\n\nSpell Glyph\nYou can store a prepared spell of 3rd level or lower in the glyph by casting it as part of creating the glyph. The spell must target a single creature or an area. The spell being stored has no immediate effect when cast in this way. When the glyph is triggered, the stored spell is cast. If the spell has a target, it targets the creature that triggered the glyph. If the spell affects an area, the area is centered on that creature. If the spell summons hostile creatures or creates harmful objects or traps, they appear as close as possible to the intruder and attack it. If the spell requires concentration, it lasts until the end of its full duration.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, the damage of an explosive runes glyph increases by 1d8 for each slot level above 3rd. If you create a spell glyph, you can store any spell of up to the same level as the slot you use for the glyph of warding.",
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Wizard"
@@ -3123,6 +3154,7 @@
     "description": "Slick grease covers the ground in a 10-foot square centered on a point within range and turns it into difficult terrain for the duration.\n\nWhen the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or fall prone. A creature that enters the area or ends its turn there must also succeed on a Dexterity saving throw or fall prone.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -3161,6 +3193,7 @@
     "description": "You imbue a creature you touch with positive energy to undo a debilitating effect. You can reduce the target’s exhaustion level by one, or end one of the following effects on the target:\n* One effect that charmed or petrified the target\n* One curse, including the target’s attunement to a cursed magic item\n* Any reduction to one of the target’s ability scores\n* One effect reducing the target’s hit point maximum",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid"
@@ -3218,6 +3251,7 @@
     "description": "You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid"
     ],
@@ -3350,6 +3384,7 @@
     "description": "Choose a willing creature that you can see within range. Until the spell ends, the target’s speed is doubled, it gains a +2 bonus to AC, it has advantage on Dexterity saving throws, and it gains an additional action on each of its turns. That action can be used only to take the Attack (one weapon attack only), Dash, Disengage, Hide, or Use an Object action.\n\nWhen the spell ends, the target can’t move or take actions until after its next turn, as a wave of lethargy sweeps over it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -3408,6 +3443,7 @@
     "description": "Choose a manufactured metal object, such as a metal weapon or a suit of heavy or medium metal armor, that you can see within range. You cause the object to glow red-hot. Any creature in physical contact with the object takes 2d8 fire damage when you cast the spell. Until the spell ends, you can use a bonus action on each of your subsequent turns to cause this damage again.\n\nIf a creature is holding or wearing the object and takes the damage from it, the creature must succeed on a Constitution saving throw or drop the object if it can. If it doesn’t drop the object, it has disadvantage on attack rolls and ability checks until the start of your next turn.",
     "higher_levels": "When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd.",
     "classes": [
+      "Artificer",
       "Bard",
       "Druid"
     ],
@@ -3640,6 +3676,7 @@
     "description": "You choose one object that you must touch throughout the casting of the spell. If it is a magic item or some other magic-imbued object, you learn its properties and how to use them, whether it requires attunement to use, and how many charges it has, if any. You learn whether any spells are affecting the item and what they are. If the item was created by a spell, you learn which spell created it.\n\nIf you instead touch a creature throughout the casting, you learn what spells, if any, are currently affecting it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Wizard"
     ],
@@ -3755,6 +3792,7 @@
     "description": "A creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is invisible as long as it is on the target’s person. The spell ends for a target that attacks or casts a spell.",
     "higher_levels": "When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd.",
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
@@ -3776,6 +3814,7 @@
     "description": "You touch a creature. The creature’s jump distance is tripled until the spell ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -3837,13 +3876,14 @@
     "description": "You hide a chest, and all its contents, on the Ethereal Plane.\nYou must touch the chest and the miniature replica that serves as a material component for the spell. The chest can contain up to 12 cubic feet of nonliving material (3 feet by 2 feet by 2 feet).\n\nWhile the chest remains on the Ethereal Plane, you can use an action and touch the replica to recall the chest. It appears in an unoccupied space on the ground within 5 feet of you. You can send the chest back to the Ethereal Plane by using an action and touching both the chest and the replica.\n\nAfter 60 days, there is a cumulative 5 percent chance per day that the spell’s effect ends. This effect ends if you cast this spell again, if the smaller replica chest is destroyed, or if you choose to end the spell as an action. If the spell ends and the larger chest is on the Ethereal Plane, it is irretrievably lost.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
     "page": 254
   },
   {
-    "name": "Leomund’s Tiny Hut (Ritual)",
+    "name": "Leomund’s Tiny Hut",
     "level": 3,
     "casting_time": "1 Minute",
     "range": "Self (10-foot-radius hemisphere)",
@@ -3874,6 +3914,7 @@
     "description": "You touch a creature and can end either one disease or one condition afflicting it. The condition can be blinded, deafened, paralyzed, or poisoned.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -3896,6 +3937,7 @@
     "description": "One creature or object of your choice that you can see within range rises vertically, up to 20 feet, and remains suspended there for the duration. The spell can levitate a target that weighs up to 500 pounds. An unwilling creature that succeeds on a Constitution saving throw is unaffected.\n\nThe target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target’s altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can use your action to move the target, which must remain within the spell’s range.\n\nWhen the spell ends, the target floats gently to the ground if it is still aloft.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -3915,6 +3957,7 @@
     "description": "You touch one object that is no larger than 10 feet in any dimension. Until the spell ends, the object sheds bright light in a 20-foot radius and dim light for an additional 20 feet. The light can be colored as you like. Completely covering the object with something opaque blocks the light. The spell ends if you cast it again or dismiss it as an action.\n\nIf you target an object held or worn by a hostile creature, that creature must succeed on a Dexterity saving throw to avoid the spell.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Sorcerer",
@@ -4039,6 +4082,7 @@
     "description": "You touch a creature. The target’s speed increases by 10 feet until the spell ends.",
     "higher_levels": "When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.",
     "classes": [
+      "Artificer",
       "Bard",
       "Druid",
       "Ranger",
@@ -4079,6 +4123,7 @@
     "description": "A spectral, floating hand appears at a point you choose within range.\nThe hand lasts for the duration or until you dismiss it as an action. The hand vanishes if it is ever more than 30 feet away from you or if you cast this spell again.\n\nYou can use your action to control the hand. You can use the hand to manipulate an object, open an unlocked door or container, stow or retrieve an item from an open container, or pour the contents out of a vial. You can move the hand up to 30 feet each time you use it.\n\nThe hand can’t attack, activate magical items, or carry more than 10 pounds.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
@@ -4158,6 +4203,7 @@
     "description": "You implant a message within an object in range, a message that is uttered when a trigger condition is met.\nChoose an object that you can see and that isn’t being worn or carried by another creature. Then speak the message, which must be 25 words or less, though it can be delivered over as long as 10 minutes. Finally, determine the circumstance that will trigger the spell to deliver your message.\n\nWhen that circumstance occurs, a magical mouth appears on the object and recites the message in your voice and at the same volume you spoke. If the object you chose has a mouth or something that looks like a mouth (for example, the mouth of a statue), the magical mouth appears there so that words appear to come from the object’s mouth. When you cast this spell, you can have the spell end after it delivers its message, or it can remain and repeats its message whenever the trigger occurs.\n\nThe triggering circumstance can be as general or as detailed as you like, though it must be based on visual or audible conditions that occur within 30 feet of the object. For example, you could instruct the mouth to speak when any creature moves within 30 feet of the object or when a silver bell rings within 30 feet of it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Wizard"
     ],
@@ -4349,6 +4395,7 @@
     "description": "This spell repairs a single break or tear in an object you touch, such as broken chain link, two halves of a broken key, a torn cloak, or a leaking wineskin.\nAs long as the break or tear is no larger than 1 foot in any dimension, you mend it, leaving no trace of the former damage.\n\nThis spell can physically repair a magic item or construct, but the spell can’t restore magic to such an object.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -4371,6 +4418,7 @@
     "description": "You point your finger toward a creature within range and whisper a message.\nThe target (and only the target) hears the message and can reply in a whisper that only you can hear.\n\nYou can cast this spell through solid objects if you are familiar with the target and know it is beyond the barrier. Magical silence, 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood blocks the spell. The spell doesn’t have to follow a straight line and can travel freely around corners or through openings.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -4566,6 +4614,7 @@
     "description": "You conjure a phantom watchdog in an unoccupied space that you can see within range, where it remains for the duration, until you dismiss it as an action, or until you move more than 100 feet away from it.\n\nThe hound is invisible to all creatures except you and can’t be harmed. When a Small or larger creature comes within 30 feet of it without first speaking the password that you specify when you cast this spell, the hound starts barking loudly. The hound sees invisible creatures and can see into the Ethereal Plane. It ignores illusions.\n\nAt the start of each of your turns, the hound attempts to bite one creature within 5 feet of it that is hostile to you. The hound’s attack bonus is equal to your spellcasting ability modifier + your proficiency bonus. On a hit, it deals 4d8 piercing damage.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -4603,6 +4652,7 @@
     "description": "You make an area within range magically secure.\nThe area is a cube that can be as small as 5 feet to as large as 100 feet on each side. The spell lasts for the duration or until you use an action to dismiss it.\n\nWhen you cast the spell, you decide what sort of security the spell provides, choosing any or all of the following properties:\n* Sound can’t pass through the barrier at the edge of the warded area.\n* The barrier of the warded area appears dark and foggy, preventing vision (including darkvision) through it.\n* Sensors created by divination spells can’t appear inside the protected area or pass through the barrier at its perimeter.\n* Creatures in the area can’t be targeted by divination spells.\n* Nothing can teleport into or out of the warded area.\n* Planar travel is blocked within the warded area.\n\nCasting this spell on the same spot every day for a year makes this effect permanent.",
     "higher_levels": "When you cast this spell using a spell slot of 5th level or higher, you can increase the size of the cube by 100 feet for each slot level beyond 4th. Thus you could protect a cube that can be up to 200 feet on one side by using a spell slot o f 5th level.",
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -4698,6 +4748,7 @@
     "description": "A frigid globe of cold energy streaks from your fingertips to a point of your choice within range, where it explodes in a 60-foot-radius sphere.\nEach creature within the area must make a Constitution saving throw. On a failed save, a creature takes 10d6 cold damage. On a successful save, it takes half as much damage.\n\nIf the globe strikes a body of water or a liquid that is principally water (not including water-based creatures), it freezes the liquid to a depth of 6 inches over an area 30 feet square. This ice lasts for 1 minute. Creatures that were swimming on the surface of frozen water are trapped in the ice. A trapped creature can use an action to make a Strength check against your spell save DC to break free.\n\nYou can refrain from firing the globe after completing the spell, if you wish. A small globe about the size of a sling stone, cool to the touch, appears in your hand. At any time, you or a creature you give the globe to can throw the globe (to a range of 40 feet) or hurl it with a sling (to the sling’s normal range). It shatters on impact, with the same effect as the normal casting of the spell. You can also set the globe down without shattering it. After 1 minute, if the globe hasn’t already shattered, it explodes.",
     "higher_levels": "When you cast this spell using a spell slot of 7th level or higher, the damage increases by 1d6 for each slot level above 6th",
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -4927,6 +4978,7 @@
     "description": "You extend your hand toward a creature you can see within range and project a puff of noxious gas from your palm. The creature must succeed on a Constitution saving throw or take 1d12 poison damage.",
     "higher_levels": "This spell’s damage increases by 1d12 when you reach 5th level (2d12), 11th level (3d12), 17th level (4d12).",
     "classes": [
+      "Artificer",
       "Druid",
       "Sorcerer",
       "Warlock",
@@ -5029,6 +5081,7 @@
     "description": "This spell is a minor magical trick that novice spellcasters use for practice. You create one of the following magical effects within range:\n -You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor.\n-You instantaneously light or snuff out a candle, a torch, or a small campfire.\n-You instantaneously clean or soil an object no larger than 1 cubic foot.\n-You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour.\n-You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour.\n-You create a nonmagical trinket or an illusory image that can fit in your hand and that lasts until the end of your next turn.\nIf you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time, and you can dismiss such an effect as an action.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
@@ -5143,6 +5196,7 @@
     "description": "For the duration, the willing creature you touch has resistance to one damage type of your choice: acid, cold, fire, lightning, or thunder.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid",
       "Ranger",
@@ -5186,6 +5240,7 @@
     "description": "You touch a creature. If it is poisoned, you neutralize the poison. If more than one poison afflicts the target, you neutralize one poison that you know is present, or you neutralize one at random.\n\nFor the duration, the target has advantage on saving throws against being poisoned, and it has resistance to poison damage.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid",
       "Paladin",
@@ -5207,6 +5262,7 @@
     "description": "All nonmagical food and drink within a 5-foot-radius sphere centered on a point of your choice within range is purified and rendered free of poison and disease.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid",
       "Paladin"
@@ -5235,7 +5291,7 @@
     "page": 270
   },
   {
-    "name": "Rary’s Telepathic Bond (Ritual)",
+    "name": "Rary’s Telepathic Bond",
     "level": 5,
     "casting_time": "1 Action",
     "range": "30 feet",
@@ -5284,6 +5340,7 @@
     "description": "A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.",
     "higher_levels": "The spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -5381,6 +5438,7 @@
     "description": "You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one saving throw of its choice. It can roll the die before or after the saving throw. The spell then ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid"
     ],
@@ -5439,6 +5497,7 @@
     "description": "You touch a creature that has died within the last minute. That creature returns to life with 1 hit point. This spell can’t return to life a creature that has died of old age, nor can it restore any missing body parts.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Paladin"
     ],
@@ -5458,6 +5517,7 @@
     "description": "You touch a length of rope that is up to 60 feet long. One end of the rope then rises into the air until the whole rope hangs perpendicular to the ground. At the upper end of the rope, an invisible entrance opens to an extradimensional space that lasts until the spell ends.\n\nThe extradimensional space can be reached by climbing to the top of the rope. The space can hold as many as eight Medium or smaller creatures. The rope can be pulled into the space, making the rope disappear from view outside the space.\n\nAttacks and spells can’t cross through the entrance into or out of the extradimensional space, but those inside can see out of it as if through a 3-foot-by-5-foot window centered on the rope.\n\nAnything inside the extradimensional space drops out when the spell ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Players Handbook",
@@ -5494,6 +5554,7 @@
     "description": "You ward a creature within range against attack.\nUntil the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn’t protect the warded creature from area effects, such as the explosion of a fireball.\n\nIf the warded creature makes an attack or casts a spell that affects an enemy creature, this spell ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric"
     ],
     "source": "Players Handbook",
@@ -5571,6 +5632,7 @@
     "description": "For the duration, you see invisible creatures and objects as if they were visible, and you can see into the Ethereal Plane. Ethereal creatures and objects appear ghostly and translucent.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -5745,6 +5807,7 @@
     "description": "Lightning springs from your hand to deliver a shock to a creature you try to touch.\nMake a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can’t take reactions until the start of its next turn.",
     "higher_levels": "The spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -5881,6 +5944,7 @@
     "description": "You touch a living creature that has 0 hit points. The creature becomes stable. This spell has no effect on undead or constructs.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric"
     ],
     "source": "Players Handbook",
@@ -5958,6 +6022,7 @@
     "description": "Until the spell ends, one willing creature you touch gains the ability to move up, down, and across vertical surfaces and upside down along ceilings, while leaving its hands free. The target also gains a climbing speed equal to its walking speed.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
@@ -6071,6 +6136,7 @@
     "description": "You touch a stone object of Medium size or smaller or a section of stone no more than 5 feet in any dimension and form it into any shape that suits your purpose. So, for example, you could shape a large rock into a weapon, idol, or coffer, or make a small passage through a wall, as long as the wall is less than 5 feet thick. You could also shape a stone door or its frame to seal the door shut. The object you create can have up to two hinges and a latch, but finer mechanical detail isn’t possible.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid",
       "Wizard"
@@ -6091,6 +6157,7 @@
     "description": "This spell turns the flesh of a willing creature you touch as hard as stone. Until the spell ends, the target has resistance to nonmagical bludgeoning, piercing, and slashing damage.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -6313,7 +6380,7 @@
     "page": 281
   },
   {
-    "name": "Tenser’s Floating Disk (Ritual)",
+    "name": "Tenser’s Floating Disk",
     "level": 1,
     "casting_time": "1 Action",
     "range": "30 feet",
@@ -6361,6 +6428,7 @@
     "description": "You create a long, vine-like whip covered in thorns that lashes out at your command toward a creature in range. Make a melee spell attack against the target. If the attack hits, the creature takes 1d6 piercing damage, and if the creature is Large or smaller, you pull the creature up to 10 feet closer to you.",
     "higher_levels": "This spell’s damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
     "classes": [
+      "Artificer",
       "Druid"
     ],
     "source": "Players Handbook",
@@ -6691,6 +6759,7 @@
     "description": "A nonmagical wall of solid stone springs into existence at a point you choose within range.\nThe wall is 6 inches thick and is composed of ten 10-foot-by-10-foot panels. Each panel must be contiguous with at least on other panel. Alternatively, you can create 10-foot-by-20-foot panels that are only 3 inches thick.\n\nIf the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (your choice). If a creature would be surrounded on all sides by the wall (or the wall and another solid surface), that creature can make a Dexterity saving throw. On a success, it can use its reaction to move up to its speed so that it is no longer enclosed by the wall.\n\nThe wall can have any shape you desire, though it can’t occupy the same space as a creature or object. the wall doesn’t need to be vertical or resting on any firm foundation. It must, however, merge with and be solidly supported by existing stone. Thus you can use this spell to bridge a chasm or create a ramp.\n\nIf you create a span greater than 20 feet in length, you must halve the size of each panel to create supports. You can crudely shape the wall to create crenellations, battlements, and so on.\n\nThe wall is an object made of stone that can be damaged and thus breached. Each panel has AC 15 and 30 hit points per inch of thickness. Reducing a panel to 0 hit points destroys it and might cause connected panels to collapse at the DM’s discretion.\n\nIf you maintain your concentration on this spell for its whole duration, the wall becomes permanent and can’t be dispelled. Otherwise, the wall disappears when the spell ends.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Sorcerer",
       "Wizard"
@@ -6747,6 +6816,7 @@
     "description": "This spell grants up to ten willing creatures you can see within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -6768,6 +6838,7 @@
     "description": "This spell grants the ability to move across any liquid surface – such as water, acid, mud, snow, quicksand, or lava – as if it were harmless solid ground (creatures crossing molten lava can still take damage from the heat).\nUp to ten willing creatures you can see within range gain this ability for the duration.\n\nIf you target a creature submerged in a liquid, the spell carries the target to the surface of the liquid at a rate of 60 feet per round.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Cleric",
       "Druid",
       "Ranger",
@@ -6789,6 +6860,7 @@
     "description": "You conjure a mass of thick, sticky webbing at a point of your choice within range.\nThe webs fill a 20-foot cube from that point for the duration. The webs are difficult terrain and lightly obscure their area.\n\nIf the webs aren’t anchored between two solid masses (such as walls or trees) or layered across a floor, wall, or ceiling, the conjured web collapses on itself, and the spell ends at the start of your next turn. Webs layered over a flat surface have a depth of 5 feet.\n\nEach creature that starts its turn in the webs or that enters them during its turn must make a Dexterity saving throw. On a failed save, the creature is restrained as long as it remains in the webs or until it breaks free.\n\nA creature restrained by the webs can use its action to make a Strength check against your spell save DC. If it succeeds, it is no longer restrained.\n\nThe webs are flammable. Any 5-foot cube of webs exposed to fire burns away in 1 round, dealing 2d4 fire damage to any creature that starts its turn in the fire.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -7013,6 +7085,7 @@
     "description": "The spell captures some of the incoming energy, lessening its effect on you and storing it for your next melee attack. You have resistance to the triggering damage type until the start of your next turn. Also, the first time you hit with a melee attack on your next turn, the target takes an extra 1d6 damage of the triggering type, and the spell ends.",
     "higher_levels": "When you cast this spell using a spell slot of 2nd level or higher, the extra damage increases by 1d6 for each slot level above 1st.",
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -7090,6 +7163,7 @@
     "description": "Choose one object weighing 1 to 5 pounds within range that isn’t being worn or carried. The object flies in a straight line up to 90 feet in a direction you choose before falling to the ground, stopping early if it impacts against a solid surface. If the object would strike a creature, that creature must make a Dexterity saving throw. On a failed save, the object strikes the target and stops moving. In either case, both the object and the creature or solid surface take 3d8 bludgeoning damage.",
     "higher_levels": "When you cast this spell using a spell slot of 2nd level or higher, the maximum weight of objects that you can target with this spell increases by 5 pounds, and the damage increases by 1d8, for each slot level above 1st.",
     "classes": [
+      "Artificer",
       "Sorcerer",
       "Wizard"
     ],
@@ -7109,6 +7183,7 @@
     "description": "You make a calming gesture, and up to three willing creatures of your choice that you can see within range fall unconscious for the spell’s duration. The spell ends on a target early if it takes damage or someone uses an action to shake or slap it awake. If a target remains unconscious for the full duration, that target gains the benefit of a short rest, and it can’t be affected by this spell again until it finishes a long rest.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, you can target one additional willing creature for each slot level above 3rd.",
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -7247,6 +7322,7 @@
     "description": "You create a bonfire on ground that you can see within range. Until the spell ends, the magic bonfire fills a 5-foot cube. Any creature in the bonfire’s space when you cast the spell must succeed on a Dexterity saving throw or take 1d8 fire damage. A creature must also make the saving throw when it moves into the bonfire’s space for the first time on a turn or ends its turn there.\nThe bonfire ignites flammable objects in its area that aren’t being worn or carried.\nThe spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Sorcerer",
       "Warlock",
@@ -7443,6 +7519,7 @@
     "description": "Choose one creature you can see within range, and choose one of the following damage types: acid, cold, fire, lightning, or thunder.\nThe target must succeed on a Constitution saving throw or be affected by the spell for its duration. The first time each turn the affected target takes damage of the chosen type, the target takes an extra 2d6 damage of that type. Moreover, the target loses any resistance to that damage type until the spell ends.",
     "higher_levels": "When you cast this spell using a spell slot of 5th level or higher, you can target one additional creature for each slot level above 4th. The creatures must be within 30 feet of each other when you target them.",
     "classes": [
+      "Artificer",
       "Druid",
       "Warlock",
       "Wizard"
@@ -7562,6 +7639,7 @@
     "description": "You touch a quiver containing arrows or bolts. When a target is hit by a ranged weapon attack using a piece of ammunition drawn from the quiver, the target takes an extra 1d6 fire damage. The spell’s magic ends on the piece of ammunition when it hits or misses, and the spell ends when twelve pieces of ammunition have been drawn from the quiver.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, the number of pieces of ammunition you can affect with this spell increases by two for each slot level above 3rd.",
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
@@ -7583,6 +7661,7 @@
     "description": "You cause numbing frost to form on one creature that you can see within range. The target must make a Constitution saving throw. On a failed save, the target takes 1d6 cold damage, and it has disadvantage on the next weapon attack roll it makes before the end of its next turn.\nThe spell’s damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Sorcerer",
       "Warlock",
@@ -7936,6 +8015,7 @@
     "description": "You touch one to three pebbles and imbue them with magic. You or someone else can make a ranged spell attack with one of the pebbles by throwing it or hurling it with a sling. If thrown, a pebble has a range of 60 feet. If someone else attacks with a pebble, that attacker adds your spellcasting ability modifier, not the attacker’s, to the attack roll. On a hit, the target takes bludgeoning damage equal to 1d6 + your spellcasting ability modifier. Whether the attack hits or misses, the spell then ends on the stone.\nIf you cast this spell again, the spell ends on any pebbles still affected by your previous casting.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Warlock"
     ],
@@ -8187,6 +8267,7 @@
     "description": "Choose an area of nonmagical flame that you can see and that fits within a 5-foot cube within range. You can extinguish the fire in that area, and you create either fireworks or smoke when you do so.\nFireworks. The target explodes with a dazzling display of colors. Each creature within 10 feet of the target must succeed on a Constitution saving throw or become blinded until the end of your next turn.\nSmoke. Thick black smoke spreads out from the target in a 20-foot radius, moving around corners. The area of the smoke is heavily obscured. The smoke persists for 1 minute or until a strong wind disperses it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -8305,6 +8386,7 @@
     "description": "Your magic deepens a creature’s understanding of its own talent. You touch one willing creature and give it expertise in one skill of your choice; until the spell ends, the creature doubles its proficiency bonus for ability checks it makes that use the chosen skill.\nYou must choose a skill in which the target is proficient and that isn’t already benefiting from an effect, such as Expertise, that doubles its proficiency bonus.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
@@ -8325,6 +8407,7 @@
     "description": "You cause up to ten words to form in a part of the sky you can see. The words appear to be made of cloud and remain in place for the spell’s duration. The words dissipate when the spell ends. A strong wind can disperse the clouds and end the spell early.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Druid",
       "Wizard"
@@ -8345,6 +8428,7 @@
     "description": "As you cast this spell, you use the rope to create a circle with a 5-foot radius on the ground or the floor. When you finish casting, the rope disappears and the circle becomes a magic trap.\nThis trap is nearly invisible, requiring a successful Intelligence (Investigation) check against your spell save DC to be discerned.\nThe trap triggers when a Small, Medium, or Large creature moves onto the ground or the floor in the spell’s radius. That creature must succeed on a Dexterity saving throw or be magically hoisted into the air, leaving it hanging upside down 3 feet above the ground or the floor. The creature is restrained there until the spell ends.\nA restrained creature can make a Dexterity saving throw at the end of each of its turns, ending the effect on itself on a success. Alternatively, the creature or someone else who can reach it can use an action to make an Intelligence (Arcana) check against your spell save DC. On a success, the restrained effect ends.\nAfter the trap is triggered, the spell ends when no creature is restrained by it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Ranger",
       "Wizard"
@@ -8536,6 +8620,7 @@
     "description": "You create a burst of thunderous sound, which can be heard 100 feet away.\nEach creature other than you within 5 feet of you must make a Constitution saving throw. On a failed save, the creature takes 1d6 thunder damage.\nThe spell’s damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Bard",
       "Druid",
       "Sorcerer",
@@ -8598,6 +8683,7 @@
     "description": "You touch one Tiny, nonmagical object that isn’t attached to another object or a surface and isn’t being carried by another creature. The target animates and sprouts little arms and legs, becoming a creature under your control until the spell ends or the creature drops to 0 hit points. See the stat block for its statistics.\nAs a bonus action, you can mentally command the creature if it is within 120 feet of you. (If you control multiple creatures with this spell, you can command any or all of them at the same time, issuing the same command to each one.) You decide what action the creature will take and where it will move during its next turn, or you can issue a simple, general command, such as to fetch a key, stand watch, or stack some books. If you issue no commands, the servant does nothing other than defend itself against hostile creatures. Once given an order, the servant continues to follow that order until its task is complete.\nWhen the creature drops to 0 hit points, it reverts to its original form, and any remaining damage carries over to that form.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, you can animate two additional objects for each slot level above 3rd.",
     "classes": [
+      "Artificer",
       "Wizard"
     ],
     "source": "Xanathar's Guide To Everything",
@@ -8636,6 +8722,7 @@
     "description": "You choose an area of stone or mud that you can see that fits within a 40-foot cube and is within range, and choose one of the following effects.\nTransmute Rock to Mud. Nonmagical rock of any sort in the area becomes an equal volume of thick, flowing mud that remains for the spell’s duration.\nThe ground in the spell’s area becomes muddy enough that creatures can sink into it. Each foot that a creature moves through the mud costs 4 feet of movement, and any creature on the ground when you cast the spell must make a Strength saving throw. A creature must also make the saving throw when it moves into the area for the first time on a turn or ends its turn there. On a failed save, a creature sinks into the mud and is restrained, though it can use an action to end the restrained condition on itself by pulling itself free of the mud.\nIf you cast the spell on a ceiling, the mud falls. Any creature under the mud when it falls must make a Dexterity saving throw. A creature takes 4d8 bludgeoning damage on a failed save, or half as much damage on a successful one.\nTransmute Mud to Rock. Nonmagical mud or quicksand in the area no more than 10 feet deep transforms into soft stone for the spell’s duration. Any creature in the mud when it transforms must make a Dexterity saving throw. On a successful save, a creature is shunted safely to the surface in an unoccupied space. On a failed save, a creature becomes restrained by the rock. A restrained creature, or another creature within reach, can use an action to try to break the rock by succeeding on a DC 20 Strength check or by dealing damage to it. The rock has AC 15 and 25 hit points, and it is immune to poison and psychic damage.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Druid",
       "Wizard"
     ],
@@ -8842,7 +8929,7 @@
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
     "components": "V, S",
-    "school": "conjuration",
+    "school": "Conjuration",
     "ritual": false,
     "conc": true,
     "description": "You create a blade-shaped planar rift about 3 feet long in an unoccupied space you can see within range. The blade lasts for the duration. When you cast this spell, you can make up to two melee spell attacks with the blade, each one against a creature, loose object, or structure within 5 feet of the blade. On a hit, the target takes 4d12 force damage. This attack scores a critical hit if the number on the d20 is 18 or higher. On a critical hit, the blade deals an extra 8d12 (for a total of 12d12 force damage).\n\tAs a bonus action on your turn, you can move the blade up to 30 feet to an unoccupied space you can see and then make up to two melee spell attacks with it again.\n\tThe blade can harmlessly pass through any barier, inculding a wall of force.",
@@ -8883,7 +8970,7 @@
     "range": "20 feet",
     "duration": "6 hours",
     "components": "V, S, M (a magic item or a willing creature from the destination world)",
-    "school": "conjuration",
+    "school": "Conjuration",
     "ritual": false,
     "conc": false,
     "description": "You and up to eight willing creatures within range fall unconscious for the spell's duration and experience visions of another world on the Material Plane, such as Oerth, Toril, Krynn, or Eberron. If the spell reaches its full duration, the visions conclude with each of you encountering and pulling back a mysterious blue curtain. The spell then ends with you mentally and physically transported to the world that was in the visions.\n\tTo cast this spell, you must have a magic item that originated on the world you wish to reach, and you must be aware of the world's existence, even if you don't know the world's name. Your destination in the other world is a safe location within 1 mile of where the magic item was created. Alternatively, you can cast the spell if one of the affected creatures was born on the other world, which causes your destination to be a safe location within 1 mile of where that creature was born.\n\tThe spell ends early on a creature if that creature takes any damage, and the creature isn't transported. IF you take any damage, the spell ends for you and all the other creatures, with none of you being transported.",
