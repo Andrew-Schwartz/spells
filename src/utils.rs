@@ -1,4 +1,3 @@
-use std::array::IntoIter;
 use std::fmt::Display;
 
 use iced::{Color, Column, Length, Row, Scrollable, Space};
@@ -108,14 +107,3 @@ pub trait IterExt: Iterator + Sized {
 }
 
 impl<I: Iterator + Sized> IterExt for I {}
-
-// todo remove in edition 2021
-pub trait ArrayIterTemp<T, const N: usize> {
-    fn array_iter(self) -> std::array::IntoIter<T, N>;
-}
-
-impl<T, const N: usize> ArrayIterTemp<T, N> for [T; N] {
-    fn array_iter(self) -> IntoIter<T, N> {
-        std::array::IntoIter::new(self)
-    }
-}

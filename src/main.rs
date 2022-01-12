@@ -35,8 +35,9 @@ use iced::window::Icon;
 use iced_aw::{ICON_FONT, TabLabel, Tabs};
 use iced_native::{Event, Subscription, window};
 use once_cell::sync::Lazy;
+use self_update::{cargo_crate_version, Status};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::Error;
+use serde::de::Error as _;
 
 use search::SearchPage;
 use utils::ListGrammaticallyExt;
@@ -95,7 +96,26 @@ const WIDTH: u32 = 1100;
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
+fn update() -> Result<Status, self_update::errors::Error> {
+    self_update::backends::github::Update::configure()
+        .repo_owner("Andrew-Schwartz")
+        .repo_name("spells")
+        .bin_name("spells")
+        .show_output(false)
+        // .show_download_progress(true)
+        .current_version(cargo_crate_version!())
+        .no_confirm(true)
+        .build()?
+        .update()
+}
+
 fn main() -> iced::Result {
+    let update_string = match update() {
+        Ok(Status::Updated(version)) => format!("Downloaded spells v{}. Restart program to get the update.", version),
+        Ok(Status::UpToDate(_)) => String::new(),
+        Err(err) => format!("Error updating program: {}", err),
+    };
+
     let icon = {
         const LOGO: &[u8] = include_bytes!("../resources/logo.png");
         const WIDTH: u32 = 1500;
@@ -116,11 +136,13 @@ fn main() -> iced::Result {
         default_font: Some(include_bytes!("../resources/arial.ttf")),
         default_text_size: 18,
         antialiasing: true,
+        flags: update_string,
         ..Default::default()
     })
 }
 
 struct DndSpells {
+    update_status: String,
     style: Style,
     // tabs: MyTabs,
     tab: Tab,
@@ -260,12 +282,13 @@ impl DndSpells {
         }
     }
 
-    fn open() -> anyhow::Result<Self> {
+    fn open(update_status: String) -> anyhow::Result<Self> {
         let custom_spells = Self::read_spells(&*SPELL_FILE)?;
         let characters = Self::read_characters(&*CHARACTER_FILE, &custom_spells)?;
         let closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &custom_spells)?;
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
+            update_status,
             style: Style::default(),
             tab: Tab::Search,
             width,
@@ -317,10 +340,10 @@ impl DndSpells {
 impl Application for DndSpells {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = ();
+    type Flags = String;
 
-    fn new(_: Self::Flags) -> (Self, Command<Message>) {
-        let window = Self::open().expect("failed to start");
+    fn new(update_status: Self::Flags) -> (Self, Command<Message>) {
+        let window = Self::open(update_status).expect("failed to start");
         (window, async { Message::Search(search::Message::Refresh) }.into())
     }
 
@@ -462,12 +485,12 @@ impl Application for DndSpells {
                                         spell.classes.push(class);
                                     }
                                 }
-                                Edit::Source(source) => spell.source = source,
-                                Edit::Page(page) => if page.is_empty() {
-                                    spell.page = None;
-                                } else if let Ok(page) = page.parse() {
-                                    spell.page = Some(page);
-                                },
+                                // Edit::Source(source) => spell.source = source,
+                                // Edit::Page(page) => if page.is_empty() {
+                                //     spell.page = None;
+                                // } else if let Ok(page) = page.parse() {
+                                //     spell.page = Some(page);
+                                // },
                             };
                             if let Some(saved_spell) = self.custom_spells.iter_mut().find(|s| s.name == spell.name) {
                                 *saved_spell = spell.clone();
@@ -661,15 +684,15 @@ impl Application for DndSpells {
                                 &mut self.settings_page.spell_name_state,
                             ];
                             if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
-                                states.extend(vec![
+                                states.extend([
                                     &mut spell.casting_time_extra_state,
                                     &mut spell.range_state,
                                     &mut spell.components_state,
                                     &mut spell.duration_state,
                                     &mut spell.description_state,
                                     &mut spell.higher_levels_state,
-                                    &mut spell.source_state,
-                                    &mut spell.page_state
+                                    // &mut spell.source_state,
+                                    // &mut spell.page_state
                                 ]);
                             }
                             for i in 0..states.len() {
@@ -838,6 +861,8 @@ impl Application for DndSpells {
 
         let bottom_bar = Container::new(Row::new()
             .spacing(2)
+            .push_space(Length::Fill)
+            .push(Text::new(&self.update_status).size(10))
             .push_space(Length::Fill)
             .push(col_slider_reset)
             .push(col_slider)
@@ -1093,6 +1118,55 @@ impl Serialize for CastingTime {
     }
 }
 
+#[derive(Eq, PartialEq, Clone, Copy, Hash, Debug, Ord, PartialOrd)]
+pub enum Source {
+    PlayersHandbook,
+    XanatharsGuideToEverything,
+    TashasCauldronOfEverything,
+    Custom,
+}
+
+impl Display for Source {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(Self::STRINGS[*self as usize])
+    }
+}
+
+impl Source {
+    const ALL: [Self; 4] = [
+        Self::PlayersHandbook,
+        Self::XanatharsGuideToEverything,
+        Self::TashasCauldronOfEverything,
+        Self::Custom,
+    ];
+
+    const STRINGS: [&'static str; 4] = [
+        "Player's Handbook",
+        "Xanathar's Guide to Everything",
+        "Tasha's Cauldron of Everything",
+        "Custom",
+    ];
+}
+
+impl<'de> Deserialize<'de> for Source {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let str = <&'de str>::deserialize(d)?;
+        match str {
+            "Player's Handbook" => Ok(Self::PlayersHandbook),
+            "Xanathar's Guide to Everything" => Ok(Self::XanatharsGuideToEverything),
+            "Tasha's Cauldron of Everything" => Ok(Self::TashasCauldronOfEverything),
+            "Custom" => Ok(Self::Custom),
+            _ => Err(D::Error::unknown_variant(str, &Self::STRINGS)),
+        }
+    }
+}
+
+impl Serialize for Source {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        Self::STRINGS[*self as usize].serialize(s)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(try_from = "DeserializeSpell")]
 pub struct Spell {
@@ -1114,7 +1188,7 @@ pub struct Spell {
     #[serde(skip_serializing)]
     higher_levels_lower: Option<&'static str>,
     classes: &'static [Class],
-    source: &'static str,
+    source: Source,
     page: u32,
 }
 
@@ -1132,7 +1206,7 @@ struct DeserializeSpell {
     description: String,
     higher_levels: Option<String>,
     classes: Vec<Class>,
-    source: &'static str,
+    source: Source,
     page: u32,
 }
 
@@ -1236,9 +1310,6 @@ pub struct CustomSpell {
     classes: Vec<Class>,
     #[serde(skip)]
     pub classes_state: pick_list::State<PLOption<Class>>,
-    source: String,
-    #[serde(skip)]
-    pub source_state: text_input::State,
     page: Option<u32>,
     #[serde(skip)]
     pub page_state: text_input::State,
@@ -1281,8 +1352,6 @@ impl CustomSpell {
             higher_levels_state: Default::default(),
             classes: Vec::new(),
             classes_state: Default::default(),
-            source: String::new(),
-            source_state: Default::default(),
             page: None,
             page_state: Default::default(),
         }
@@ -1352,14 +1421,15 @@ impl CustomSpell {
 
             #[allow(clippy::if_not_else)]
                 let about = format!(
-                "A {}{}spell{}{}{}{}{}",
+                // "A {}{}spell{}{}{}{}{}",
+                "A {}{}spell",
                 classes,
                 if !classes.is_empty() { " " } else { "" },
-                if !classes.is_empty() && (!self.source.is_empty() || self.page.is_some()) { "," } else { "" },
-                self.source,
-                if !self.source.is_empty() || self.page.is_some() { " from " } else { "" },
-                if !self.source.is_empty() { " " } else { "" },
-                self.page.map(|p| p.to_string()).as_deref().unwrap_or("")
+                // if !classes.is_empty() && (!self.source.is_empty() || self.page.is_some()) { "," } else { "" },
+                // self.source,
+                // if !self.source.is_empty() || self.page.is_some() { " from " } else { "" },
+                // if !self.source.is_empty() { " " } else { "" },
+                // self.page.map(|p| p.to_string()).as_deref().unwrap_or("")
             );
             if about != "A spell" {
                 column = column
@@ -1438,9 +1508,12 @@ impl Spell {
                     .push(text(higher));
             }
             let classes = self.classes.iter().list_grammatically();
+            let an_grammar = classes.chars().next()
+                .filter(|c| *c == 'A')
+                .map_or('\0', |_| 'n');
             column = column
                 .push(Rule::horizontal(8))
-                .push(text(format!("A {} spell, from {} page {}", classes, self.source, self.page)));
+                .push(text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page)));
         }
         Container::new(column)
     }
@@ -1612,6 +1685,14 @@ impl StaticCustomSpell {
         match self {
             Self::Static(spell) => &spell.casting_time,
             Self::Custom(spell) => &spell.casting_time,
+        }
+    }
+
+    #[must_use]
+    pub fn source(&self) -> Source {
+        match self {
+            Self::Static(spell) => spell.source,
+            Self::Custom(_) => Source::Custom,
         }
     }
 

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{CustomSpell, find_spell, SpellButtons, SpellId, StArc, StaticCustomSpell};
 use crate::search::{Mode, SearchOptions};
 use crate::style::Style;
-use crate::utils::{ArrayIterTemp, SpacingExt};
+use crate::utils::SpacingExt;
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveSpell {
@@ -256,6 +256,7 @@ impl CharacterPage {
                         // self.spells = self.search.search(custom, characters);
                     }
                     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
+                    Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
                 }
                 false
             }
@@ -266,7 +267,7 @@ impl CharacterPage {
                 self.search.school_search = None;
                 self.search.ritual_search = None;
                 self.search.text_search = None;
-                // self.spells = self.search.search(custom, characters);
+                self.search.source_search = None;
                 false
             }
         }
@@ -486,7 +487,7 @@ impl<'a> SpellButtons<'a> for CharacterPageButtons<'a> {
             (Some(self.remove), Icon::Trash, Message::RemoveSpell(id.clone())),
             (self.down, Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
             (self.right, Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
-        ].array_iter()
+        ].into_iter()
             .fold(Row::new().spacing(2), |row, (state, icon, msg)|
                 if let Some(state) = state {
                     row.push(Button::new(state, Text::new(icon).size(12).font(ICON_FONT))

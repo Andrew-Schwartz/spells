@@ -38,8 +38,8 @@ pub enum Edit {
     // DescEnter,
     HigherLevels(String),
     Class(PLOption<Class>),
-    Source(String),
-    Page(String),
+    // Source(String),
+    // Page(String),
 }
 
 pub struct ClosedCharacter {
@@ -98,11 +98,11 @@ pub enum SpellEditor {
 
 impl SpellEditor {
     pub fn searching(needle: &str, spells: &[CustomSpell]) -> Self {
-        use levenshtein::levenshtein;
         let spells = spells.iter()
             .map(|spell| (&spell.name_lower, spell))
             .filter(|(name, _)| name.contains(&needle))
-            .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
+            .sorted_unstable_by_key(|&(name, _)| name)
+            // .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
             .map(|(_, spell)| spell)
             .take(20)
             .map(|spell| (spell.clone(), Default::default(), Default::default(), Default::default()))
@@ -409,19 +409,12 @@ impl SettingsPage {
                     edit_message(Edit::Class),
                 ).style(style);
 
-                let source = TextInput::new(
-                    &mut spell.source_state,
-                    "Player's Handbook",
-                    &spell.source,
-                    edit_message(Edit::Source),
-                ).style(style);
-
-                let page = TextInput::new(
-                    &mut spell.page_state,
-                    "278",
-                    &spell.page.map_or_else(String::new, |p| p.to_string()),
-                    edit_message(Edit::Page),
-                ).style(style);
+                // let page = TextInput::new(
+                //     &mut spell.page_state,
+                //     "278",
+                //     &spell.page.map_or_else(String::new, |p| p.to_string()),
+                //     edit_message(Edit::Page),
+                // ).style(style);
 
                 let column = Column::new()
                     .spacing(3)
@@ -446,10 +439,10 @@ impl SettingsPage {
                     .push(Rule::horizontal(8))
                     .push(row("Classes:", classes))
                     .push(row("", Text::new(spell.classes.iter().list_grammatically()).size(16)))
-                    .push(Rule::horizontal(8))
-                    .push(row("Source:", source))
-                    .push(row("Page:", page))
-                ;
+                    // .push(Rule::horizontal(8))
+                    // .push(row("Source:", source))
+                    // .push(row("Page:", page))
+                    ;
                 spells_col.push(column)
             }
         };

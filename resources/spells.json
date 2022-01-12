@@ -16,7 +16,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 211
   },
   {
@@ -36,7 +36,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 211
   },
   {
@@ -56,7 +56,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 211
   },
   {
@@ -76,7 +76,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 211
   },
   {
@@ -96,7 +96,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 212
   },
   {
@@ -116,7 +116,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 212
   },
   {
@@ -134,7 +134,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 212
   },
   {
@@ -153,7 +153,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 212
   },
   {
@@ -174,7 +174,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 213
   },
   {
@@ -192,7 +192,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 213
   },
   {
@@ -211,7 +211,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 213
   },
   {
@@ -230,7 +230,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 214
   },
   {
@@ -249,7 +249,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 214
   },
   {
@@ -269,7 +269,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 214
   },
   {
@@ -288,7 +288,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 215
   },
   {
@@ -306,7 +306,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 215
   },
   {
@@ -324,7 +324,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 215
   },
   {
@@ -344,7 +344,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 215
   },
   {
@@ -362,7 +362,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 215
   },
   {
@@ -380,7 +380,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -398,7 +398,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -416,7 +416,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -435,7 +435,7 @@
       "Bard",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -454,7 +454,7 @@
       "Bard",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -472,7 +472,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 216
   },
   {
@@ -494,7 +494,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 217
   },
   {
@@ -513,7 +513,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 217
   },
   {
@@ -531,7 +531,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 217
   },
   {
@@ -550,7 +550,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 217
   },
   {
@@ -570,7 +570,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 218
   },
   {
@@ -589,7 +589,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 218
   },
   {
@@ -607,7 +607,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 218
   },
   {
@@ -628,7 +628,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 218
   },
   {
@@ -647,7 +647,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -668,7 +668,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -686,7 +686,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -707,7 +707,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -727,7 +727,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -747,7 +747,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -765,7 +765,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 219
   },
   {
@@ -784,7 +784,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 220
   },
   {
@@ -802,7 +802,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 220
   },
   {
@@ -821,7 +821,7 @@
       "Bard",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -840,7 +840,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -862,7 +862,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -882,7 +882,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -901,7 +901,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -921,7 +921,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -939,7 +939,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 221
   },
   {
@@ -960,7 +960,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 222
   },
   {
@@ -978,7 +978,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 222
   },
   {
@@ -999,7 +999,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 222
   },
   {
@@ -1018,7 +1018,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 222
   },
   {
@@ -1037,7 +1037,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 222
   },
   {
@@ -1056,7 +1056,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 223
   },
   {
@@ -1074,7 +1074,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 223
   },
   {
@@ -1093,7 +1093,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1111,7 +1111,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1132,7 +1132,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1150,7 +1150,7 @@
     "classes": [
       "Bard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1169,7 +1169,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1190,7 +1190,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 224
   },
   {
@@ -1209,7 +1209,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 225
   },
   {
@@ -1227,7 +1227,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 225
   },
   {
@@ -1245,7 +1245,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 225
   },
   {
@@ -1264,7 +1264,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 225
   },
   {
@@ -1283,7 +1283,7 @@
       "Druid",
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 226
   },
   {
@@ -1302,7 +1302,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 226
   },
   {
@@ -1320,7 +1320,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 226
   },
   {
@@ -1339,7 +1339,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 226
   },
   {
@@ -1358,7 +1358,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 226
   },
   {
@@ -1377,7 +1377,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 227
   },
   {
@@ -1395,7 +1395,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 227
   },
   {
@@ -1415,7 +1415,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 227
   },
   {
@@ -1435,7 +1435,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 227
   },
   {
@@ -1455,7 +1455,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 228
   },
   {
@@ -1473,7 +1473,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 228
   },
   {
@@ -1493,7 +1493,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 228
   },
   {
@@ -1513,7 +1513,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 229
   },
   {
@@ -1532,7 +1532,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 229
   },
   {
@@ -1552,7 +1552,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 229
   },
   {
@@ -1572,7 +1572,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 229
   },
   {
@@ -1593,7 +1593,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 229
   },
   {
@@ -1611,7 +1611,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1634,7 +1634,7 @@
       "Paladin",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1655,7 +1655,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1675,7 +1675,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1697,7 +1697,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1719,7 +1719,7 @@
       "Ranger",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1738,7 +1738,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1757,7 +1757,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 230
   },
   {
@@ -1776,7 +1776,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1794,7 +1794,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1813,7 +1813,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1838,7 +1838,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1859,7 +1859,7 @@
       "Paladin",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1879,7 +1879,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 231
   },
   {
@@ -1900,7 +1900,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 233
   },
   {
@@ -1921,7 +1921,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 233
   },
   {
@@ -1940,7 +1940,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 233
   },
   {
@@ -1959,7 +1959,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 233
   },
   {
@@ -1984,7 +1984,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2002,7 +2002,7 @@
     "classes": [
       "Bard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2020,7 +2020,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2038,7 +2038,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2056,7 +2056,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2075,7 +2075,7 @@
       "Druid",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 234
   },
   {
@@ -2096,7 +2096,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 235
   },
   {
@@ -2116,7 +2116,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 235
   },
   {
@@ -2134,7 +2134,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 235
   },
   {
@@ -2154,7 +2154,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 236
   },
   {
@@ -2172,7 +2172,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 236
   },
   {
@@ -2192,7 +2192,7 @@
       "Druid",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 236
   },
   {
@@ -2210,7 +2210,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 237
   },
   {
@@ -2229,7 +2229,7 @@
       "Artificer",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 237
   },
   {
@@ -2251,7 +2251,7 @@
       "Druid",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 237
   },
   {
@@ -2271,7 +2271,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 237
   },
   {
@@ -2289,7 +2289,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 237
   },
   {
@@ -2307,7 +2307,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2326,7 +2326,7 @@
       "Bard",
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2348,7 +2348,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2366,7 +2366,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2387,7 +2387,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2408,7 +2408,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 238
   },
   {
@@ -2427,7 +2427,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2447,7 +2447,7 @@
       "Bard",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2467,7 +2467,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2488,7 +2488,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2509,7 +2509,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2530,7 +2530,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 239
   },
   {
@@ -2551,7 +2551,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 240
   },
   {
@@ -2569,7 +2569,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 240
   },
   {
@@ -2587,7 +2587,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 240
   },
   {
@@ -2607,7 +2607,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 240
   },
   {
@@ -2627,7 +2627,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2647,7 +2647,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2667,7 +2667,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2685,7 +2685,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2705,7 +2705,7 @@
       "Druid",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2724,7 +2724,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 241
   },
   {
@@ -2742,7 +2742,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 242
   },
   {
@@ -2760,7 +2760,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 242
   },
   {
@@ -2779,7 +2779,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 242
   },
   {
@@ -2798,7 +2798,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 243
   },
   {
@@ -2819,7 +2819,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 243
   },
   {
@@ -2840,7 +2840,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 243
   },
   {
@@ -2858,7 +2858,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 243
   },
   {
@@ -2878,7 +2878,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 243
   },
   {
@@ -2899,7 +2899,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 244
   },
   {
@@ -2921,7 +2921,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 244
   },
   {
@@ -2942,7 +2942,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 244
   },
   {
@@ -2962,7 +2962,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 244
   },
   {
@@ -2982,7 +2982,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 244
   },
   {
@@ -3004,7 +3004,7 @@
       "Paladin",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3023,7 +3023,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3041,7 +3041,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3060,7 +3060,7 @@
       "Bard",
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3079,7 +3079,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3100,7 +3100,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 245
   },
   {
@@ -3119,7 +3119,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3138,7 +3138,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3157,7 +3157,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3177,7 +3177,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3198,7 +3198,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3216,7 +3216,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 246
   },
   {
@@ -3235,7 +3235,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 248
   },
   {
@@ -3255,7 +3255,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 248
   },
   {
@@ -3273,7 +3273,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 248
   },
   {
@@ -3293,7 +3293,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 248
   },
   {
@@ -3311,7 +3311,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 249
   },
   {
@@ -3329,7 +3329,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 249
   },
   {
@@ -3350,7 +3350,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 249
   },
   {
@@ -3368,7 +3368,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 249
   },
   {
@@ -3388,7 +3388,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3407,7 +3407,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3427,7 +3427,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3447,7 +3447,7 @@
       "Bard",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3465,7 +3465,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3484,7 +3484,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3503,7 +3503,7 @@
       "Bard",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 250
   },
   {
@@ -3521,7 +3521,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3542,7 +3542,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3565,7 +3565,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3583,7 +3583,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3601,7 +3601,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3619,7 +3619,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 251
   },
   {
@@ -3640,7 +3640,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 252
   },
   {
@@ -3660,7 +3660,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 252
   },
   {
@@ -3680,7 +3680,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 252
   },
   {
@@ -3700,7 +3700,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 252
   },
   {
@@ -3719,7 +3719,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 252
   },
   {
@@ -3738,7 +3738,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 253
   },
   {
@@ -3756,7 +3756,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 253
   },
   {
@@ -3776,7 +3776,7 @@
       "Druid",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3798,7 +3798,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3820,7 +3820,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3840,7 +3840,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3860,7 +3860,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3879,7 +3879,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 254
   },
   {
@@ -3898,7 +3898,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -3921,7 +3921,7 @@
       "Paladin",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -3941,7 +3941,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -3963,7 +3963,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -3981,7 +3981,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -4000,7 +4000,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 255
   },
   {
@@ -4020,7 +4020,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4043,7 +4043,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4066,7 +4066,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4088,7 +4088,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4107,7 +4107,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4129,7 +4129,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4150,7 +4150,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 256
   },
   {
@@ -4168,7 +4168,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 257
   },
   {
@@ -4187,7 +4187,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 257
   },
   {
@@ -4207,7 +4207,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 257
   },
   {
@@ -4223,10 +4223,11 @@
     "description": "You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls.",
     "higher_levels": "When you cast this spell using a spell slot of 4th level or higher, the bonus increases to +2.\nWhen you use a spell slot of 6th level or higher, the bonus increases to +3.",
     "classes": [
+      "Artificer",
       "Paladin",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 257
   },
   {
@@ -4247,7 +4248,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4267,7 +4268,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4285,7 +4286,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4303,7 +4304,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4324,7 +4325,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4342,7 +4343,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 258
   },
   {
@@ -4361,7 +4362,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4379,7 +4380,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4402,7 +4403,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4423,7 +4424,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4442,7 +4443,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4461,7 +4462,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 259
   },
   {
@@ -4482,7 +4483,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 260
   },
   {
@@ -4502,7 +4503,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 260
   },
   {
@@ -4522,7 +4523,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 260
   },
   {
@@ -4541,7 +4542,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 260
   },
   {
@@ -4561,7 +4562,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 260
   },
   {
@@ -4580,7 +4581,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 261
   },
   {
@@ -4598,7 +4599,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 261
   },
   {
@@ -4617,7 +4618,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 261
   },
   {
@@ -4636,7 +4637,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 261
   },
   {
@@ -4655,7 +4656,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 262
   },
   {
@@ -4674,7 +4675,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 262
   },
   {
@@ -4694,7 +4695,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 263
   },
   {
@@ -4714,7 +4715,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 263
   },
   {
@@ -4732,7 +4733,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 263
   },
   {
@@ -4748,10 +4749,9 @@
     "description": "A frigid globe of cold energy streaks from your fingertips to a point of your choice within range, where it explodes in a 60-foot-radius sphere.\nEach creature within the area must make a Constitution saving throw. On a failed save, a creature takes 10d6 cold damage. On a successful save, it takes half as much damage.\n\nIf the globe strikes a body of water or a liquid that is principally water (not including water-based creatures), it freezes the liquid to a depth of 6 inches over an area 30 feet square. This ice lasts for 1 minute. Creatures that were swimming on the surface of frozen water are trapped in the ice. A trapped creature can use an action to make a Strength check against your spell save DC to break free.\n\nYou can refrain from firing the globe after completing the spell, if you wish. A small globe about the size of a sling stone, cool to the touch, appears in your hand. At any time, you or a creature you give the globe to can throw the globe (to a range of 40 feet) or hurl it with a sling (to the sling’s normal range). It shatters on impact, with the same effect as the normal casting of the spell. You can also set the globe down without shattering it. After 1 minute, if the globe hasn’t already shattered, it explodes.",
     "higher_levels": "When you cast this spell using a spell slot of 7th level or higher, the damage increases by 1d6 for each slot level above 6th",
     "classes": [
-      "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 263
   },
   {
@@ -4767,9 +4767,10 @@
     "description": "A sphere of shimmering force encloses a creature or object of Large size or smaller within range. An unwilling creature must make a Dexterity saving throw. On a failed save, the creature is enclosed for the duration.\n\nNothing---not physical objects, energy, or other spell effects---can pass through the barrier, in or out, though a creature in the sphere can breathe there. The sphere is immune to all damage, and a creature or object inside can’t be damaged by attacks or effects originating from outside, nor can a creature inside the sphere damage anything outside it.\n\nThe sphere is weightless and just large enough to contain the creature or object inside. An enclosed creature can use its action to push against the sphere’s walls and thus roll the sphere at up to half the creature’s speed. Similarly, the globe can be picked up and moved by other creatures.\n\nA disintegrate spell targeting the globe destroys it without harming anything inside it.",
     "higher_levels": null,
     "classes": [
+      "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 264
   },
   {
@@ -4788,7 +4789,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 264
   },
   {
@@ -4807,7 +4808,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 264
   },
   {
@@ -4825,7 +4826,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 264
   },
   {
@@ -4845,7 +4846,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 264
   },
   {
@@ -4859,11 +4860,11 @@
     "ritual": false,
     "conc": true,
     "description": "You tap into the nightmares of a creature you can see within range and create an illusory manifestation of its deepest fears, visible only to that creature.\nThe target must make a Wisdom saving throw. On a failed save, the target becomes frightened for the duration. At the end of each of the target’s turns before the spell ends, the target must succeed on a Wisdom saving throw or take 4d10 psychic damage. On a successful save, the spell ends.",
-    "higher_levels": "When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d1O for each slot level above 4th.",
+    "higher_levels": "When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d10 for each slot level above 4th.",
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 265
   },
   {
@@ -4881,7 +4882,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 265
   },
   {
@@ -4899,7 +4900,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 265
   },
   {
@@ -4920,7 +4921,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 265
   },
   {
@@ -4942,7 +4943,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -4962,7 +4963,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -4984,7 +4985,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -5005,7 +5006,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -5026,7 +5027,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -5047,7 +5048,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 267
   },
   {
@@ -5065,7 +5066,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 267
   },
   {
@@ -5087,7 +5088,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 267
   },
   {
@@ -5106,7 +5107,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 267
   },
   {
@@ -5124,7 +5125,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 267
   },
   {
@@ -5142,7 +5143,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 269
   },
   {
@@ -5161,7 +5162,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 269
   },
   {
@@ -5180,7 +5181,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5203,7 +5204,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5224,7 +5225,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5246,7 +5247,7 @@
       "Paladin",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5267,7 +5268,7 @@
       "Druid",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5287,7 +5288,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5305,7 +5306,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 270
   },
   {
@@ -5324,7 +5325,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5344,7 +5345,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5363,7 +5364,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5383,7 +5384,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5401,7 +5402,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5422,7 +5423,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 271
   },
   {
@@ -5442,7 +5443,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5461,7 +5462,7 @@
       "Bard",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5481,7 +5482,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5501,7 +5502,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5520,7 +5521,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5538,7 +5539,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5557,7 +5558,7 @@
       "Artificer",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 272
   },
   {
@@ -5576,7 +5577,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 273
   },
   {
@@ -5598,7 +5599,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 273
   },
   {
@@ -5616,7 +5617,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5637,7 +5638,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5657,7 +5658,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5677,7 +5678,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5695,7 +5696,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5714,7 +5715,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 274
   },
   {
@@ -5735,7 +5736,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5754,7 +5755,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5773,7 +5774,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5791,7 +5792,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5811,7 +5812,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5831,7 +5832,7 @@
       "Cleric",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 275
   },
   {
@@ -5851,7 +5852,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 276
   },
   {
@@ -5869,7 +5870,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 276
   },
   {
@@ -5889,7 +5890,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 276
   },
   {
@@ -5909,7 +5910,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 276
   },
   {
@@ -5928,7 +5929,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -5947,7 +5948,7 @@
       "Artificer",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -5967,7 +5968,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -5986,7 +5987,7 @@
       "Bard",
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -6006,7 +6007,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -6027,7 +6028,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -6046,7 +6047,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 277
   },
   {
@@ -6064,7 +6065,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6082,7 +6083,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6100,7 +6101,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6120,7 +6121,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6141,7 +6142,7 @@
       "Druid",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6163,7 +6164,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 278
   },
   {
@@ -6181,7 +6182,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 279
   },
   {
@@ -6202,7 +6203,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 279
   },
   {
@@ -6222,7 +6223,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 279
   },
   {
@@ -6242,7 +6243,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 279
   },
   {
@@ -6260,7 +6261,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 279
   },
   {
@@ -6280,7 +6281,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 280
   },
   {
@@ -6299,7 +6300,7 @@
       "Bard",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 280
   },
   {
@@ -6318,7 +6319,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 280
   },
   {
@@ -6336,7 +6337,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 281
   },
   {
@@ -6356,7 +6357,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 281
   },
   {
@@ -6376,7 +6377,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 281
   },
   {
@@ -6394,7 +6395,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 282
   },
   {
@@ -6412,7 +6413,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 282
   },
   {
@@ -6431,7 +6432,7 @@
       "Artificer",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 282
   },
   {
@@ -6449,7 +6450,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 282
   },
   {
@@ -6470,7 +6471,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 282
   },
   {
@@ -6489,7 +6490,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 283
   },
   {
@@ -6511,7 +6512,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 283
   },
   {
@@ -6529,7 +6530,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 283
   },
   {
@@ -6548,7 +6549,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 283
   },
   {
@@ -6568,7 +6569,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 283
   },
   {
@@ -6587,7 +6588,7 @@
       "Cleric",
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 284
   },
   {
@@ -6609,7 +6610,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 284
   },
   {
@@ -6630,7 +6631,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 284
   },
   {
@@ -6648,7 +6649,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 284
   },
   {
@@ -6668,7 +6669,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 284
   },
   {
@@ -6687,7 +6688,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 285
   },
   {
@@ -6707,7 +6708,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 285
   },
   {
@@ -6725,7 +6726,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 285
   },
   {
@@ -6743,7 +6744,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 285
   },
   {
@@ -6764,7 +6765,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6782,7 +6783,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6800,7 +6801,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6822,7 +6823,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6844,7 +6845,7 @@
       "Ranger",
       "Sorcerer"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6864,7 +6865,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 287
   },
   {
@@ -6882,7 +6883,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 288
   },
   {
@@ -6900,7 +6901,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 288
   },
   {
@@ -6919,7 +6920,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 288
   },
   {
@@ -6938,7 +6939,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 288
   },
   {
@@ -6958,7 +6959,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 289
   },
   {
@@ -6976,7 +6977,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 289
   },
   {
@@ -6994,7 +6995,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 289
   },
   {
@@ -7014,7 +7015,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 289
   },
   {
@@ -7032,7 +7033,7 @@
     "classes": [
       "Bard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 266
   },
   {
@@ -7050,7 +7051,7 @@
     "classes": [
       "Bard"
     ],
-    "source": "Players Handbook",
+    "source": "Player's Handbook",
     "page": 285
   },
   {
@@ -7188,7 +7189,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 151
   },
   {
@@ -7207,7 +7208,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 151
   },
   {
@@ -7226,7 +7227,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 151
   },
   {
@@ -7244,7 +7245,7 @@
     "classes": [
       "Sorcerer"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 151
   },
   {
@@ -7266,7 +7267,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 151
   },
   {
@@ -7346,7 +7347,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 152
   },
   {
@@ -7366,7 +7367,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 152
   },
   {
@@ -7385,7 +7386,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 153
   },
   {
@@ -7404,7 +7405,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 153
   },
   {
@@ -7423,7 +7424,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 154
   },
   {
@@ -7441,7 +7442,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 154
   },
   {
@@ -7545,7 +7546,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 155
   },
   {
@@ -7565,7 +7566,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 155
   },
   {
@@ -7605,7 +7606,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 155
   },
   {
@@ -7623,7 +7624,7 @@
     "classes": [
       "Paladin"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 156
   },
   {
@@ -7686,7 +7687,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 157
   },
   {
@@ -7725,7 +7726,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 157
   },
   {
@@ -7744,7 +7745,7 @@
       "Cleric",
       "Paladin"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 157
   },
   {
@@ -7782,7 +7783,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 157
   },
   {
@@ -7820,7 +7821,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 158
   },
   {
@@ -7841,7 +7842,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 158
   },
   {
@@ -7943,7 +7944,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 160
   },
   {
@@ -7962,7 +7963,7 @@
       "Cleric",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 160
   },
   {
@@ -7981,7 +7982,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 160
   },
   {
@@ -8039,7 +8040,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 160
   },
   {
@@ -8097,7 +8098,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 161
   },
   {
@@ -8115,7 +8116,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 161
   },
   {
@@ -8135,7 +8136,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 162
   },
   {
@@ -8174,7 +8175,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 163
   },
   {
@@ -8194,7 +8195,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 163
   },
   {
@@ -8212,7 +8213,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 163
   },
   {
@@ -8230,7 +8231,7 @@
     "classes": [
       "Druid"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 163
   },
   {
@@ -8251,7 +8252,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 163
   },
   {
@@ -8292,7 +8293,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 164
   },
   {
@@ -8312,7 +8313,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 164
   },
   {
@@ -8330,7 +8331,7 @@
     "classes": [
       "Warlock"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 164
   },
   {
@@ -8370,7 +8371,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 164
   },
   {
@@ -8391,7 +8392,7 @@
       "Sorcerer",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 165
   },
   {
@@ -8433,7 +8434,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 165
   },
   {
@@ -8471,7 +8472,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 165
   },
   {
@@ -8490,7 +8491,7 @@
       "Ranger",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 166
   },
   {
@@ -8528,7 +8529,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 166
   },
   {
@@ -8547,7 +8548,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 167
   },
   {
@@ -8568,7 +8569,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 167
   },
   {
@@ -8586,7 +8587,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 167
   },
   {
@@ -8604,7 +8605,7 @@
     "classes": [
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 168
   },
   {
@@ -8647,7 +8648,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 168
   },
   {
@@ -8686,7 +8687,7 @@
       "Artificer",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 168
   },
   {
@@ -8706,7 +8707,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 169
   },
   {
@@ -8765,7 +8766,7 @@
       "Warlock",
       "Wizard"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 170
   },
   {
@@ -8882,7 +8883,7 @@
     "classes": [
       "Cleric"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 171
   },
   {
@@ -8901,7 +8902,7 @@
       "Druid",
       "Ranger"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 171
   },
   {
@@ -8919,7 +8920,7 @@
     "classes": [
       "Ranger"
     ],
-    "source": "Xanathar's Guide To Everything",
+    "source": "Xanathar's Guide to Everything",
     "page": 171
   },
   {
@@ -9061,7 +9062,6 @@
     "description": "You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.",
     "higher_levels": "This spell's damage increases by 1d6 when you reach certain levels: 5th level (2d6), 11th level (3d6), and 17th level (4d6).",
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
@@ -9228,7 +9228,7 @@
   },
   {
     "name": "Summon Shadowspawn",
-    "level": 6,
+    "level": 3,
     "casting_time": "1 Action",
     "range": "90 feet",
     "duration": "Concentration, up to 1 hour",
@@ -9334,7 +9334,7 @@
     "school": "Transmutation",
     "ritual": false,
     "conc": true,
-    "description": "Uttering an incantation, you draw on the magic of the Lower Planes or Upper Planes (your choice) to transform yourself. You gain the following benefits until the spell ends:\n* You are immune to fire and poison damage (Lower Planes) or radiant and necrotic damage(Upper Planes).\n* You are immune to the poisoned condition (Lower Planes) or the charmed condition (Upper Planes).\n* Spectral wings appear on your back, giving you a flying speed of 40 feet.\n* you have a +2 bonus to AC.\n* All your weapon attacks are magical, and when you make a weapon attack you can use your spellcasting ability modifier, instead of Strength or Dexterity, for the attack or damage rolls.\n* You can attack twice, instead of once, when you take the Attack action on your turn. You ignore this benefit if you already have a feature, like Extra Attack, that lets you attack more than once when you take the Attack action on your turn.",
+    "description": "Uttering an incantation, you draw on the magic of the Lower Planes or Upper Planes (your choice) to transform yourself. You gain the following benefits until the spell ends:\n* You are immune to fire and poison damage (Lower Planes) or radiant and necrotic damage(Upper Planes).\n* You are immune to the poisoned condition (Lower Planes) or the charmed condition (Upper Planes).\n* Spectral wings appear on your back, giving you a flying speed of 40 feet.\n* You have a +2 bonus to AC.\n* All your weapon attacks are magical, and when you make a weapon attack you can use your spellcasting ability modifier, instead of Strength or Dexterity, for the attack or damage rolls.\n* You can attack twice, instead of once, when you take the Attack action on your turn. You ignore this benefit if you already have a feature, like Extra Attack, that lets you attack more than once when you take the Attack action on your turn.",
     "higher_levels": null,
     "classes": [
       "Sorcerer",
