@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 use std::ops::Not;
 
-use iced::{button, checkbox, container, pick_list, scrollable, slider, text_input};
+use iced::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text_input};
 use iced_aw::tabs;
 
 macro_rules! from {
@@ -143,8 +143,9 @@ from! { Style =>
 }
 
 from! { SettingsBarStyle =>
-    button: light = Button, dark = SettingsButton;
-    container: dark = SettingsContainer;
+    button: light = Button, dark = SettingsBarStyle;
+    container: dark = SettingsBarStyle;
+    progress_bar: dark = SettingsBarStyle;
 }
 
 from! { TabButtonStyle =>
@@ -222,7 +223,7 @@ mod light {
 
 #[allow(clippy::cast_precision_loss)]
 mod dark {
-    use iced::{Background, button, checkbox, Color, container, pick_list, scrollable, slider, text_input};
+    use iced::{Background, button, checkbox, Color, container, pick_list, progress_bar, scrollable, slider, text_input};
     use iced::button::Style;
     use iced::slider::{Handle, HandleShape};
     use iced_aw::tabs;
@@ -279,6 +280,16 @@ mod dark {
                 0x2E as f32 / 255.0,
                 0x2F as f32 / 255.0,
                 0x37 as f32 / 255.0,
+            );
+        }
+
+        pub mod settings_bar {
+            use iced::Color;
+
+            pub const PROGRESS_BAR: Color = Color::from_rgb(
+                0x3E as f32 / 255.0,
+                0x3F as f32 / 255.0,
+                0x47 as f32 / 255.0,
             );
         }
 
@@ -566,9 +577,9 @@ mod dark {
         }
     }
 
-    pub struct SettingsButton;
+    pub struct SettingsBarStyle;
 
-    impl button::StyleSheet for SettingsButton {
+    impl button::StyleSheet for SettingsBarStyle {
         fn active(&self) -> button::Style {
             button::Style {
                 background: color::tab_bar::BACKGROUND.into(),
@@ -578,13 +589,21 @@ mod dark {
         }
     }
 
-    pub struct SettingsContainer;
-
-    impl container::StyleSheet for SettingsContainer {
+    impl container::StyleSheet for SettingsBarStyle {
         fn style(&self) -> container::Style {
             container::Style {
                 background: Some(Background::Color(color::tab_bar::BACKGROUND)),
                 ..Container.style()
+            }
+        }
+    }
+
+    impl progress_bar::StyleSheet for SettingsBarStyle {
+        fn style(&self) -> progress_bar::Style {
+            progress_bar::Style {
+                background: color::settings_bar::PROGRESS_BAR.into(),
+                bar: color::ACTIVE.into(),
+                border_radius: 5.0,
             }
         }
     }

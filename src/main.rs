@@ -19,6 +19,7 @@ clippy::enum_glob_use,
 
 use std::cmp::min;
 use std::convert::TryFrom;
+use std::default::Default;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader, ErrorKind, Write};
@@ -28,14 +29,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-use iced::{Align, Application, Button, button, Column, Command, Container, Element, Length, pick_list, Row, Rule, Settings, Slider, slider, Text, text_input, Tooltip, VerticalAlignment};
+use iced::{Align, Application, Button, button, Column, Command, Container, Element, Length, pick_list, ProgressBar, Row, Rule, Settings, Slider, slider, Text, text_input, Tooltip, VerticalAlignment};
 use iced::mouse::ScrollDelta;
 use iced::tooltip::Position;
 use iced::window::Icon;
 use iced_aw::{ICON_FONT, TabLabel, Tabs};
 use iced_native::{Event, Subscription, window};
 use once_cell::sync::Lazy;
-use self_update::{cargo_crate_version, Status};
+use self_update::cargo_crate_version;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as _;
 
@@ -47,7 +48,7 @@ use crate::hotkey::Move;
 use crate::hotmouse::{ButtonPress, Pt};
 use crate::search::PLOption;
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
-use crate::style::Style;
+use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
 use crate::utils::{SpacingExt, TryRemoveExt};
 
@@ -60,6 +61,7 @@ mod character;
 mod hotkey;
 mod hotmouse;
 mod utils;
+mod update;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -90,61 +92,114 @@ static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| {
     path
 });
 
+// static ICON: Lazy<Icon> = Lazy::new(|| );
+fn icon() -> Icon {
+    const LOGO: &[u8] = include_bytes!("../resources/logo.png");
+    const WIDTH: u32 = 1500;
+    const HEIGHT: u32 = 1500;
+    let image = image::load_from_memory(LOGO).expect("failed to read logo");
+
+    Icon::from_rgba(image.into_bytes(), WIDTH, HEIGHT).unwrap()
+}
+
 const WIDTH: u32 = 1100;
 
 /// want two columns for starting window size with a bit of room to expand
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
-fn update() -> Result<Status, self_update::errors::Error> {
-    self_update::backends::github::Update::configure()
-        .repo_owner("Andrew-Schwartz")
-        .repo_name("spells")
-        .bin_name("spells")
-        .show_output(false)
-        // .show_download_progress(true)
-        .current_version(cargo_crate_version!())
-        .no_confirm(true)
-        .build()?
-        .update()
-}
+// fn update() -> Result<Status, self_update::errors::Error> {
+//     let releases = self_update::backends::github::ReleaseList::configure()
+//         .repo_owner("Andrew-Schwartz")
+//         .repo_name("spells")
+//         // .bin_name("spells")
+//         // .show_output(false)
+//         // .show_download_progress(true)
+//         // .current_version(cargo_crate_version!())
+//         // .no_confirm(true)
+//         .build()?
+//         .fetch()?;
+//     if let Some(release) = releases.first() {
+//         download::DownloadWindow::run(Settings {
+//             window: iced::window::Settings {
+//                 size: (400, 150),
+//                 icon: Some(icon()),
+//                 resizable: false,
+//                 ..Default::default()
+//             },
+//             default_font: Some(include_bytes!("../resources/arial.ttf")),
+//             default_text_size: 18,
+//             antialiasing: true,
+//             ..Default::default()
+//         }).unwrap();
+//         todo!("DONE")
+//     }
+//     Ok(Status::UpToDate(cargo_crate_version!().into()))
+// }
 
 fn main() -> iced::Result {
-    let update_string = match update() {
-        Ok(Status::Updated(version)) => format!("Downloaded spells v{}. Restart program to get the update.", version),
-        Ok(Status::UpToDate(_)) => String::new(),
-        Err(err) => format!("Error updating program: {}", err),
-    };
-
-    let icon = {
-        const LOGO: &[u8] = include_bytes!("../resources/logo.png");
-        const WIDTH: u32 = 1500;
-        const HEIGHT: u32 = 1500;
-        let image = image::load_from_memory(LOGO).expect("failed to read logo");
-
-        Icon::from_rgba(image.into_bytes(), WIDTH, HEIGHT).unwrap()
-    };
+    // let update_string = match update() {
+    //     Ok(Status::Updated(version)) => format!("Downloaded spells v{}. Restart program to get the update.", version),
+    //     Ok(Status::UpToDate(_)) => String::new(),
+    //     Err(err) => format!("Error updating program: {}", err),
+    // };
 
     DndSpells::run(Settings {
         window: iced::window::Settings {
             min_size: Some((1024 / 2, 500)),
             // default: (1024, 768)
             size: (WIDTH, 768),
-            icon: Some(icon),
+            icon: Some(icon()),
             ..Default::default()
         },
         default_font: Some(include_bytes!("../resources/arial.ttf")),
         default_text_size: 18,
         antialiasing: true,
-        flags: update_string,
         ..Default::default()
     })
 }
 
-struct DndSpells {
-    update_status: String,
+#[derive(Debug)]
+pub enum UpdateState {
+    Checking,
+    Ready,
+    Downloading(f32),
+    UpToDate,
+    Downloaded,
+    Errored(String),
+}
+
+impl UpdateState {
+    pub fn view(&self, style: SettingsBarStyle) -> Element<crate::Message> {
+        const VER: &str = cargo_crate_version!();
+        match self {
+            &Self::Downloading(pct) => {
+                Row::new()
+                    .align_items(Align::Center)
+                    .push(Text::new("Downloading").size(10))
+                    .push_space(5)
+                    .push(ProgressBar::new(0.0..=100.0, pct)
+                        .style(style)
+                        .height(Length::Units(12)) // bottom bar is 20 pts
+                        .width(Length::Units(100)))
+                    .into()
+            }
+            view_as_text => match view_as_text {
+                Self::Checking => Text::new("Checking for updates..."),
+                Self::Ready => Text::new("Preparing to download..."),
+                Self::Downloaded => Text::new("Downloaded new version! Restart program to get new features!"),
+                Self::UpToDate => Text::new(format!("Running most recent version, v{}", VER)),
+                Self::Errored(e) => Text::new(format!("Error downloading new version: {}. Running v{}", e, VER)),
+                Self::Downloading(_) => unreachable!(),
+            }.size(10).into()
+        }
+    }
+}
+
+pub struct DndSpells {
+    update_state: UpdateState,
+    update_url: String,
     style: Style,
-    // tabs: MyTabs,
     tab: Tab,
     width: u32,
     height: u32,
@@ -167,6 +222,7 @@ struct DndSpells {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Update(update::Message),
     ToggleTheme,
     SetColScale(f32),
     // SwitchTab(Tab),
@@ -282,13 +338,15 @@ impl DndSpells {
         }
     }
 
-    fn open(update_status: String) -> anyhow::Result<Self> {
+    fn open() -> anyhow::Result<Self> {
         let custom_spells = Self::read_spells(&*SPELL_FILE)?;
         let characters = Self::read_characters(&*CHARACTER_FILE, &custom_spells)?;
         let closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &custom_spells)?;
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
-            update_status,
+            update_state: UpdateState::Checking,
+            // update_status: format!("Running {}", cargo_crate_version!()),
+            update_url: "".to_string(),
             style: Style::default(),
             tab: Tab::Search,
             width,
@@ -338,13 +396,17 @@ impl DndSpells {
 }
 
 impl Application for DndSpells {
-    type Executor = iced::executor::Default;
+    type Executor = iced_futures::executor::Tokio;
     type Message = Message;
-    type Flags = String;
+    type Flags = ();
 
-    fn new(update_status: Self::Flags) -> (Self, Command<Message>) {
-        let window = Self::open(update_status).expect("failed to start");
-        (window, async { Message::Search(search::Message::Refresh) }.into())
+    fn new((): Self::Flags) -> (Self, Command<Message>) {
+        let window = Self::open().expect("failed to start");
+        let commands = Command::batch([
+            async { Message::Search(search::Message::Refresh) }.into(),
+            async { Message::Update(update::Message::CheckForUpdate) }.into(),
+        ]);
+        (window, commands)
     }
 
     fn title(&self) -> String {
@@ -362,6 +424,9 @@ impl Application for DndSpells {
 
     fn update(&mut self, message: Self::Message, clipboard: &mut iced::Clipboard) -> Command<Message> {
         match message {
+            Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
+                self.update_state = UpdateState::Errored(e.to_string())
+            },
             Message::ToggleTheme => self.style = match self.style {
                 Style::Light => Style::Dark,
                 Style::Dark => Style::Light,
@@ -777,7 +842,7 @@ impl Application for DndSpells {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        iced_native::subscription::events_with(|event, _status| {
+        let listeners = iced_native::subscription::events_with(|event, _status| {
             match event {
                 Event::Keyboard(e) => hotkey::handle(e),
                 Event::Window(e) => match e {
@@ -787,11 +852,24 @@ impl Application for DndSpells {
                 Event::Mouse(e) => hotmouse::handle(e),
                 Event::Touch(_) => None,
             }
-        })
+        });
+        match &self.update_state {
+            UpdateState::Ready | UpdateState::Downloading(_) => {
+                let download = Subscription::from_recipe(update::Download { url: self.update_url.clone() })
+                    .map(|p| {
+                        // println!("progress = {:?}", p);
+                        Message::Update(update::Message::Progress(p))
+                    });
+                Subscription::batch([
+                    listeners,
+                    download,
+                ])
+            }
+            _ => listeners
+        }
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        // gotta make the borrow checker happy :)
         let style = self.style;
         let num_cols = self.num_cols;
         let num_characters = self.characters.len();
@@ -861,8 +939,8 @@ impl Application for DndSpells {
 
         let bottom_bar = Container::new(Row::new()
             .spacing(2)
-            .push_space(Length::Fill)
-            .push(Text::new(&self.update_status).size(10))
+            .push_space(4)
+            .push(self.update_state.view(style.settings_bar()))
             .push_space(Length::Fill)
             .push(col_slider_reset)
             .push(col_slider)
@@ -877,6 +955,7 @@ impl Application for DndSpells {
             .push(tabs.height(Length::Shrink))
             .push_space(Length::Fill)
             .push(bottom_bar);
+
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
