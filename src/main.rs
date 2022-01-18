@@ -68,8 +68,8 @@ const JSON: &str = include_str!("../resources/spells.json");
 pub static SPELLS: Lazy<Vec<Spell>> = Lazy::new(|| serde_json::from_str(JSON).expect("json error in `data/spells.json`"));
 
 static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = dirs::data_local_dir().unwrap_or_default();
-    path.push("dndspells/");
+    let path = dirs::data_local_dir().unwrap_or_default()
+        .join("dndspells");
     std::fs::create_dir_all(&path).unwrap();
     path
 });
@@ -108,42 +108,7 @@ const WIDTH: u32 = 1100;
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
-// fn update() -> Result<Status, self_update::errors::Error> {
-//     let releases = self_update::backends::github::ReleaseList::configure()
-//         .repo_owner("Andrew-Schwartz")
-//         .repo_name("spells")
-//         // .bin_name("spells")
-//         // .show_output(false)
-//         // .show_download_progress(true)
-//         // .current_version(cargo_crate_version!())
-//         // .no_confirm(true)
-//         .build()?
-//         .fetch()?;
-//     if let Some(release) = releases.first() {
-//         download::DownloadWindow::run(Settings {
-//             window: iced::window::Settings {
-//                 size: (400, 150),
-//                 icon: Some(icon()),
-//                 resizable: false,
-//                 ..Default::default()
-//             },
-//             default_font: Some(include_bytes!("../resources/arial.ttf")),
-//             default_text_size: 18,
-//             antialiasing: true,
-//             ..Default::default()
-//         }).unwrap();
-//         todo!("DONE")
-//     }
-//     Ok(Status::UpToDate(cargo_crate_version!().into()))
-// }
-
 fn main() -> iced::Result {
-    // let update_string = match update() {
-    //     Ok(Status::Updated(version)) => format!("Downloaded spells v{}. Restart program to get the update.", version),
-    //     Ok(Status::UpToDate(_)) => String::new(),
-    //     Err(err) => format!("Error updating program: {}", err),
-    // };
-
     DndSpells::run(Settings {
         window: iced::window::Settings {
             min_size: Some((1024 / 2, 500)),
@@ -188,7 +153,7 @@ impl UpdateState {
                 Self::Checking => Text::new("Checking for updates..."),
                 Self::Ready => Text::new("Preparing to download..."),
                 Self::Downloaded => Text::new("Downloaded new version! Restart program to get new features!"),
-                Self::UpToDate => Text::new(format!("Running most recent version, v{}", VER)),
+                Self::UpToDate => Text::new(format!("Up to date, v{}", VER)),
                 Self::Errored(e) => Text::new(format!("Error downloading new version: {}. Running v{}", e, VER)),
                 Self::Downloading(_) => unreachable!(),
             }.size(10).into()
@@ -856,10 +821,7 @@ impl Application for DndSpells {
         match &self.update_state {
             UpdateState::Ready | UpdateState::Downloading(_) => {
                 let download = Subscription::from_recipe(update::Download { url: self.update_url.clone() })
-                    .map(|p| {
-                        // println!("progress = {:?}", p);
-                        Message::Update(update::Message::Progress(p))
-                    });
+                    .map(|p| Message::Update(update::Message::Progress(p)));
                 Subscription::batch([
                     listeners,
                     download,

@@ -1,9 +1,11 @@
+use std::{fs, io};
 use std::env::consts::EXE_SUFFIX;
-use std::fs;
+use std::fs::DirEntry;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
+use anyhow::anyhow;
 use iced_native::subscription::Recipe;
 use reqwest::header::{self, HeaderValue};
 use self_update::{cargo_crate_version, Move};
@@ -119,6 +121,9 @@ impl<H: Hasher, E> Recipe<H, E> for Download {
 pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
     match message {
         Message::CheckForUpdate => {
+            // ignore any errors here
+            let _ = delete_backup_temp_directories();
+
             let latest_release = self_update::backends::github::ReleaseList::configure()
                 .repo_owner("Andrew-Schwartz")
                 .repo_name("spells")
@@ -145,8 +150,6 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
             Ok(())
         }
         Message::Progress(progress) => {
-            // println!("progress = {:?}", progress);
-
             app.update_state = match progress {
                 Progress::Started => UpdateState::Downloading(0.0),
                 Progress::Advanced(pct) => UpdateState::Downloading(pct),
@@ -165,92 +168,118 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
 
 /// taken from self_update, but modified so that it uses the downloaded file
 fn update_extended(bytes: Vec<u8>) -> anyhow::Result<()> {
-    let bin_install_path = std::env::current_exe()?;
+    let current_exe = std::env::current_exe()?;
 
-    let string = bin_install_path.file_name().unwrap()
+    let current_exe_string = current_exe.file_name().unwrap()
         .to_string_lossy()
         .to_string();
-    let bin_name = string.trim_end_matches(EXE_SUFFIX);
+    let bin_name = current_exe_string.trim_end_matches(EXE_SUFFIX);
 
-    let tmp_dir_parent = bin_install_path
+    let tmp_dir_parent = current_exe
         .parent()
         .map(PathBuf::from)
         .ok_or_else(|| anyhow::Error::msg("Failed to determine parent dir"))?;
     let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
-    let tmp_backup_filename = tmp_backup_dir_prefix.clone();
 
     if cfg!(windows) {
         // Windows executables can not be removed while they are running, which prevents clean up
         // of the temporary directory by the `tempfile` crate after we move the running executable
         // into it during an update. We clean up any previously created temporary directories here.
         // Ignore errors during cleanup since this is not critical for completing the update.
-        let _ = cleanup_backup_temp_directories(
-            &tmp_dir_parent,
-            &tmp_backup_dir_prefix,
-            &tmp_backup_filename,
-        );
+        for entry in fs::read_dir(&tmp_dir_parent)? {
+            let _ = cleanup_backup_temp_directories(
+                entry,
+                &tmp_backup_dir_prefix,
+                &tmp_backup_dir_prefix,
+            );
+        }
     }
 
     let tmp_archive_dir_prefix = format!("{}_download", bin_name);
     let tmp_archive_dir = tempfile::Builder::new()
         .prefix(&tmp_archive_dir_prefix)
         .tempdir_in(&tmp_dir_parent)?;
-    let tmp_archive_path = tmp_archive_dir.path().join("spells");
+    let tmp_archive_path = tmp_archive_dir.path().join(bin_name);
     let mut tmp_archive = fs::File::create(&tmp_archive_path)?;
     tmp_archive.write_all(&bytes)?;
-
-    let bin_path_in_archive = bin_name;
-    let new_exe = tmp_archive_dir.path().join(&bin_path_in_archive);
 
     // Make executable
     #[cfg(not(windows))]
         {
-            let mut permissions = fs::metadata(&new_exe)?.permissions();
+            let mut permissions = fs::metadata(&tmp_archive_path)?.permissions();
             permissions.set_mode(0o755);
-            fs::set_permissions(&new_exe, permissions)?;
+            fs::set_permissions(&tmp_archive_path, permissions)?;
         }
 
     let tmp_backup_dir = tempfile::Builder::new()
         .prefix(&tmp_backup_dir_prefix)
         .tempdir_in(&tmp_dir_parent)?;
-    let tmp_file_path = tmp_backup_dir.path().join(&tmp_backup_filename);
+    let tmp_file_path = tmp_backup_dir.path().join(&tmp_backup_dir_prefix);
 
-    Move::from_source(&new_exe)
+    Move::from_source(&tmp_archive_path)
         .replace_using_temp(&tmp_file_path)
-        .to_dest(&bin_install_path)?;
+        .to_dest(&current_exe)?;
 
     Ok(())
 }
 
-fn cleanup_backup_temp_directories<P: AsRef<Path>>(
-    tmp_dir_parent: P,
+
+pub fn delete_backup_temp_directories() -> anyhow::Result<()> {
+    // Windows executables can not be removed while they are running, which prevents clean up
+    // of the temporary directory by the `tempfile` crate after we move the running executable
+    // into it during an update. We clean up any previously created temporary directories here.
+    // Ignore errors during cleanup since this is not critical for completing the update.
+    if cfg!(windows) {
+        let current_exe = std::env::current_exe()?;
+
+        let current_exe_string = current_exe.file_name().unwrap()
+            .to_string_lossy()
+            .to_string();
+        let bin_name = current_exe_string.trim_end_matches(EXE_SUFFIX);
+
+        let tmp_dir_parent = current_exe
+            .parent()
+            .map(PathBuf::from)
+            .ok_or_else(|| anyhow::Error::msg("Failed to determine parent dir"))?;
+        let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
+
+        for entry in fs::read_dir(&tmp_dir_parent)? {
+            let _ = cleanup_backup_temp_directories(
+                entry,
+                &tmp_backup_dir_prefix,
+                &tmp_backup_dir_prefix,
+            );
+        }
+    }
+
+    Ok(())
+}
+
+fn cleanup_backup_temp_directories(
+    entry: io::Result<DirEntry>,
     tmp_dir_prefix: &str,
     expected_tmp_filename: &str,
 ) -> anyhow::Result<()> {
-    for entry in fs::read_dir(tmp_dir_parent)? {
-        let entry = entry?;
-        let tmp_dir_name = if let Ok(tmp_dir_name) = entry.file_name().into_string() {
-            tmp_dir_name
-        } else {
-            continue;
-        };
+    let entry = entry?;
+    let tmp_dir_name = entry.file_name().into_string()
+        .map_err(|os_string| anyhow!("Could not get handle file name `{:?}`", os_string))?;
 
-        // For safety, check that the temporary directory contains only the expected backup
-        // binary file before removing. If subdirectories or other files exist then the user
-        // is using the temp directory for something else. This is unlikely, but we should
-        // be careful with `fs::remove_dir_all`.
-        let is_expected_tmp_file = |tmp_file_entry: std::io::Result<fs::DirEntry>| {
-            tmp_file_entry
-                .ok()
-                .filter(|e| e.file_name() == expected_tmp_filename)
-                .is_some()
-        };
+    // For safety, check that the temporary directory contains only the expected backup
+    // binary file before removing. If subdirectories or other files exist then the user
+    // is using the temp directory for something else. This is unlikely, but we should
+    // be careful with `fs::remove_dir_all`.
+    let is_expected_tmp_file = |tmp_file_entry: std::io::Result<fs::DirEntry>| {
+        tmp_file_entry
+            .ok()
+            .filter(|e| e.file_name() == expected_tmp_filename)
+            .is_some()
+    };
 
-        if tmp_dir_name.starts_with(tmp_dir_prefix)
-            && fs::read_dir(entry.path())?.all(is_expected_tmp_file)
-        {
-            fs::remove_dir_all(entry.path())?;
-        }
+    if tmp_dir_name.starts_with(tmp_dir_prefix)
+        && fs::read_dir(entry.path())?.all(is_expected_tmp_file)
+    {
+        fs::remove_dir_all(entry.path())?;
     }
+
     Ok(())
 }
