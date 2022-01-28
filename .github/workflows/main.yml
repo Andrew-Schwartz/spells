@@ -18,6 +18,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      - run: sudo apt install libxkbcommon-dev
+        if: matrix.os == ubuntu-latest
       - name: Build
         run: cargo b --release
       - run: |
