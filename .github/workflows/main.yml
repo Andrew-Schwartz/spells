@@ -1,0 +1,105 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo b --release
+      - run: |
+          dir=artifact-${{ matrix.os }}
+          mkdir $dir
+          echo "$(cargo r --release -- TARGET)" > $dir/TARGET
+          mv target/release/circleci-testing $dir/circleci-testing
+        if: matrix.os != 'windows-latest'
+      - run: |
+          $dir="artifact-${{ matrix.os }}"
+          mkdir $dir
+          echo "$(cargo r --release -- TARGET)" > $dir/TARGET
+          mv target/release/circleci-testing.exe $dir/circleci-testing.exe
+        if: matrix.os == 'windows-latest'
+      - uses: actions/upload-artifact@v2.3.1
+        with:
+          name: artifact-${{ matrix.os }}
+          path: artifact-${{ matrix.os }}
+          if-no-files-found: error
+        if: matrix.os != 'windows-latest'
+      - uses: actions/upload-artifact@v2.3.1
+        with:
+          name: artifact-${{ matrix.os }}
+          path: artifact-${{ matrix.os }}
+          if-no-files-found: error
+        if: matrix.os == 'windows-latest'
+
+  release:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: artifact-ubuntu-latest
+      - uses: actions/download-artifact@v1
+        with:
+          name: artifact-macos-latest
+      - uses: actions/download-artifact@v1
+        with:
+          name: artifact-windows-latest
+      - name: Create Draft Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.3.1
+          release_name: v1.3.1 Programs for windows, linux, and mac
+          draft: true
+          prerelease: false
+      - name: Get Names
+        id: names
+        run: |
+          echo "::set-output name=ubuntu::$(cat artifact-ubuntu-latest/TARGET)"
+          echo "::set-output name=macos::$(cat artifact-macos-latest/TARGET)"
+          echo "::set-output name=windows::$(cat artifact-windows-latest/TARGET)"
+      - uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifact-ubuntu-latest/circleci-testing
+          asset_name: circleci-testing-${{ steps.names.outputs.ubuntu }}
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifact-macos-latest/circleci-testing
+          asset_name: circleci-testing-${{ steps.names.outputs.macos }}
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifact-windows-latest/circleci-testing.exe
+          asset_name: circleci-testing-${{ steps.names.outputs.windows }}.exe
+          asset_content_type: application/zip
+      - uses: eregon/publish-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: ${{ steps.create_release.outputs.id }}
