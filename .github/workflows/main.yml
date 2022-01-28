@@ -26,13 +26,13 @@ jobs:
           dir=artifact-${{ matrix.os }}
           mkdir $dir
           echo "$(cargo r --release -- TARGET)" > $dir/TARGET
-          mv target/release/circleci-testing $dir/circleci-testing
+          mv target/release/spells $dir/spells
         if: matrix.os != 'windows-latest'
       - run: |
           $dir="artifact-${{ matrix.os }}"
           mkdir $dir
           echo "$(cargo r --release -- TARGET)" > $dir/TARGET
-          mv target/release/circleci-testing.exe $dir/circleci-testing.exe
+          mv target/release/spells.exe $dir/spells.exe
         if: matrix.os == 'windows-latest'
       - uses: actions/upload-artifact@v2.3.1
         with:
@@ -81,24 +81,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact-ubuntu-latest/circleci-testing
-          asset_name: circleci-testing-${{ steps.names.outputs.ubuntu }}
+          asset_path: artifact-ubuntu-latest/spells
+          asset_name: spells-${{ steps.names.outputs.ubuntu }}
           asset_content_type: application/zip
       - uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact-macos-latest/circleci-testing
-          asset_name: circleci-testing-${{ steps.names.outputs.macos }}
+          asset_path: artifact-macos-latest/spells
+          asset_name: spells-${{ steps.names.outputs.macos }}
           asset_content_type: application/zip
       - uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifact-windows-latest/circleci-testing.exe
-          asset_name: circleci-testing-${{ steps.names.outputs.windows }}.exe
+          asset_path: artifact-windows-latest/spells.exe
+          asset_name: spells-${{ steps.names.outputs.windows }}.exe
           asset_content_type: application/zip
       - uses: eregon/publish-release@v1
         env:
