@@ -27,7 +27,7 @@ use std::mem;
 use std::ops::{Deref, Not};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use iced::{Align, Application, Button, button, Column, Command, Container, Element, Length, pick_list, ProgressBar, Row, Rule, Settings, Slider, slider, Text, text_input, Tooltip, VerticalAlignment};
 use iced::mouse::ScrollDelta;
@@ -369,7 +369,11 @@ impl Application for DndSpells {
         let window = Self::open().expect("failed to start");
         let commands = Command::batch([
             async { Message::Search(search::Message::Refresh) }.into(),
-            async { Message::Update(update::Message::CheckForUpdate) }.into(),
+            async {
+                // wait briefly to so that loading doesn't take so long
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                Message::Update(update::Message::CheckForUpdate)
+            }.into(),
         ]);
         (window, commands)
     }

@@ -206,6 +206,8 @@ fn update_extended(bytes: Vec<u8>) -> anyhow::Result<()> {
     // Make executable
     #[cfg(not(windows))]
         {
+            use std::os::unix::fs::PermissionsExt;
+
             let mut permissions = fs::metadata(&tmp_archive_path)?.permissions();
             permissions.set_mode(0o755);
             fs::set_permissions(&tmp_archive_path, permissions)?;

@@ -92,13 +92,33 @@ pub trait ListGrammaticallyExt: ExactSizeIterator + Sized {
 
 impl<T: Display, I: ExactSizeIterator<Item=T>> ListGrammaticallyExt for I {}
 
-pub trait Tap: Sized {
-    fn tap<F: FnOnce(Self) -> Self>(self, f: F) -> Self {
+pub trait Tap {
+    fn tap<T, F: FnOnce(Self) -> T>(self, f: F) -> T where Self: Sized {
+        f(self)
+    }
+
+    fn tap_if<F: FnOnce(Self) -> Self>(self, condition: bool, f: F) -> Self where Self: Sized {
+        if condition {
+            f(self)
+        } else {
+            self
+        }
+    }
+
+    fn tap_if_some<T, F: FnOnce(Self, T) -> Self>(self, option: Option<T>, f: F) -> Self where Self: Sized {
+        if let Some(t) = option {
+            f(self, t)
+        } else {
+            self
+        }
+    }
+
+    fn tap_ref<T, F: FnOnce(&Self) -> T>(&self, f: F) -> T {
         f(self)
     }
 }
 
-impl<T: Sized> Tap for T {}
+impl<T> Tap for T {}
 
 pub trait IterExt: Iterator + Sized {
     fn none<P: FnMut(Self::Item) -> bool>(mut self, predicate: P) -> bool {

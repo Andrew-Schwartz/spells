@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::{CastingTime, character, Class, CustomSpell, School, Source, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
 use crate::character::CharacterPage;
 use crate::style::Style;
-use crate::utils::{IterExt, SpacingExt};
+use crate::utils::{IterExt, SpacingExt, Tap};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -104,7 +104,16 @@ impl Mode {
 
 impl Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        <Self as Debug>::fmt(self, f)
+        // not debug
+        f.write_str(match self {
+            Mode::Level => "Level",
+            Mode::Class => "Class",
+            Mode::School => "School",
+            Mode::CastingTime => "Casting Time",
+            Mode::Ritual => "Ritual",
+            Mode::Text => "Text",
+            Mode::Source => "Source"
+        })
     }
 }
 
@@ -517,6 +526,7 @@ impl SearchOptions {
         ).style(style)
             .on_press(reset_message);
 
+        // todo this doesn't work on character pages
         // additional search stuff
         let advanced_search = [
             self.level_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
@@ -534,28 +544,25 @@ impl SearchOptions {
             );
 
         Container::new(
-            Column::new().push(
-                before_search_bar.into()
-                    .map_or_else(
-                        || Row::new()
-                            .align_items(Align::Center)
-                            .push_space(Length::Fill),
-                        |btn| Row::new()
-                            .align_items(Align::Center)
-                            .push_space(Length::Fill)
-                            .push(btn)
-                            .push_space(8))
-                    .push(search)
-                    .push_space(3)
-                    .push(mode)
-                    .push_space(3)
-                    .push(reset_modes)
+            Column::new()
+                .push(Row::new()
+                    .align_items(Align::Center)
                     .push_space(Length::Fill)
-            ).push(Row::new()
-                .push_space(Length::Fill)
-                .push(advanced_search.width(Length::FillPortion(18)))
-                .push_space(Length::Fill)
-            )
+                    .push(reset_modes)
+                    .push_space(4)
+                    .push(mode)
+                    .push_space(8)
+                    .push(search)
+                    .tap_if_some(before_search_bar.into(), |row, btn| row
+                        .push_space(8)
+                        .push(btn))
+                    .push_space(Length::Fill)
+                )
+                .push(Row::new()
+                    .push_space(Length::Fill)
+                    .push(advanced_search.width(Length::FillPortion(18)))
+                    .push_space(Length::Fill)
+                )
         )
     }
 }

@@ -424,10 +424,8 @@ impl SettingsPage {
                     .push_space(2)
                     .push(row("Level:", level))
                     .push(row("Casting Time:", casting_time))
-                    .tap(|col| match casting_time_extra {
-                        Some(casting_time_extra) => col.push(casting_time_extra),
-                        None => col,
-                    }).push(row("Range:", range))
+                    .tap_if_some(casting_time_extra, |col, cte| col.push(cte))
+                    .push(row("Range:", range))
                     .push(row("Components:", components))
                     .push(row("Duration:", duration))
                     .push(row("Ritual?", ritual))
