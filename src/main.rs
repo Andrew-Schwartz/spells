@@ -109,9 +109,9 @@ const WIDTH: u32 = 1100;
 const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
 fn main() -> iced::Result {
-    if Some("TARGET") = std::env::args().nth(1).as_deref() {
+    if let Some("TARGET") = std::env::args().nth(1).as_deref() {
         println!("{}", self_update::get_target());
-        return Ok(())
+        return Ok(());
     }
 
     DndSpells::run(Settings {
