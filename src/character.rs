@@ -7,8 +7,8 @@ use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{CustomSpell, find_spell, SpellButtons, SpellId, StArc, StaticCustomSpell};
-use crate::search::{Mode, SearchOptions};
+use crate::{CustomSpell, find_spell, search, SpellButtons, SpellId, StArc, StaticCustomSpell};
+use crate::search::{Mode, Searcher, SearchOptions, WithButton};
 use crate::style::Style;
 use crate::utils::SpacingExt;
 
@@ -44,9 +44,7 @@ pub enum Message {
     RemoveSpell(SpellId),
     /// delta to move the spell
     MoveSpell(SpellId, MoveSpell),
-    Search(String),
-    PickMode(Mode),
-    ResetModes,
+    Search(search::Message),
 }
 
 pub const TABS: usize = 11;
@@ -198,6 +196,15 @@ impl CharacterPage {
                     true
                 })
             }
+            Message::PrepareAll(prepare) => {
+                match self.tab {
+                    0 => &mut self.character.spells[..],
+                    t => &mut self.character.spells[t - 1..t],
+                }.iter_mut()
+                    .flatten()
+                    .for_each(|(_, prepared)| *prepared = prepare);
+                true
+            }
             Message::SpellTab(level) => {
                 self.tab = level;
                 false
@@ -232,42 +239,86 @@ impl CharacterPage {
                 })
             }
             Message::Search(search) => {
-                self.search.search = search;
-                false
-            }
-            Message::PrepareAll(prepare) => {
-                match self.tab {
-                    0 => &mut self.character.spells[..],
-                    t => &mut self.character.spells[t - 1..t],
-                }.iter_mut()
-                    .flatten()
-                    .for_each(|(_, prepared)| *prepared = prepare);
-                true
-            }
-            Message::PickMode(mode) => {
-                match mode {
-                    Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
-                    Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
-                    Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
-                    Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
-                    Mode::Ritual => {
-                        SearchOptions::toggle_mode(&mut self.search.ritual_search);
-                        // the default (false) will still match spells, so redo the search
-                        // self.spells = self.search.search(custom, characters);
+                fn toggle<T: Ord>(vec: &mut Vec<WithButton<T>>, entry: T) {
+                    if let Some(idx) = vec.iter().position(|WithButton { t, .. }| *t == entry) {
+                        vec.remove(idx);
+                    } else {
+                        vec.push(WithButton::new(entry));
+                        vec.sort();
                     }
-                    Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
-                    Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
                 }
-                false
-            }
-            Message::ResetModes => {
-                self.search.level_search = None;
-                self.search.class_search = None;
-                self.search.casting_time_search = None;
-                self.search.school_search = None;
-                self.search.ritual_search = None;
-                self.search.text_search = None;
-                self.search.source_search = None;
+
+                let search = match search {
+                    search::Message::Search(search) => {
+                        // self.c
+                        self.search.search = search;
+                        true
+                    }
+                    search::Message::Refresh => {
+                        // self.search.search()
+                        false
+                    }
+                    search::Message::PickMode(mode) => {
+                        match mode {
+                            Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
+                            Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
+                            Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
+                            Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
+                            Mode::Ritual => {
+                                SearchOptions::toggle_mode(&mut self.search.ritual_search);
+                                // the default (false) will still match spells, so redo the search
+                                // self.spells = self.search.search(custom, characters);
+                            }
+                            Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
+                            Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
+                            Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
+                        }
+                        false
+                    }
+                    search::Message::ResetModes => {
+                        self.search.level_search = None;
+                        self.search.class_search = None;
+                        self.search.casting_time_search = None;
+                        self.search.school_search = None;
+                        self.search.ritual_search = None;
+                        self.search.concentration_search = None;
+                        self.search.text_search = None;
+                        self.search.source_search = None;
+                        false
+                    }
+                    search::Message::CollapseAll => todo!(),
+                    search::Message::Collapse(_id) => todo!(),
+                    search::Message::PickLevel(level) => self.search.level_search
+                        .as_mut()
+                        .map(|levels| toggle(&mut levels.levels, level))
+                        .is_some(),
+                    search::Message::PickClass(class) => self.search.class_search
+                        .as_mut()
+                        .map(|classes| toggle(&mut classes.classes, class))
+                        .is_some(),
+                    search::Message::PickCastingTime(casting_time) => self.search.casting_time_search
+                        .as_mut()
+                        .map(|times| toggle(&mut times.times, casting_time))
+                        .is_some(),
+                    search::Message::PickSchool(school) => self.search.school_search.as_mut()
+                        .map(|schools| toggle(&mut schools.schools, school))
+                        .is_some(),
+                    search::Message::PickSource(source) => self.search.source_search.as_mut()
+                        .map(|sources| toggle(&mut sources.sources, source))
+                        .is_some(),
+                    search::Message::ToggleRitual(ritual) => self.search.ritual_search.as_mut()
+                        .map(|search| search.ritual = ritual)
+                        .is_some(),
+                    search::Message::ToggleConcentration(conc) => self.search.concentration_search.as_mut()
+                        .map(|search| search.concentration = conc)
+                        .is_some(),
+                    search::Message::SearchText(text) => self.search.text_search.as_mut()
+                        .map(|search| search.text = text.to_lowercase())
+                        .is_some(),
+                };
+                if search {
+                    // todo!()
+                }
                 false
             }
         }
@@ -390,17 +441,36 @@ impl CharacterPage {
             let needle = search.search.to_lowercase();
             let spells = spells.iter_mut()
                 .flatten()
-                .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
+                .filter(|(spell, _)| [
+                    search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                ].into_iter()
+                    .flatten()
+                    .filter(|searcher| !searcher.is_empty())
+                    .all(|searcher| searcher.matches(&spell.spell)))
+                .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
+                // .sorted_unstable_by_key(|(spell, _)| spell.spell.name())
                 .collect_vec();
+            // let spells = spells.iter_mut()
+            //     .flatten()
+            //     .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
+            //     .collect_vec();
             // only thing to focus on
             search.state.focus();
             let search_col = Column::new()
                 .align_items(Align::Center)
                 .push(search.view(
                     None,
-                    move |s| message(Message::Search(s)),
-                    move |m| message(Message::PickMode(m)),
-                    message(Message::ResetModes),
+                    move |s| message(Message::Search(search::Message::Search(s))),
+                    move |m| message(Message::Search(search::Message::PickMode(m))),
+                    message(Message::Search(search::Message::ResetModes)),
+                    Some(index),
                     style,
                 ));
             (spells, search_col)

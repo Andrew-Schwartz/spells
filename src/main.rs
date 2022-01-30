@@ -46,7 +46,7 @@ use utils::ListGrammaticallyExt;
 use crate::character::{Character, CharacterPage, SerializeCharacter};
 use crate::hotkey::Move;
 use crate::hotmouse::{ButtonPress, Pt};
-use crate::search::PLOption;
+use crate::search::{PLOption, Unwrap};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
@@ -1016,7 +1016,7 @@ impl School {
         Self::Necromancy,
     ];
 
-    // todo use array::map when that's stable
+    // todo use array::map when that's const stable
     pub const PL_ALL: [PLOption<Self>; 8] = [
         PLOption::Some(Self::Abjuration),
         PLOption::Some(Self::Conjuration),
@@ -1321,6 +1321,7 @@ impl TryFrom<DeserializeSpell> for Spell {
 pub struct CustomSpell {
     name: Arc<str>,
     name_lower: String,
+    // todo this was for allowing spells to be renamed
     #[serde(skip)]
     name_state: text_input::State,
     level: usize,
@@ -1702,6 +1703,11 @@ impl StaticCustomSpell {
     #[must_use]
     pub fn ritual(&self) -> bool {
         delegate!(self, ritual)
+    }
+
+    #[must_use]
+    pub fn concentration(&self) -> bool {
+        delegate!(self, conc)
     }
 
     #[must_use]

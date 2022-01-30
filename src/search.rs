@@ -26,11 +26,22 @@ pub enum Message {
     PickSchool(School),
     PickSource(Source),
     ToggleRitual(bool),
+    ToggleConcentration(bool),
     SearchText(String),
 }
 
 pub trait PLNone {
     fn title() -> &'static str;
+}
+
+pub trait Unwrap<T>: Sized {
+    fn unwrap(self) -> T;
+}
+
+impl<T> Unwrap<T> for Option<T> {
+    fn unwrap(self) -> T {
+        self.unwrap()
+    }
 }
 
 /// `PickListOption`, meant to be used as the title for a `PickList` but not in the set of items
@@ -40,8 +51,8 @@ pub enum PLOption<T> {
     Some(T),
 }
 
-impl<T> PLOption<T> {
-    pub fn unwrap(self) -> T {
+impl<T> Unwrap<T> for PLOption<T> {
+    fn unwrap(self) -> T {
         match self {
             PLOption::Some(t) => t,
             PLOption::None => panic!("called `PLOption::unwrap()` on a `None` value"),
@@ -82,6 +93,7 @@ pub enum Mode {
     School,
     CastingTime,
     Ritual,
+    Concentration,
     Text,
     Source,
 }
@@ -91,12 +103,13 @@ plopt!(School, "School");
 plopt!(Source, "Source");
 
 impl Mode {
-    pub(crate) const ALL: [PLOption<Self>; 7] = [
+    pub(crate) const ALL: [PLOption<Self>; 8] = [
         PLOption::Some(Self::Level),
         PLOption::Some(Self::Class),
         PLOption::Some(Self::School),
         PLOption::Some(Self::CastingTime),
         PLOption::Some(Self::Ritual),
+        PLOption::Some(Self::Concentration),
         PLOption::Some(Self::Text),
         PLOption::Some(Self::Source),
     ];
@@ -111,8 +124,9 @@ impl Display for Mode {
             Mode::School => "School",
             Mode::CastingTime => "Casting Time",
             Mode::Ritual => "Ritual",
+            Mode::Concentration => "Concentration",
             Mode::Text => "Text",
-            Mode::Source => "Source"
+            Mode::Source => "Source",
         })
     }
 }
@@ -135,8 +149,10 @@ impl PickListLevel {
     ];
 
     const NONE: Self = Self(u8::MAX);
+}
 
-    pub fn unwrap(self) -> u8 {
+impl Unwrap<u8> for PickListLevel {
+    fn unwrap(self) -> u8 {
         if self == Self::NONE {
             panic!("called `PickListLevel::unwrap()` on a `NONE` value")
         } else {
@@ -159,17 +175,22 @@ pub trait Searcher {
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool;
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message>;
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message>;
 }
 
 #[derive(Debug)]
-struct WithButton<T> {
-    t: T,
+pub struct WithButton<T> {
+    pub t: T,
     state: button::State,
 }
 
 impl<T> WithButton<T> {
-    fn new(t: T) -> Self {
+    pub fn new(t: T) -> Self {
         Self { t, state: Default::default() }
     }
 }
@@ -197,26 +218,62 @@ impl<T: Ord> Ord for WithButton<T> {
 fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
     vec: &'a mut Vec<WithButton<T>>,
     on_press: F,
+    character: Option<usize>,
     style: Style,
     row: Row<'a, crate::Message>,
 ) -> Row<'a, crate::Message> {
     let len = vec.len();
     vec.iter_mut()
         .enumerate()
-        .map(|(i, WithButton { t, state })| Button::new(
-            state,
-            Text::new(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13),
-        ).on_press(crate::Message::Search(on_press(t.clone())))
-            .style(style.background())
-            .padding(0)
+        .map(|(i, WithButton { t, state })| {
+            Button::new(
+                state,
+                Text::new(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13),
+            ).on_press({
+                let message = on_press(t.clone());
+                match character {
+                    Some(i) => crate::Message::Character(i, character::Message::Search(message)),
+                    None => crate::Message::Search(message),
+                }
+            })
+                .style(style.background())
+                .padding(0)
+        }
         )
         .fold(row.push_space(3), Row::push)
         .push_space(5)
 }
 
+// kinda cheaty, for ones that are guaranteed to be present
+impl Unwrap<bool> for bool {
+    fn unwrap(self) -> bool {
+        self
+    }
+}
+
+impl Unwrap<String> for String {
+    fn unwrap(self) -> String {
+        self
+    }
+}
+
+fn on_selected<T, F, U>(character: Option<usize>, f: F) -> impl Fn(U) -> crate::Message + 'static
+    where
+        F: 'static + Fn(T) -> Message,
+        U: Unwrap<T>,
+{
+    move |u: U| {
+        let search_message = f(u.unwrap());
+        match character {
+            Some(i) => crate::Message::Character(i, character::Message::Search(search_message)),
+            None => crate::Message::Search(search_message),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct LevelSearch {
-    levels: Vec<WithButton<u8>>,
+    pub levels: Vec<WithButton<u8>>,
     state: pick_list::State<PickListLevel>,
 }
 
@@ -230,7 +287,12 @@ impl Searcher for LevelSearch {
         self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let levels = PickListLevel::ALL.into_iter()
             .filter(|lvl| self.levels.iter().none(|wb| wb.t == lvl.0))
             .collect_vec();
@@ -239,15 +301,15 @@ impl Searcher for LevelSearch {
             &mut self.state,
             levels,
             Some(PickListLevel::NONE),
-            |pll| crate::Message::Search(Message::PickLevel(pll.unwrap())),
+            on_selected(character, Message::PickLevel),
         ).style(style).text_size(14);
-        add_buttons(&mut self.levels, Message::PickLevel, style, row.push(pick_list))
+        add_buttons(&mut self.levels, Message::PickLevel, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ClassSearch {
-    classes: Vec<WithButton<Class>>,
+    pub classes: Vec<WithButton<Class>>,
     state: pick_list::State<PLOption<Class>>,
 }
 
@@ -261,7 +323,12 @@ impl Searcher for ClassSearch {
             .any(|class| self.classes.iter().any(|WithButton { t, .. }| class == t))
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let classes = Class::ALL.into_iter()
             .filter(|class| self.classes.iter().none(|wb| wb.t == *class))
             .map(PLOption::Some)
@@ -271,9 +338,9 @@ impl Searcher for ClassSearch {
             &mut self.state,
             classes,
             Some(PLOption::None),
-            |c| crate::Message::Search(Message::PickClass(c.unwrap())),
+            on_selected(character, Message::PickClass)
         ).style(style).text_size(14);
-        add_buttons(&mut self.classes, Message::PickClass, style, row.push(pick_list))
+        add_buttons(&mut self.classes, Message::PickClass, character, style, row.push(pick_list))
     }
 }
 
@@ -281,7 +348,7 @@ plopt!(CastingTime, "Casting Time");
 
 #[derive(Debug, Default)]
 pub struct CastingTimeSearch {
-    times: Vec<WithButton<CastingTime>>,
+    pub times: Vec<WithButton<CastingTime>>,
     state: pick_list::State<PLOption<CastingTime>>,
 }
 
@@ -294,7 +361,12 @@ impl Searcher for CastingTimeSearch {
         self.times.iter().any(|WithButton { t, .. }| t == spell.casting_time())
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let durations = [
             CastingTime::Action,
             CastingTime::BonusAction,
@@ -315,15 +387,15 @@ impl Searcher for CastingTimeSearch {
             &mut self.state,
             durations,
             Some(PLOption::None),
-            |s| crate::Message::Search(Message::PickCastingTime(s.unwrap())),
+            on_selected(character, Message::PickCastingTime),
         ).style(style).text_size(14);
-        add_buttons(&mut self.times, Message::PickCastingTime, style, row.push(pick_list))
+        add_buttons(&mut self.times, Message::PickCastingTime, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct SchoolSearch {
-    schools: Vec<WithButton<School>>,
+    pub schools: Vec<WithButton<School>>,
     state: pick_list::State<PLOption<School>>,
 }
 
@@ -336,7 +408,12 @@ impl Searcher for SchoolSearch {
         self.schools.iter().any(|WithButton { t, .. }| *t == spell.school())
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let schools = School::ALL.into_iter()
             .filter(|school| self.schools.iter().none(|wb| wb.t == *school))
             .map(PLOption::Some)
@@ -346,15 +423,15 @@ impl Searcher for SchoolSearch {
             &mut self.state,
             schools,
             Some(PLOption::None),
-            |s| crate::Message::Search(Message::PickSchool(s.unwrap())),
+            on_selected(character, Message::PickSchool)
         ).style(style).text_size(14);
-        add_buttons(&mut self.schools, Message::PickSchool, style, row.push(pick_list))
+        add_buttons(&mut self.schools, Message::PickSchool, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct RitualSearch {
-    ritual: bool,
+    pub ritual: bool,
 }
 
 impl Searcher for RitualSearch {
@@ -366,11 +443,45 @@ impl Searcher for RitualSearch {
         spell.ritual() == self.ritual
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let checkbox = Checkbox::new(
             self.ritual,
             "Ritual",
-            |b| crate::Message::Search(Message::ToggleRitual(b)),
+            on_selected(character, Message::ToggleRitual),
+        ).style(style);
+        row.push(checkbox).push_space(5)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ConcentrationSearch {
+    pub concentration: bool,
+}
+
+impl Searcher for ConcentrationSearch {
+    fn is_empty(&self) -> bool {
+        false
+    }
+
+    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+        spell.concentration() == self.concentration
+    }
+
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
+        let checkbox = Checkbox::new(
+            self.concentration,
+            "Concentration",
+            on_selected(character, Message::ToggleConcentration),
         ).style(style);
         row.push(checkbox).push_space(5)
     }
@@ -378,7 +489,7 @@ impl Searcher for RitualSearch {
 
 #[derive(Debug, Default)]
 pub struct TextSearch {
-    text: String,
+    pub text: String,
     state: text_input::State,
 }
 
@@ -398,13 +509,18 @@ impl Searcher for TextSearch {
             )
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let text = Text::new("Spell Text:");
         let input = TextInput::new(
             &mut self.state,
             "int|wis",
             &self.text,
-            |s| crate::Message::Search(Message::SearchText(s)),
+            on_selected(character, Message::SearchText),
         ).style(style);
         row.push(text).push_space(4).push(input)
     }
@@ -412,7 +528,7 @@ impl Searcher for TextSearch {
 
 #[derive(Debug, Default)]
 pub struct SourceSearch {
-    sources: Vec<WithButton<Source>>,
+    pub sources: Vec<WithButton<Source>>,
     state: pick_list::State<PLOption<Source>>,
 }
 
@@ -425,7 +541,12 @@ impl Searcher for SourceSearch {
         self.sources.iter().any(|wb| wb.t == spell.source())
     }
 
-    fn add_to_row<'a>(&'a mut self, row: Row<'a, crate::Message>, style: Style) -> Row<'a, crate::Message> {
+    fn add_to_row<'a>(
+        &'a mut self,
+        row: Row<'a, crate::Message>,
+        character: Option<usize>,
+        style: Style,
+    ) -> Row<'a, crate::Message> {
         let sources = Source::ALL.into_iter()
             .filter(|source| self.sources.iter().none(|wb| wb.t == *source))
             .map(PLOption::Some)
@@ -435,9 +556,9 @@ impl Searcher for SourceSearch {
             &mut self.state,
             sources,
             Some(PLOption::None),
-            |s| crate::Message::Search(Message::PickSource(s.unwrap())),
+            on_selected(character, Message::PickSource)
         ).style(style).text_size(14);
-        add_buttons(&mut self.sources, Message::PickSource, style, row.push(pick_list))
+        add_buttons(&mut self.sources, Message::PickSource, character, style, row.push(pick_list))
     }
 }
 
@@ -453,6 +574,7 @@ pub struct SearchOptions {
     pub casting_time_search: Option<CastingTimeSearch>,
     pub school_search: Option<SchoolSearch>,
     pub ritual_search: Option<RitualSearch>,
+    pub concentration_search: Option<ConcentrationSearch>,
     pub text_search: Option<TextSearch>,
     pub source_search: Option<SourceSearch>,
 }
@@ -465,7 +587,7 @@ impl SearchOptions {
         };
     }
 
-    fn search(&mut self, custom: &[CustomSpell], characters: &[CharacterPage]) -> Vec<Spell> {
+    pub fn search(&mut self, custom: &[CustomSpell], characters: &[CharacterPage]) -> Vec<Spell> {
         let needle = &self.search;
         SPELLS.iter()
             .map(StaticCustomSpell::Static)
@@ -479,6 +601,7 @@ impl SearchOptions {
                 self.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                self.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
             ].into_iter()
@@ -499,6 +622,7 @@ impl SearchOptions {
         search_message: S,
         mode_message: M,
         reset_message: crate::Message,
+        character: Option<usize>,
         style: Style,
     ) -> Container<'s, crate::Message>
         where
@@ -534,13 +658,14 @@ impl SearchOptions {
             self.school_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
             self.casting_time_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
             self.ritual_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
+            self.concentration_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
             self.text_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
             self.source_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
         ].into_iter()
             .flatten()
             .fold(
                 Row::new().align_items(Align::Center),
-                |row, searcher| searcher.add_to_row(row, style),
+                |row, searcher| searcher.add_to_row(row, character, style),
             );
 
         Container::new(
@@ -630,8 +755,9 @@ impl SearchPage {
                     Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
                     Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
                     Mode::Ritual => SearchOptions::toggle_mode(&mut self.search.ritual_search),
+                    Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
                     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
-                    Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search)
+                    Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
                 }
                 // the default (false) will still match spells, so redo the search
                 mode == Mode::Ritual
@@ -642,52 +768,35 @@ impl SearchPage {
                 self.search.casting_time_search = None;
                 self.search.school_search = None;
                 self.search.ritual_search = None;
+                self.search.concentration_search = None;
                 self.search.text_search = None;
                 self.search.source_search = None;
                 true
             }
-            Message::PickLevel(level) => if let Some(levels) = &mut self.search.level_search {
-                toggle(&mut levels.levels, level);
-                true
-            } else {
-                false
-            },
-            Message::PickClass(class) => if let Some(classes) = &mut self.search.class_search {
-                toggle(&mut classes.classes, class);
-                true
-            } else {
-                false
-            },
-            Message::PickSchool(school) => if let Some(schools) = &mut self.search.school_search {
-                toggle(&mut schools.schools, school);
-                true
-            } else {
-                false
-            },
-            Message::PickCastingTime(casting_time) => if let Some(casting_times) = &mut self.search.casting_time_search {
-                toggle(&mut casting_times.times, casting_time);
-                true
-            } else {
-                false
-            },
-            Message::PickSource(source) => if let Some(sources) = &mut self.search.source_search {
-                toggle(&mut sources.sources, source);
-                true
-            } else {
-                false
-            },
-            Message::ToggleRitual(ritual) => if let Some(search) = &mut self.search.ritual_search {
-                search.ritual = ritual;
-                true
-            } else {
-                false
-            },
-            Message::SearchText(text) => if let Some(search) = &mut self.search.text_search {
-                search.text = text.to_lowercase();
-                true
-            } else {
-                false
-            },
+            Message::PickLevel(level) => self.search.level_search.as_mut()
+                .map(|levels| toggle(&mut levels.levels, level))
+                .is_some(),
+            Message::PickClass(class) => self.search.class_search.as_mut()
+                .map(|classes| toggle(&mut classes.classes, class))
+                .is_some(),
+            Message::PickSchool(school) => self.search.school_search.as_mut()
+                .map(|schools| toggle(&mut schools.schools, school))
+                .is_some(),
+            Message::PickCastingTime(casting_time) => self.search.casting_time_search.as_mut()
+                .map(|casting_times| toggle(&mut casting_times.times, casting_time))
+                .is_some(),
+            Message::PickSource(source) => self.search.source_search.as_mut()
+                .map(|sources| toggle(&mut sources.sources, source))
+                .is_some(),
+            Message::ToggleRitual(ritual) => self.search.ritual_search.as_mut()
+                .map(|search| search.ritual = ritual)
+                .is_some(),
+            Message::ToggleConcentration(conc) => self.search.concentration_search.as_mut()
+                .map(|search| search.concentration = conc)
+                .is_some(),
+            Message::SearchText(text) => self.search.text_search.as_mut()
+                .map(|search| search.text = text.to_lowercase())
+                .is_some(),
             Message::CollapseAll => {
                 self.collapse = !self.collapse;
                 self.spells.iter_mut().for_each(|spell| spell.collapse = None);
@@ -744,6 +853,7 @@ impl SearchPage {
                 |s| crate::Message::Search(Message::Search(s)),
                 |m| crate::Message::Search(Message::PickMode(m)),
                 crate::Message::Search(Message::ResetModes),
+                None,
                 style,
             ))
             .push(scroll);
