@@ -41,7 +41,6 @@ jobs:
           name: artifact-${{ matrix.os }}
           path: artifact-${{ matrix.os }}
           if-no-files-found: error
-        if: matrix.os != 'windows-latest'
 
   release:
     needs: [ build ]
