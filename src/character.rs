@@ -418,7 +418,6 @@ impl CharacterPage {
 
         // iterate through tabs, allowing for specific handling for "all" and "cantrip" tabs
         let mut iter = tabs.iter_mut();
-        // todo show search params on the ALL page
         // all spells tab
         let all = iter.next().unwrap();
         tabs_row = tabs_row.push(make_button(all, "All".into(), 0));
