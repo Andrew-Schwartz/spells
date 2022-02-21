@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.3.2
-          release_name: v1.3.2 Windows program icon set
+          tag_name: v1.3.3
+          release_name: v1.3.3 Fix "Enemies Abound" capitalization
           draft: true
           prerelease: false
       - name: Get Names

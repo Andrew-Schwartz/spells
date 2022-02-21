@@ -1761,12 +1761,19 @@ impl StaticCustomSpell {
 }
 
 #[must_use]
-pub fn find_spell(spell: &str, custom: &[CustomSpell]) -> Option<StaticCustomSpell> {
+pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<StaticCustomSpell> {
+    fn fix_name_changes(spell_name: &str, spell: &Spell) -> bool {
+        match spell_name {
+            "Enemies abound" => spell.name == "Enemies Abound",
+            _ => false
+        }
+    }
+
     SPELLS.iter()
-        .find(|s| &*s.name == spell)
+        .find(|s| &*s.name == spell_name || fix_name_changes(spell_name, s))
         .map(StaticCustomSpell::Static)
         .or_else(|| custom.iter()
-            .find(|s| &*s.name == spell)
+            .find(|s| &*s.name == spell_name)
             .cloned()
             .map(StaticCustomSpell::Custom))
 }
