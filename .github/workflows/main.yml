@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.3.3
-          release_name: v1.3.3 Fix "Enemies Abound" capitalization
+          tag_name: v1.3.4
+          release_name: v1.3.4 Mac command key support & custom character scrolling
           draft: true
           prerelease: false
       - name: Get Names

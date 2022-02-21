@@ -1762,8 +1762,10 @@ impl StaticCustomSpell {
 
 #[must_use]
 pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<StaticCustomSpell> {
+    // TODO remove this after its been enough time that everyone probably updated it
     fn fix_name_changes(spell_name: &str, spell: &Spell) -> bool {
         match spell_name {
+            // Feb 21, 2022
             "Enemies abound" => spell.name == "Enemies Abound",
             _ => false
         }

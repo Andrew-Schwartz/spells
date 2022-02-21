@@ -1,4 +1,4 @@
-use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Text, text_input, TextInput};
+use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Scrollable, scrollable, Text, text_input, TextInput};
 use itertools::Itertools;
 
 use crate::{CastingTime, Class, CustomSpell, School};
@@ -64,9 +64,11 @@ pub struct SettingsPage {
     pub name: String,
     pub character_name_state: text_input::State,
     create_character: button::State,
+    character_scroll: scrollable::State,
     pub spell_name: String,
     pub spell_name_state: text_input::State,
     create_spell: button::State,
+    spell_scroll: scrollable::State,
     pub spell_editor: SpellEditor,
     close_spell_state: button::State,
 }
@@ -77,9 +79,11 @@ impl SettingsPage {
             name: Default::default(),
             character_name_state: Default::default(),
             create_character: Default::default(),
+            character_scroll: Default::default(),
             spell_name: Default::default(),
             spell_name_state: Default::default(),
             create_spell: Default::default(),
+            spell_scroll: Default::default(),
             spell_editor: SpellEditor::searching("", custom_spells),
             close_spell_state: Default::default(),
         }
@@ -141,7 +145,7 @@ impl SettingsPage {
         ).style(style)
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
-        let text_width = (width as f32 / 2.0
+            let text_width = (width as f32 / 2.0
             - PADDING as f32
             - RULE_SPACING as f32
             - NAME_PADDING as f32
@@ -151,7 +155,7 @@ impl SettingsPage {
         ) as u32;
         let closed_character_buttons = closed_characters.iter_mut()
             .enumerate()
-            .fold(Column::new(), |col, (index, closed)| {
+            .fold(Scrollable::new(&mut self.character_scroll), |col, (index, closed)| {
                 let style = style.alternating(index);
                 let name = Button::new(
                     &mut closed.name_button,
@@ -223,9 +227,9 @@ impl SettingsPage {
 
         let spells_col = match &mut self.spell_editor {
             SpellEditor::Searching { spells } => {
-                spells.iter_mut()
+                let scroll = spells.iter_mut()
                     .enumerate()
-                    .fold(spells_col, |spells_col, (index, (spell, edit1, edit2, delete))| {
+                    .fold(Scrollable::new(&mut self.spell_scroll).spacing(4), |spells_col, (index, (spell, edit1, edit2, delete))| {
                         let style = style.alternating(index);
                         let name = Button::new(
                             edit1,
@@ -252,7 +256,8 @@ impl SettingsPage {
                                 .push(delete)
                                 .align_items(Align::Center)
                         ).style(style))
-                    })
+                    });
+                spells_col.push(scroll)
             }
             SpellEditor::Editing { spell } => {
                 fn row<'a, T: Into<Element<'a, crate::Message>>, L: Into<String>>(
@@ -278,9 +283,7 @@ impl SettingsPage {
                         .push_space(Length::Fill)
                 }
                 fn edit_message<T: 'static>(edit_ctor: fn(T) -> Edit) -> impl Fn(T) -> crate::Message {
-                    move |t: T| crate::Message::Settings(Message::EditSpell(
-                        edit_ctor(t)
-                    ))
+                    move |t: T| crate::Message::Settings(Message::EditSpell(edit_ctor(t)))
                 }
 
                 let title = Text::new(&*spell.name).size(36);
@@ -311,14 +314,6 @@ impl SettingsPage {
                     Some(spell.level),
                     edit_message(Edit::Level),
                 ).style(style).text_size(14);
-
-                // let casting_time = TextInput::new(
-                //     &mut spell.casting_time_state,
-                //     "",
-                //     &spell.casting_time.to_string(),
-                //     edit_message(Edit::CastingTime),
-                // ).style(style)
-                //     .on_submit(crate::Message::Settings(Message::EditSpell(Edit::CastingTimeSubmit)));
 
                 const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
                 let casting_time = PickList::new(

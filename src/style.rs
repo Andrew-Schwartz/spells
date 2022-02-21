@@ -665,9 +665,9 @@ mod dark {
                 button::Style {
                     background: Color::TRANSPARENT.into(),
                     text_color: Color::WHITE,
-                    // border_width: 0.7,
-                    // border_color: Color::from_rgba8(0xFF, 0xFF, 0xFF, 1.0),
-                    // border_radius: 1.0,
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                    border_radius: 5.0,
                     ..button::Style::default()
                 }
             }
