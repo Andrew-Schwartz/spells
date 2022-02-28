@@ -22,7 +22,7 @@ use std::convert::TryFrom;
 use std::default::Default;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::fs::File;
-use std::io::{BufRead, BufReader, ErrorKind, Write};
+use std::io::{BufRead, BufReader, ErrorKind, Write as _};
 use std::mem;
 use std::ops::{Deref, Not};
 use std::path::{Path, PathBuf};
@@ -50,7 +50,7 @@ use crate::search::{PLOption, Unwrap};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
-use crate::utils::{SpacingExt, TryRemoveExt};
+use crate::utils::{SpacingExt, Tap, TryRemoveExt};
 
 mod fetch;
 mod style;
@@ -494,7 +494,22 @@ impl Application for DndSpells {
                                     *when = Some(StArc::Arc(Arc::from(new)));
                                 },
                                 Edit::Range(range) => spell.range = range,
-                                Edit::Components(components) => spell.components = components,
+                                Edit::ComponentV(v) => match &mut spell.components {
+                                    Some(components) => components.v = v,
+                                    none @ None => *none = Some(Components { v: true, s: false, m: None }),
+                                },
+                                Edit::ComponentS(s) => match &mut spell.components {
+                                    Some(components) => components.s = s,
+                                    none @ None => *none = Some(Components { v: false, s: true, m: None }),
+                                },
+                                Edit::ComponentM(m) => match &mut spell.components {
+                                    Some(components) => components.m = m.then(String::new),
+                                    none @ None => *none = Some(Components { v: false, s: false, m: Some(String::new()) }),
+                                },
+                                Edit::ComponentMaterial(mat) => match &mut spell.components {
+                                    Some(components) => components.m = Some(mat),
+                                    None => spell.components = Some(Components { v: false, s: false, m: Some(mat) }),
+                                },
                                 Edit::Duration(duration) => spell.duration = duration,
                                 Edit::Ritual(ritual) => spell.ritual = ritual,
                                 Edit::Concentration(conc) => spell.conc = conc,
@@ -725,8 +740,13 @@ impl Application for DndSpells {
                             if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
                                 states.extend([
                                     &mut spell.casting_time_extra_state,
-                                    &mut spell.range_state,
-                                    &mut spell.components_state,
+                                    &mut spell.range_state
+                                ]);
+                                if matches!(&spell.components, Some(Components { m: Some(_), .. })) {
+                                    states.extend([&mut spell.material_state]);
+                                }
+                                states.extend([
+                                    // &mut spell.components_state,
                                     &mut spell.duration_state,
                                     &mut spell.description_state,
                                     &mut spell.higher_levels_state,
@@ -1168,6 +1188,76 @@ impl Serialize for CastingTime {
     }
 }
 
+#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd, Default)]
+pub struct Components {
+    v: bool,
+    s: bool,
+    m: Option<String>,
+}
+
+impl Display for Components {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut prev = false;
+        if self.v {
+            write!(f, "V")?;
+            prev = true;
+        }
+        if self.s {
+            if prev { write!(f, ", ")? }
+            write!(f, "S")?;
+            prev = true;
+        }
+        if let Some(material) = &self.m {
+            if prev { write!(f, ", ")? }
+            write!(f, "M ({material})")?;
+        }
+        Ok(())
+    }
+}
+
+impl<'de> Deserialize<'de> for Components {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let str = <&'de str>::deserialize(d)?.trim();
+
+        fn vsm(str: &str) -> (bool, bool, bool) {
+            let mut vsm = (false, false, false);
+            for char in str.chars() {
+                match char {
+                    'V' => vsm.0 = true,
+                    'S' => vsm.1 = true,
+                    'M' => vsm.2 = true,
+                    ' ' | ',' => {}
+                    _ => println!("Bad character {char}"),
+                }
+            }
+            vsm
+        }
+
+        let ((v, s, _), material) = if let (Some(start), Some(end)) = (str.find('('), str.rfind(')')) {
+            let vsm = vsm(&str[..start]);
+            assert_eq!(vsm.2, true);
+            (vsm, Some(&str[start + 1..end]))
+        } else {
+            let vsm = vsm(str);
+            assert_eq!(vsm.2, false);
+            (vsm, None)
+        };
+
+        let components = Self {
+            v,
+            s,
+            m: material.map(|str| str.to_string()),
+        };
+        Ok(components)
+    }
+}
+
+impl Serialize for Components {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        format!("{self}").serialize(s)
+    }
+}
+
 #[derive(Eq, PartialEq, Clone, Copy, Hash, Debug, Ord, PartialOrd)]
 pub enum Source {
     PlayersHandbook,
@@ -1227,7 +1317,7 @@ pub struct Spell {
     casting_time: CastingTime,
     range: &'static str,
     duration: &'static str,
-    components: &'static str,
+    components: Components,
     school: School,
     ritual: bool,
     conc: bool,
@@ -1249,7 +1339,7 @@ struct DeserializeSpell {
     casting_time: &'static str,
     range: &'static str,
     duration: &'static str,
-    components: &'static str,
+    components: Components,
     school: School,
     ritual: bool,
     conc: bool,
@@ -1337,9 +1427,9 @@ pub struct CustomSpell {
     range: String,
     #[serde(skip)]
     pub range_state: text_input::State,
-    components: String,
+    pub components: Option<Components>,
     #[serde(skip)]
-    pub components_state: text_input::State,
+    pub material_state: text_input::State,
     duration: String,
     #[serde(skip)]
     pub duration_state: text_input::State,
@@ -1389,8 +1479,8 @@ impl CustomSpell {
             range_state: Default::default(),
             duration: String::new(),
             duration_state: Default::default(),
-            components: String::new(),
-            components_state: Default::default(),
+            components: None,
+            material_state: Default::default(),
             school: School::Abjuration,
             school_state: Default::default(),
             ritual: false,
@@ -1445,29 +1535,6 @@ impl CustomSpell {
             .push(title)
             .push(buttons);
         if !collapse {
-            column = column
-                .push(Rule::horizontal(8))
-                .push(text(self.school))
-                .push_space(4)
-                .push(text(format!("Level: {}", self.level)))
-                .push(text(format!("Casting Time: {}", self.casting_time)))
-                .push(text(format!("Range: {}", self.range)))
-                .push(text(format!("Components: {}", self.components)))
-                .push(text(format!("Duration: {}", self.duration)))
-                .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
-                .push(Rule::horizontal(10))
-                .push(text(&self.description))
-            ;
-            if let Some(higher) = &self.higher_levels {
-                column = column
-                    .push(Rule::horizontal(8))
-                    .push(Row::new()
-                        .push_space(Length::Fill)
-                        .push(Text::new("At higher levels").size(20).width(Length::FillPortion(18)))
-                        .push_space(Length::Fill))
-                    .push_space(3)
-                    .push(text(higher));
-            }
             let classes = self.classes.iter().list_grammatically();
 
             #[allow(clippy::if_not_else)]
@@ -1482,11 +1549,31 @@ impl CustomSpell {
                 // if !self.source.is_empty() { " " } else { "" },
                 // self.page.map(|p| p.to_string()).as_deref().unwrap_or("")
             );
-            if about != "A spell" {
-                column = column
+
+            column = column
+                .push(Rule::horizontal(8))
+                .push(text(self.school))
+                .push_space(4)
+                .push(text(format!("Level: {}", self.level)))
+                .push(text(format!("Casting Time: {}", self.casting_time)))
+                .push(text(format!("Range: {}", self.range)))
+                .push(text(format!("Components: {}", self.components.as_ref().map_or_else(String::new, |c| c.to_string()))))
+                .push(text(format!("Duration: {}", self.duration)))
+                .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
+                .push(Rule::horizontal(10))
+                .push(text(&self.description))
+                .tap_if_some(self.higher_levels.as_ref(), |col, higher| col
                     .push(Rule::horizontal(8))
-                    .push(text(about));
-            }
+                    .push(Row::new()
+                        .push_space(Length::Fill)
+                        .push(Text::new("At higher levels").size(20).width(Length::FillPortion(18)))
+                        .push_space(Length::Fill))
+                    .push_space(3)
+                    .push(text(higher)))
+                .tap_if(about != "A spell", |col| col
+                    .push(Rule::horizontal(8))
+                    .push(text(about)))
+            ;
         }
         Container::new(column)
     }

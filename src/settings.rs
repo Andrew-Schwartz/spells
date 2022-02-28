@@ -1,7 +1,7 @@
 use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Scrollable, scrollable, Text, text_input, TextInput};
 use itertools::Itertools;
 
-use crate::{CastingTime, Class, CustomSpell, School};
+use crate::{CastingTime, Class, Components, CustomSpell, School};
 use crate::character::Character;
 use crate::search::PLOption;
 use crate::settings::Message::SubmitSpell;
@@ -30,7 +30,10 @@ pub enum Edit {
     CastingTimeN(String),
     CastingTimeWhen(String),
     Range(String),
-    Components(String),
+    ComponentV(bool),
+    ComponentS(bool),
+    ComponentM(bool),
+    ComponentMaterial(String),
     Duration(String),
     Ritual(bool),
     Concentration(bool),
@@ -355,12 +358,39 @@ impl SettingsPage {
                     edit_message(Edit::Range),
                 ).style(style);
 
-                let components = TextInput::new(
-                    &mut spell.components_state,
-                    "",
-                    &spell.components,
-                    edit_message(Edit::Components),
+                let Components { v, s, m } = spell.components.clone().unwrap_or_default();
+                let v = Checkbox::new(
+                    v,
+                    "V",
+                    edit_message(Edit::ComponentV),
                 ).style(style);
+                let s = Checkbox::new(
+                    s,
+                    "S",
+                    edit_message(Edit::ComponentS),
+                ).style(style);
+                let mat = Checkbox::new(
+                    m.is_some(),
+                    "M",
+                    edit_message(Edit::ComponentM),
+                ).style(style);
+                let components = Row::new()
+                    .push_space(Length::Fill)
+                    .push(v)
+                    .push_space(Length::Fill)
+                    .push(s)
+                    .push_space(Length::Fill)
+                    .push(mat);
+                let material_component = if let Some(mat) = m {
+                    Some(TextInput::new(
+                        &mut spell.material_state,
+                        "material",
+                        &mat,
+                        edit_message(Edit::ComponentMaterial),
+                    ).style(style))
+                } else {
+                    None
+                };
 
                 let duration = TextInput::new(
                     &mut spell.duration_state,
@@ -422,6 +452,7 @@ impl SettingsPage {
                     .tap_if_some(casting_time_extra, |col, cte| col.push(cte))
                     .push(row("Range:", range))
                     .push(row("Components:", components))
+                    .tap_if_some(material_component, |col, mat| col.push(row("Material:", mat)))
                     .push(row("Duration:", duration))
                     .push(row("Ritual?", ritual))
                     .push(row("Concentration?", conc))
