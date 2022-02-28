@@ -46,5 +46,5 @@ tokio = { version = "1.15.0", features = ["time"] }
 opt-level = 2
 
 [profile.release]
-strip = true
+#strip = true
 #lto = "fat"
