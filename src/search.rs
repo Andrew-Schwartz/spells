@@ -338,7 +338,7 @@ impl Searcher for ClassSearch {
             &mut self.state,
             classes,
             Some(PLOption::None),
-            on_selected(character, Message::PickClass)
+            on_selected(character, Message::PickClass),
         ).style(style).text_size(14);
         add_buttons(&mut self.classes, Message::PickClass, character, style, row.push(pick_list))
     }
@@ -423,7 +423,7 @@ impl Searcher for SchoolSearch {
             &mut self.state,
             schools,
             Some(PLOption::None),
-            on_selected(character, Message::PickSchool)
+            on_selected(character, Message::PickSchool),
         ).style(style).text_size(14);
         add_buttons(&mut self.schools, Message::PickSchool, character, style, row.push(pick_list))
     }
@@ -556,7 +556,7 @@ impl Searcher for SourceSearch {
             &mut self.state,
             sources,
             Some(PLOption::None),
-            on_selected(character, Message::PickSource)
+            on_selected(character, Message::PickSource),
         ).style(style).text_size(14);
         add_buttons(&mut self.sources, Message::PickSource, character, style, row.push(pick_list))
     }

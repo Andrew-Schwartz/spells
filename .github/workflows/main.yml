@@ -17,7 +17,7 @@ jobs:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2`
       - run: sudo apt install libxkbcommon-dev
         if: matrix.os == 'ubuntu-latest'
       - name: Build
@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.3.4
-          release_name: v1.3.4 Mac command key support & custom character scrolling
+          tag_name: v1.3.5
+          release_name: v1.3.5 Improved custom spells component interfact
           draft: true
           prerelease: false
       - name: Get Names
