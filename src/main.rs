@@ -29,12 +29,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+// use iced_native
 use iced::{Align, Application, Button, button, Column, Command, Container, Element, Length, pick_list, ProgressBar, Row, Rule, Settings, Slider, slider, Text, text_input, Tooltip, VerticalAlignment};
 use iced::mouse::ScrollDelta;
 use iced::tooltip::Position;
 use iced::window::Icon;
 use iced_aw::{ICON_FONT, TabLabel, Tabs};
 use iced_native::{Event, Subscription, window};
+use itertools::Either;
 use once_cell::sync::Lazy;
 use self_update::cargo_crate_version;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -122,7 +124,7 @@ fn main() -> iced::Result {
             icon: Some(icon()),
             ..Default::default()
         },
-        default_font: Some(include_bytes!("../resources/arial.ttf")),
+        // default_font: Some(include_bytes!("../resources/arial.ttf")),
         default_text_size: 18,
         antialiasing: true,
         ..Default::default()
@@ -432,6 +434,27 @@ impl Application for DndSpells {
                         let character = self.closed_characters.remove(index);
                         self.add_character(character.character);
                         self.save().expect("todoooooo");
+                    }
+                    Message::Rename(index) => {
+                        let rename = match &mut self.closed_characters[index].rename {
+                            Either::Left(_) => {
+                                Either::Right(Default::default())
+                            }
+                            Either::Right((_, name, _)) => {
+                                if !name.is_empty() {
+                                    let name = std::mem::take(name);
+                                    self.closed_characters[index].character.name = Arc::from(name);
+                                    self.save().expect("ASDSADAS");
+                                }
+                                Either::Left(Default::default())
+                            }
+                        };
+                        self.closed_characters[index].rename = rename;
+                    }
+                    Message::RenameString(index, new) => {
+                        if let Either::Right((_, name, _)) = &mut self.closed_characters[index].rename {
+                            *name = new;
+                        }
                     }
                     Message::DeleteCharacter(index) => {
                         self.closed_characters.remove(index);
@@ -1227,7 +1250,7 @@ impl<'de> Deserialize<'de> for Components {
                     'S' => vsm.1 = true,
                     'M' => vsm.2 = true,
                     ' ' | ',' => {}
-                    _ => println!("Bad character {char}"),
+                    _ => println!("Bad character {char} in {str}"),
                 }
             }
             vsm

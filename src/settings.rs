@@ -1,5 +1,5 @@
 use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Scrollable, scrollable, Text, text_input, TextInput};
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 
 use crate::{CastingTime, Class, Components, CustomSpell, School};
 use crate::character::Character;
@@ -13,6 +13,8 @@ pub enum Message {
     CharacterName(String),
     SubmitCharacter,
     Open(usize),
+    Rename(usize),
+    RenameString(usize, String),
     DeleteCharacter(usize),
     SpellName(String),
     OpenSpell(usize),
@@ -49,6 +51,7 @@ pub struct ClosedCharacter {
     pub character: Character,
     name_button: button::State,
     open_button: button::State,
+    pub rename: Either<button::State, (text_input::State, String, button::State)>,
     delete_button: button::State,
 }
 
@@ -58,6 +61,7 @@ impl From<Character> for ClosedCharacter {
             character,
             name_button: Default::default(),
             open_button: Default::default(),
+            rename: Either::Left(Default::default()),
             delete_button: Default::default(),
         }
     }
@@ -153,7 +157,7 @@ impl SettingsPage {
             - RULE_SPACING as f32
             - NAME_PADDING as f32
             - 45.0 // open button
-            - SPACING as f32
+            - (2 * SPACING) as f32
             - 51.0 // delete button
         ) as u32;
         let closed_character_buttons = closed_characters.iter_mut()
@@ -173,6 +177,37 @@ impl SettingsPage {
                     Text::new("Open").size(15),
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::Open(index)));
+                let rename = match &mut closed.rename {
+                    Either::Left(button_state) => {
+                        let button = Button::new(
+                            button_state,
+                            Text::new("Rename").size(15),
+                        ).style(style)
+                            .on_press(crate::Message::Settings(Message::Rename(index)));
+                        Container::new(button).style(style)
+                    }
+                    Either::Right((text_state, name, button_state)) => {
+                        let text = TextInput::new(
+                            text_state,
+                            "Submit now to cancel",
+                            &*name,
+                            move |s| crate::Message::Settings(Message::RenameString(index, s)),
+                        ).style(style)
+                            .width(Length::Units(140))
+                            .on_submit(crate::Message::Settings(Message::Rename(index)));
+                        let button = Button::new(
+                            button_state,
+                            Text::new("Submit").size(15),
+                        ).style(style)
+                            .on_press(crate::Message::Settings(Message::Rename(index)));
+                        let row = Row::new()
+                            .align_items(Align::Center)
+                            .push(text)
+                            .push_space(3)
+                            .push(button);
+                        Container::new(row).style(style)
+                    }
+                };
                 let delete = Button::new(
                     &mut closed.delete_button,
                     Text::new("Delete").size(15),
@@ -185,6 +220,7 @@ impl SettingsPage {
                         .push(name)
                         .push_space(Length::Fill)
                         .push(open)
+                        .push(rename)
                         .push(delete)
                         .align_items(Align::Center)
                 ).style(style))

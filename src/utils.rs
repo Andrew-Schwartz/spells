@@ -29,6 +29,8 @@ pub trait ColorExt {
     fn g(self, g: f32) -> Self;
     fn b(self, b: f32) -> Self;
     fn a(self, a: f32) -> Self;
+
+    fn clearer(self, multiplier: f32) -> Self;
 }
 
 impl ColorExt for Color {
@@ -50,6 +52,11 @@ impl ColorExt for Color {
     fn a(mut self, a: f32) -> Self {
         self.a = a;
         self
+    }
+
+    fn clearer(self, multiplier: f32) -> Self {
+        let a = self.a * multiplier;
+        self.a(a.clamp(0.0, 1.0))
     }
 }
 

@@ -36,6 +36,10 @@ macro_rules! from {
         $style:ident =>
         $($module:ident: $($light_dark_token:tt = $light_dark:ident),*);* $(;)?
     ) => {
+        impl $style {
+            pub fn transparent(self) -> TransparentStyle { TransparentStyle::Light }
+        }
+
         $(
             from! { @priv $style => $module: $($light_dark_token = $light_dark),* }
         )*
@@ -44,6 +48,12 @@ macro_rules! from {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Style {
+    Light,
+    Dark,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum TransparentStyle {
     Light,
     Dark,
 }
@@ -142,6 +152,12 @@ from! { Style =>
     tabs: dark = Tabs;
 }
 
+from! { TransparentStyle =>
+    container: light = Transparent, dark = Transparent;
+    button: light = Transparent, dark = Transparent;
+    text_input: light = Transparent, dark = Transparent;
+}
+
 from! { SettingsBarStyle =>
     button: light = Button, dark = SettingsBarStyle;
     container: dark = SettingsBarStyle;
@@ -150,6 +166,10 @@ from! { SettingsBarStyle =>
 
 from! { TabButtonStyle =>
     button: light = Button, dark = TabButton;
+}
+
+impl AlternatingStyle {
+    pub fn transparent(self) -> TransparentStyle { TransparentStyle::Light }
 }
 
 // todo epic macro for this too :)
@@ -179,8 +199,75 @@ impl From<AlternatingStyle> for Box<dyn button::StyleSheet> {
     }
 }
 
+impl From<AlternatingStyle> for Box<dyn text_input::StyleSheet> {
+    fn from(AlternatingStyle { style, alt, highlight }: AlternatingStyle) -> Self {
+        match style {
+            Style::Light => Default::default(),
+            Style::Dark => if alt {
+                dark::alt::TextInput::<0>(highlight).into()
+            } else {
+                dark::alt::TextInput::<1>(highlight).into()
+            }
+        }
+    }
+}
+
+mod transparent {
+    use iced::{button, Color, container, text_input};
+
+    pub struct Transparent;
+
+    impl container::StyleSheet for Transparent {
+        fn style(&self) -> container::Style {
+            container::Style {
+                background: Color::TRANSPARENT.into(),
+                border_color: Color::TRANSPARENT,
+                ..Default::default()
+            }
+        }
+    }
+
+    impl button::StyleSheet for Transparent {
+        fn active(&self) -> button::Style {
+            button::Style {
+                background: Color::TRANSPARENT.into(),
+                border_color: Color::TRANSPARENT,
+                ..Default::default()
+            }
+        }
+    }
+
+    impl text_input::StyleSheet for Transparent {
+        fn active(&self) -> text_input::Style {
+            text_input::Style {
+                background: Color::TRANSPARENT.into(),
+                border_color: Color::TRANSPARENT,
+                ..Default::default()
+            }
+        }
+
+        fn focused(&self) -> text_input::Style {
+            self.active()
+        }
+
+        fn placeholder_color(&self) -> Color {
+            Color::TRANSPARENT
+        }
+
+        fn value_color(&self) -> Color {
+            Color::TRANSPARENT
+        }
+
+        fn selection_color(&self) -> Color {
+            Color::TRANSPARENT
+        }
+    }
+}
+
 mod light {
     use iced::{button, Color};
+
+    pub use super::transparent::Transparent;
 
     pub struct Button;
 
@@ -227,6 +314,8 @@ mod dark {
     use iced::button::Style;
     use iced::slider::{Handle, HandleShape};
     use iced_aw::tabs;
+
+    pub use super::transparent::Transparent;
 
     mod color {
         use iced::Color;
@@ -690,6 +779,47 @@ mod dark {
                     }
                 } else {
                     self.active()
+                }
+            }
+        }
+
+        pub struct TextInput<const N: usize>(pub bool);
+
+        impl<const N: usize> text_input::StyleSheet for TextInput<N> {
+            fn active(&self) -> text_input::Style {
+                text_input::Style {
+                    background: Color::TRANSPARENT.into(),
+                    border_radius: 2.0,
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                }
+            }
+
+            fn focused(&self) -> text_input::Style {
+                text_input::Style {
+                    border_width: 1.0,
+                    border_color: color::ACTIVE.clearer(0.8),
+                    ..self.active()
+                }
+            }
+
+            fn placeholder_color(&self) -> Color {
+                Color::WHITE.clearer(0.7)
+            }
+
+            fn value_color(&self) -> Color {
+                Color::WHITE
+            }
+
+            fn selection_color(&self) -> Color {
+                color::ACTIVE
+            }
+
+            fn hovered(&self) -> text_input::Style {
+                text_input::Style {
+                    border_width: 1.0,
+                    border_color: color::ACCENT.a(0.3),
+                    ..self.focused()
                 }
             }
         }

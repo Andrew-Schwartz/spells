@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.3.5
-          release_name: v1.3.5 Improved custom spells component interfact
+          tag_name: v1.3.6
+          release_name: v1.3.6 Rename characters
           draft: true
           prerelease: false
       - name: Get Names
