@@ -53,6 +53,8 @@ pub struct Character {
     pub name: Arc<str>,
     /// the spells this character knows, by level, and if it's prepared
     pub spells: [Vec<(Spell, bool)>; 10],
+    /// slots (total, left) by level
+    pub slots: Option<[(u32, u32); 9]>,
 }
 
 impl Character {
@@ -68,6 +70,7 @@ impl Character {
         Self {
             name: Arc::clone(&serialized.name),
             spells,
+            slots: serialized.slots
         }
     }
 
@@ -78,6 +81,7 @@ impl Character {
                 .flatten()
                 .map(|(spell, prepared)| (spell.spell.name(), *prepared))
                 .collect(),
+            slots: self.slots,
         }
     }
 }
@@ -88,6 +92,7 @@ pub struct SerializeCharacter {
     // fine to Deserialize Arc because we only ever do so once, when the program starts
     name: Arc<str>,
     spells: Vec<(StArc<str>, bool)>,
+    slots: Option<[(u32, u32); 9]>
 }
 
 pub struct CharacterPage {
@@ -142,7 +147,7 @@ impl From<StaticCustomSpell> for Spell {
 
 impl From<Arc<str>> for CharacterPage {
     fn from(name: Arc<str>) -> Self {
-        Self::from(Character { name, spells: Default::default() })
+        Self::from(Character { name, spells: Default::default(), slots: None })
     }
 }
 
@@ -331,6 +336,7 @@ impl CharacterPage {
             character: Character {
                 name,
                 spells,
+                slots,
             },
             should_collapse_all,
             collapse_all,
@@ -436,7 +442,7 @@ impl CharacterPage {
         let tabs_row = tabs_row.push_space(Length::Fill);
 
         // slightly cursed way to flatten spells if we're in the `all` tab
-        let (spells, search_col) = if selected_level == 0 {
+        let (spells, search_col, level) = if selected_level == 0 {
             let needle = search.search.to_lowercase();
             let spells = spells.iter_mut()
                 .flatten()
@@ -472,9 +478,9 @@ impl CharacterPage {
                     Some(index),
                     style,
                 ));
-            (spells, search_col)
+            (spells, search_col, None)
         } else {
-            (spells[selected_level - 1].iter_mut().collect(), Column::new())
+            (spells[selected_level - 1].iter_mut().collect(), Column::new(), (selected_level >= 2).then(|| selected_level - 2))
         };
 
         let len = spells.len();
@@ -487,7 +493,7 @@ impl CharacterPage {
                 .fold(Column::new().spacing(18), |spells_col, mut chunk| {
                     let row = (0..num_cols).fold(Row::new(), |row, _| {
                         if let Some((idx, (spell, prepared))) = chunk.next() {
-                            let spell: &mut Spell = spell;
+                            // let spell: &mut Spell = spell;
                             let all_tab = selected_level == 0;
                             let button = CharacterPageButtons {
                                 character: index,

@@ -64,6 +64,7 @@ mod hotkey;
 mod hotmouse;
 mod utils;
 mod update;
+mod slots_widget;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
