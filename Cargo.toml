@@ -16,7 +16,7 @@ features = ["glow"]
 git = "https://github.com/iced-rs/iced_aw"
 branch = "main"
 default-features = false
-features = ["tabs", "colors", "icons"]
+features = ["tabs", "colors", "icons", "number_input"]
 
 [dependencies]
 iced_native = "0.4.0"

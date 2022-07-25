@@ -1,3 +1,5 @@
+#![feature(array_methods)]
+
 // ignored on other targets
 #![windows_subsystem = "windows"]
 
@@ -17,13 +19,12 @@ clippy::enum_glob_use,
 )]
 // @formatter:on
 
+use std::{fs::{self, File}, mem};
 use std::cmp::min;
 use std::convert::TryFrom;
 use std::default::Default;
 use std::fmt::{self, Debug, Display, Formatter};
-use std::fs::File;
 use std::io::{BufRead, BufReader, ErrorKind, Write as _};
-use std::mem;
 use std::ops::{Deref, Not};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -73,25 +74,25 @@ pub static SPELLS: Lazy<Vec<Spell>> = Lazy::new(|| serde_json::from_str(JSON).ex
 static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let path = dirs::data_local_dir().unwrap_or_default()
         .join("dndspells");
-    std::fs::create_dir_all(&path).unwrap();
+    fs::create_dir_all(&path).unwrap();
     path
 });
 static CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
     let mut path = SAVE_DIR.clone();
     path.push("characters.json");
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
+    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
 });
 static CLOSED_CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
     let mut path = SAVE_DIR.clone();
     path.push("closed-characters.json");
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
+    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
 });
 static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| {
     let mut path = SAVE_DIR.clone();
     path.push("custom-spells.json");
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
+    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
 });
 
@@ -161,7 +162,7 @@ impl UpdateState {
                 Self::Checking => Text::new("Checking for updates..."),
                 Self::Ready => Text::new("Preparing to download..."),
                 Self::Downloaded => Text::new("Downloaded new version! Restart program to get new features!"),
-                Self::UpToDate => Text::new(format!("Up to date, v{}", VER)),
+                Self::UpToDate => Text::new(format!("Spells v{}", VER)),
                 Self::Errored(e) => Text::new(format!("Error downloading new version: {}. Running v{}", e, VER)),
                 Self::Downloading(_) => unreachable!(),
             }.size(10).into()
@@ -1142,6 +1143,18 @@ impl CastingTime {
             _ => Err(format!("{} is not a casting time", rest))
         }
     }
+
+    pub fn equals_ignore_reaction(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Special, Self::Special) => true,
+            (Self::Action, Self::Action) => true,
+            (Self::BonusAction, Self::BonusAction) => true,
+            (Self::Reaction(_), Self::Reaction(_)) => true,
+            (&Self::Minute(m1), &Self::Minute(m2)) if m1 == m2 => true,
+            (&Self::Hour(h1), &Self::Hour(h2)) if h1 == h2 => true,
+            _ => false,
+        }
+    }
 }
 
 impl Display for CastingTime {
@@ -1151,7 +1164,7 @@ impl Display for CastingTime {
             Self::Action => f.write_str("1 Action"),
             Self::BonusAction => f.write_str("1 Bonus Action"),
             Self::Reaction(when) => if let Some(when) = when {
-                write!(f, "1 Reaction, which you take when {}", when)
+                write!(f, "1 Reaction, which you take when {when}")
             } else {
                 f.write_str("1 Reaction")
             }
@@ -1436,8 +1449,8 @@ pub struct CustomSpell {
     name: Arc<str>,
     name_lower: String,
     // todo this was for allowing spells to be renamed
-    #[serde(skip)]
-    name_state: text_input::State,
+    // #[serde(skip)]
+    // name_state: text_input::State,
     level: usize,
     #[serde(skip)]
     level_state: pick_list::State<usize>,
@@ -1493,7 +1506,7 @@ impl CustomSpell {
         Self {
             name: Arc::from(name),
             name_lower,
-            name_state: Default::default(),
+            // name_state: Default::default(),
             level: 0,
             level_state: Default::default(),
             casting_time: CastingTime::Action,
@@ -1530,6 +1543,8 @@ impl CustomSpell {
         }
     }
 
+    // TODO add a option to add source to custom spells, then merge this with the SAME METHOD in
+    //  Spell into StaticCustomSpell
     pub fn view<'a, B: SpellButtons<'a>>(
         &'a self,
         button: B,

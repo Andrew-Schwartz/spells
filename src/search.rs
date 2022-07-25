@@ -358,7 +358,9 @@ impl Searcher for CastingTimeSearch {
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.times.iter().any(|WithButton { t, .. }| t == spell.casting_time())
+        self.times.iter().any(|WithButton { t, .. }|
+            t.equals_ignore_reaction(spell.casting_time())
+        )
     }
 
     fn add_to_row<'a>(
@@ -867,7 +869,7 @@ struct SearchPageButtons<'a>(&'a mut button::State, &'a mut [(Arc<str>, button::
 impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
     type Data = ();
 
-    fn view(self, id: SpellId, (): (), style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
+    fn view(self, id: SpellId, (): Self::Data, style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
         let mut buttons = Row::new();
         if !self.1.is_empty() {
             buttons = buttons.push(Text::new("Add to:"))
