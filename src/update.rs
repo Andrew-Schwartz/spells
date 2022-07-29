@@ -53,8 +53,8 @@ impl<H: Hasher, E> Recipe<H, E> for Download {
 
     fn stream(
         self: Box<Self>,
-        _input: futures::stream::BoxStream<E>,
-    ) -> futures::stream::BoxStream<Self::Output> {
+        _input: futures::stream::BoxStream<'_, E>,
+    ) -> futures::stream::BoxStream<'_, Self::Output> {
         Box::pin(futures::stream::unfold(
             State::Ready(self.url),
             |state| async move {
@@ -270,7 +270,7 @@ fn cleanup_backup_temp_directories(
     // binary file before removing. If subdirectories or other files exist then the user
     // is using the temp directory for something else. This is unlikely, but we should
     // be careful with `fs::remove_dir_all`.
-    let is_expected_tmp_file = |tmp_file_entry: std::io::Result<fs::DirEntry>| {
+    let is_expected_tmp_file = |tmp_file_entry: io::Result<DirEntry>| {
         tmp_file_entry
             .ok()
             .filter(|e| e.file_name() == expected_tmp_filename)

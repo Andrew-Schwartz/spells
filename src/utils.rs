@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use iced::{Color, Column, Length, Row, Scrollable, Space};
+use iced::{Color, Length, pure::{self, *, widget::*}};
+use iced::tooltip::Position;
+use iced_aw::{Icon, ICON_FONT};
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
@@ -8,19 +10,13 @@ pub trait SpacingExt {
 
 impl<'a, Message: 'a> SpacingExt for Column<'a, Message> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
-        self.push(Space::with_height(length.into()))
+        self.push(vertical_space(length.into()))
     }
 }
 
 impl<'a, Message: 'a> SpacingExt for Row<'a, Message> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
-        self.push(Space::with_width(length.into()))
-    }
-}
-
-impl<'a, Message: 'a> SpacingExt for Scrollable<'a, Message> {
-    fn push_space<L: Into<Length>>(self, length: L) -> Self {
-        self.push(Space::with_height(length.into()))
+        self.push(horizontal_space(length.into()))
     }
 }
 
@@ -134,3 +130,45 @@ pub trait IterExt: Iterator + Sized {
 }
 
 impl<I: Iterator + Sized> IterExt for I {}
+
+pub trait TooltipExt<'a, Message>: Into<Element<'a, Message>> {
+    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a, Message> {
+        pure::tooltip(self, tooltip, position)
+    }
+
+    fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a, Message> {
+        self.tooltip_at(tooltip, Position::FollowCursor)
+    }
+}
+
+impl<'a, M, E: Into<Element<'a, M>>> TooltipExt<'a, M> for E {}
+
+// struct TextButton<'a, M> {
+//     button: Button<'a, M>,
+// }
+//
+// pub fn text_button<M, T: Into<String>>(text: T) -> TextButton<M> {
+//     TextButton { button: button(pure::text(text)) }
+// }
+//
+// impl<Message, Renderer> Widget<Message, Renderer> for TextButton<Message> {
+//     fn width(&self) -> Length {
+//         Length::Shrink
+//     }
+//
+//     fn height(&self) -> Length {
+//         todo!()
+//     }
+//
+//     fn layout(&self, renderer: &Renderer, limits: &Limits) -> Node {
+//         todo!()
+//     }
+//
+//     fn draw(&self, state: &iced_pure::widget::tree::Tree, renderer: &mut Renderer, style: &Style, layout: Layout<'_>, cursor_position: Point, viewport: &Rectangle) {
+//         todo!()
+//     }
+// }
+
+pub fn text_icon(icon: Icon) -> Text {
+    text(icon).font(ICON_FONT)
+}

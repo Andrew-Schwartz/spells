@@ -1,10 +1,9 @@
-use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, PickList, Row, Rule, Scrollable, scrollable, Text, text_input, TextInput};
+use iced::{Alignment, Length, pure::{*, widget::*}};
 use itertools::{Either, Itertools};
 
 use crate::{CastingTime, Class, Components, CustomSpell, School};
 use crate::character::Character;
 use crate::search::PLOption;
-use crate::settings::Message::SubmitSpell;
 use crate::style::Style;
 use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
@@ -49,50 +48,30 @@ pub enum Edit {
 
 pub struct ClosedCharacter {
     pub character: Character,
-    name_button: button::State,
-    open_button: button::State,
-    pub rename: Either<button::State, (text_input::State, String, button::State)>,
-    delete_button: button::State,
+    pub rename: Either<(), String>,
 }
 
 impl From<Character> for ClosedCharacter {
     fn from(character: Character) -> Self {
         Self {
             character,
-            name_button: Default::default(),
-            open_button: Default::default(),
             rename: Either::Left(Default::default()),
-            delete_button: Default::default(),
         }
     }
 }
 
 pub struct SettingsPage {
     pub name: String,
-    pub character_name_state: text_input::State,
-    create_character: button::State,
-    character_scroll: scrollable::State,
     pub spell_name: String,
-    pub spell_name_state: text_input::State,
-    create_spell: button::State,
-    spell_scroll: scrollable::State,
     pub spell_editor: SpellEditor,
-    close_spell_state: button::State,
 }
 
 impl SettingsPage {
     pub fn new(custom_spells: &[CustomSpell]) -> Self {
         Self {
             name: Default::default(),
-            character_name_state: Default::default(),
-            create_character: Default::default(),
-            character_scroll: Default::default(),
             spell_name: Default::default(),
-            spell_name_state: Default::default(),
-            create_spell: Default::default(),
-            spell_scroll: Default::default(),
             spell_editor: SpellEditor::searching("", custom_spells),
-            close_spell_state: Default::default(),
         }
     }
 }
@@ -100,7 +79,7 @@ impl SettingsPage {
 pub enum SpellEditor {
     Searching {
         /// Vec<(spell, open, delete)>
-        spells: Vec<(CustomSpell, button::State, button::State, button::State)>,
+        spells: Vec<CustomSpell>,
     },
     Editing {
         spell: CustomSpell,
@@ -116,39 +95,37 @@ impl SpellEditor {
             // .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
             .map(|(_, spell)| spell)
             .take(20)
-            .map(|spell| (spell.clone(), Default::default(), Default::default(), Default::default()))
+            .cloned()
             .collect();
         Self::Searching { spells }
     }
 }
 
 impl SettingsPage {
-    pub fn view<'a>(
-        &'a mut self,
-        closed_characters: &'a mut [ClosedCharacter],
+    pub fn view<'s, 'c: 's>(
+        &'s self,
+        closed_characters: &[ClosedCharacter],
         width: u32,
         style: Style,
-    ) -> Container<'a, crate::Message> {
+    ) -> Container<'c, crate::Message> {
         const PADDING: u16 = 12;
         const RULE_SPACING: u16 = 24;
         const NAME_PADDING: u16 = 3;
         const SPACING: u16 = 5;
 
-        let character_label = Row::new()
+        let character_label = row()
             .push_space(Length::Fill)
-            .push(Text::new("Characters").size(30))
+            .push(text("Characters").size(30))
             .push_space(Length::Fill);
 
-        let character_name_input = TextInput::new(
-            &mut self.character_name_state,
+        let character_name_input = text_input(
             "Character Name",
             &self.name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
         ).style(style)
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));
-        let create_character_button = Button::new(
-            &mut self.create_character,
-            Text::new("Create").size(16),
+        let create_character_button = button(
+            text("Create").size(16),
         ).style(style)
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
@@ -160,61 +137,55 @@ impl SettingsPage {
             - (2 * SPACING) as f32
             - 51.0 // delete button
         ) as u32;
-        let closed_character_buttons = closed_characters.iter_mut()
+        let closed_character_buttons = closed_characters.iter()
             .enumerate()
-            .fold(Scrollable::new(&mut self.character_scroll), |col, (index, closed)| {
+            .fold(column(), |col, (index, closed)| {
                 let style = style.alternating(index);
-                let name = Button::new(
-                    &mut closed.name_button,
-                    Text::new(&*closed.character.name).size(19),
+                let name = button(
+                    text(&*closed.character.name).size(19),
                 ).style(style.no_highlight())
                     .on_press(crate::Message::Settings(Message::Open(index)));
-                let name = Container::new(name)
+                let name = container(name)
                     .max_width(text_width)
                     .style(style);
-                let open = Button::new(
-                    &mut closed.open_button,
-                    Text::new("Open").size(15),
+                let open = button(
+                    text("Open").size(15),
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::Open(index)));
-                let rename = match &mut closed.rename {
-                    Either::Left(button_state) => {
-                        let button = Button::new(
-                            button_state,
-                            Text::new("Rename").size(15),
+                let rename = match &closed.rename {
+                    Either::Left(()) => {
+                        let button = button(
+                            text("Rename").size(15),
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::Rename(index)));
-                        Container::new(button).style(style)
+                        container(button).style(style)
                     }
-                    Either::Right((text_state, name, button_state)) => {
-                        let text = TextInput::new(
-                            text_state,
+                    Either::Right(name) => {
+                        let cancel_input = text_input(
                             "Submit now to cancel",
                             &*name,
                             move |s| crate::Message::Settings(Message::RenameString(index, s)),
                         ).style(style)
                             .width(Length::Units(140))
                             .on_submit(crate::Message::Settings(Message::Rename(index)));
-                        let button = Button::new(
-                            button_state,
-                            Text::new("Submit").size(15),
+                        let button = button(
+                            text("Submit").size(15),
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::Rename(index)));
-                        let row = Row::new()
-                            .align_items(Align::Center)
-                            .push(text)
+                        let row = row()
+                            .align_items(Alignment::Center)
+                            .push(cancel_input)
                             .push_space(3)
                             .push(button);
-                        Container::new(row).style(style)
+                        container(row).style(style)
                     }
                 };
-                let delete = Button::new(
-                    &mut closed.delete_button,
-                    Text::new("Delete").size(15),
+                let delete = button(
+                    text("Delete").size(15),
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::DeleteCharacter(index)));
-                col.push(Container::new(
-                    Row::new()
+                col.push(container(
+                    row()
                         .spacing(SPACING)
                         .push_space(NAME_PADDING)
                         .push(name)
@@ -222,14 +193,14 @@ impl SettingsPage {
                         .push(open)
                         .push(rename)
                         .push(delete)
-                        .align_items(Align::Center)
+                        .align_items(Alignment::Center)
                 ).style(style))
             });
 
-        let character_col = Column::new()
+        let character_col = column()
             .spacing(4)
-            .push(Row::new()
-                .align_items(Align::Center)
+            .push(row()
+                .align_items(Alignment::Center)
                 .push(character_name_input)
                 .push_space(4)
                 .push(create_character_button))
@@ -237,87 +208,82 @@ impl SettingsPage {
             .push(closed_character_buttons)
             ;
 
-        let spells_label = Row::new()
+        let spells_label = row()
             .push_space(Length::Fill)
-            .push(Text::new("Spell Editor").size(30))
+            .push(text("Spell Editor").size(30))
             .push_space(Length::Fill);
 
-        let spell_name = TextInput::new(
-            &mut self.spell_name_state,
+        let spell_name = text_input(
             "Spell Name",
             &self.spell_name,
             |n| crate::Message::Settings(Message::SpellName(n)),
         ).style(style)
             .on_submit(crate::Message::Settings(Message::SubmitSpell));
-        let create_spell_button = Button::new(
-            &mut self.create_spell,
-            Text::new("Create").size(16),
+        let create_spell_button = button(
+            text("Create").size(16),
         ).style(style)
-            .on_press(crate::Message::Settings(SubmitSpell));
+            .on_press(crate::Message::Settings(Message::SubmitSpell));
 
-        let spells_col = Column::new()
+        let spells_col = column()
             .spacing(4)
-            .push(Row::new()
-                .align_items(Align::Center)
+            .push(row()
+                .align_items(Alignment::Center)
                 .push(spell_name)
                 .push_space(4)
                 .push(create_spell_button))
             .push_space(10);
 
-        let spells_col = match &mut self.spell_editor {
+        let spells_col = match &self.spell_editor {
             SpellEditor::Searching { spells } => {
-                let scroll = spells.iter_mut()
+                let col = spells.iter()
                     .enumerate()
-                    .fold(Scrollable::new(&mut self.spell_scroll).spacing(4), |spells_col, (index, (spell, edit1, edit2, delete))| {
+                    .fold(column().spacing(4), |spells_col, (index, spell)| {
                         let style = style.alternating(index);
-                        let name = Button::new(
-                            edit1,
-                            Text::new(&*spell.name).size(19),
+                        let name = button(
+                            text(&*spell.name).size(19),
                         ).style(style.no_highlight())
                             .on_press(crate::Message::Settings(Message::OpenSpell(index)));
-                        let edit = Button::new(
-                            edit2,
-                            Text::new("Edit").size(15),
+                        let edit = button(
+                            text("Edit").size(15),
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::OpenSpell(index)));
-                        let delete = Button::new(
-                            delete,
-                            Text::new("Delete").size(15),
+                        let delete = button(
+                            text("Delete").size(15),
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::DeleteSpell(index)));
-                        spells_col.push(Container::new(
-                            Row::new()
+                        spells_col.push(container(
+                            row()
                                 .spacing(SPACING)
                                 .push_space(NAME_PADDING)
                                 .push(name)
                                 .push_space(Length::Fill)
                                 .push(edit)
                                 .push(delete)
-                                .align_items(Align::Center)
+                                .align_items(Alignment::Center)
                         ).style(style))
                     });
-                spells_col.push(scroll)
+                spells_col.push(scrollable(col))
             }
             SpellEditor::Editing { spell } => {
-                fn row<'a, T: Into<Element<'a, crate::Message>>, L: Into<String>>(
+                fn make_row<'a, T: Into<Element<'a, crate::Message>>, L: Into<String>>(
                     label: L,
                     content: T,
                 ) -> Row<'a, crate::Message> {
                     let label = label.into();
                     let labeled = !label.is_empty();
-                    let mut row = Row::new()
-                        .push(Text::new(label).size(16));
+                    let mut ret = row()
+                        .push(text(label).size(16));
                     if labeled {
-                        row = row.push_space(Length::Fill);
+                        ret = ret.push_space(Length::Fill);
                         // row = row.push_space(Length::Units(16))
                     }
-                    let row = row
+                    let ret = ret
                         .push(content)
-                        .align_items(Align::Center);
-                    Row::new()
+                        .align_items(Alignment::Center);
+                    row()
                         .push_space(Length::Fill)
                         .push(
-                            Container::new(row).width(Length::FillPortion(18))
+                            container(ret).width(Length::FillPortion(18))
                         )
                         .push_space(Length::Fill)
                 }
@@ -325,38 +291,34 @@ impl SettingsPage {
                     move |t: T| crate::Message::Settings(Message::EditSpell(edit_ctor(t)))
                 }
 
-                let title = Text::new(&*spell.name).size(36);
-                let close_button = Button::new(
-                    &mut self.close_spell_state,
-                    Text::new("Close"),
+                let title = text(&*spell.name).size(36);
+                let close_button = button(
+                    "Close",
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::CloseSpell));
-                let title = Row::new()
+                let title = row()
                     .push_space(Length::Fill)
                     .push(title)
-                    .push(Container::new(Row::new()
+                    .push(container(row()
                         .push_space(Length::Fill)
                         .push(close_button)
                     ).width(Length::Fill))
-                    .align_items(Align::Center);
+                    .align_items(Alignment::Center);
 
-                let school = PickList::new(
-                    &mut spell.school_state,
+                let school = pick_list(
                     &School::ALL[..],
                     Some(spell.school),
                     edit_message(Edit::School),
                 ).style(style);
 
-                let level = PickList::new(
-                    &mut spell.level_state,
+                let level = pick_list(
                     &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9][..],
                     Some(spell.level),
                     edit_message(Edit::Level),
                 ).style(style).text_size(14);
 
                 const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
-                let casting_time = PickList::new(
-                    &mut spell.casting_time_state,
+                let casting_time = pick_list(
                     CASTING_TIMES,
                     Some(match &spell.casting_time {
                         CastingTime::Reaction(_) => CastingTime::Reaction(None),
@@ -367,19 +329,17 @@ impl SettingsPage {
 
                 let casting_time_extra = match &spell.casting_time {
                     CastingTime::Special | CastingTime::Action | CastingTime::BonusAction => None,
-                    CastingTime::Reaction(when) => Some(row(
+                    CastingTime::Reaction(when) => Some(make_row(
                         "Which you take when:",
-                        TextInput::new(
-                            &mut spell.casting_time_extra_state,
+                        text_input(
                             "",
                             when.as_deref().unwrap_or(""),
                             edit_message(Edit::CastingTimeWhen),
                         ).style(style),
                     )),
-                    &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(row(
+                    &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(make_row(
                         if matches!(&spell.casting_time, CastingTime::Minute(_)) { "Minutes:" } else { "Hours:" },
-                        TextInput::new(
-                            &mut spell.casting_time_extra_state,
+                        text_input(
                             "",
                             &n.to_string(),
                             edit_message(Edit::CastingTimeN),
@@ -387,30 +347,29 @@ impl SettingsPage {
                     )),
                 };
 
-                let range = TextInput::new(
-                    &mut spell.range_state,
+                let range = text_input(
                     "",
                     &spell.range,
                     edit_message(Edit::Range),
                 ).style(style);
 
                 let Components { v, s, m } = spell.components.clone().unwrap_or_default();
-                let v = Checkbox::new(
-                    v,
+                let v = checkbox(
                     "V",
+                    v,
                     edit_message(Edit::ComponentV),
                 ).style(style);
-                let s = Checkbox::new(
-                    s,
+                let s = checkbox(
                     "S",
+                    s,
                     edit_message(Edit::ComponentS),
                 ).style(style);
-                let mat = Checkbox::new(
-                    m.is_some(),
+                let mat = checkbox(
                     "M",
+                    m.is_some(),
                     edit_message(Edit::ComponentM),
                 ).style(style);
-                let components = Row::new()
+                let components = row()
                     .push_space(Length::Fill)
                     .push(v)
                     .push_space(Length::Fill)
@@ -418,8 +377,7 @@ impl SettingsPage {
                     .push_space(Length::Fill)
                     .push(mat);
                 let material_component = if let Some(mat) = m {
-                    Some(TextInput::new(
-                        &mut spell.material_state,
+                    Some(text_input(
                         "material",
                         &mat,
                         edit_message(Edit::ComponentMaterial),
@@ -428,27 +386,25 @@ impl SettingsPage {
                     None
                 };
 
-                let duration = TextInput::new(
-                    &mut spell.duration_state,
+                let duration = text_input(
                     "",
                     &spell.duration,
                     edit_message(Edit::Duration),
                 ).style(style);
 
-                let ritual = Checkbox::new(
-                    spell.ritual,
+                let ritual = checkbox(
                     "",
+                    spell.ritual,
                     edit_message(Edit::Ritual),
                 ).style(style);
 
-                let conc = Checkbox::new(
-                    spell.conc,
+                let conc = checkbox(
                     "",
+                    spell.conc,
                     edit_message(Edit::Concentration),
                 ).style(style);
 
-                let description = TextInput::new(
-                    &mut spell.description_state,
+                let description = text_input(
                     "Describe the spell's effects...",
                     &spell.description,
                     edit_message(Edit::Description),
@@ -456,15 +412,13 @@ impl SettingsPage {
                     // .on_submit(crate::Message::Settings(Message::EditSpell(Edit::DescEnter)))
                     ;
 
-                let higher_levels = TextInput::new(
-                    &mut spell.higher_levels_state,
+                let higher_levels = text_input(
                     "Higher level effects...",
                     spell.higher_levels.as_deref().unwrap_or(""),
                     edit_message(Edit::HigherLevels),
                 ).style(style);
 
-                let classes = PickList::new(
-                    &mut spell.classes_state,
+                let classes = pick_list(
                     &Class::PL_ALL[..],
                     Some(PLOption::None),
                     edit_message(Edit::Class),
@@ -477,28 +431,28 @@ impl SettingsPage {
                 //     edit_message(Edit::Page),
                 // ).style(style);
 
-                let column = Column::new()
+                let column = column()
                     .spacing(3)
-                    .push(row("", title))
-                    .push(Rule::horizontal(8))
-                    .push(row("", school))
+                    .push(make_row("", title))
+                    .push(horizontal_rule(8))
+                    .push(make_row("", school))
                     .push_space(2)
-                    .push(row("Level:", level))
-                    .push(row("Casting Time:", casting_time))
+                    .push(make_row("Level:", level))
+                    .push(make_row("Casting Time:", casting_time))
                     .tap_if_some(casting_time_extra, |col, cte| col.push(cte))
-                    .push(row("Range:", range))
-                    .push(row("Components:", components))
-                    .tap_if_some(material_component, |col, mat| col.push(row("Material:", mat)))
-                    .push(row("Duration:", duration))
-                    .push(row("Ritual?", ritual))
-                    .push(row("Concentration?", conc))
-                    .push(Rule::horizontal(8))
-                    .push(row("", description))
-                    .push(Rule::horizontal(8))
-                    .push(row("At Higher Levels:", higher_levels))
-                    .push(Rule::horizontal(8))
-                    .push(row("Classes:", classes))
-                    .push(row("", Text::new(spell.classes.iter().list_grammatically()).size(16)))
+                    .push(make_row("Range:", range))
+                    .push(make_row("Components:", components))
+                    .tap_if_some(material_component, |col, mat| col.push(make_row("Material:", mat)))
+                    .push(make_row("Duration:", duration))
+                    .push(make_row("Ritual?", ritual))
+                    .push(make_row("Concentration?", conc))
+                    .push(horizontal_rule(8))
+                    .push(make_row("", description))
+                    .push(horizontal_rule(8))
+                    .push(make_row("At Higher Levels:", higher_levels))
+                    .push(horizontal_rule(8))
+                    .push(make_row("Classes:", classes))
+                    .push(make_row("", text(spell.classes.iter().list_grammatically()).size(16)))
                     // .push(Rule::horizontal(8))
                     // .push(row("Source:", source))
                     // .push(row("Page:", page))
@@ -507,22 +461,22 @@ impl SettingsPage {
             }
         };
 
-        let row = Row::new()
+        let row = row()
             .padding(PADDING)
-            .push(Column::new()
+            .push(column()
                 .width(Length::Fill)
                 .push(character_label.height(Length::Fill))
                 .push_space(1)
                 .push(character_col.height(Length::FillPortion(18)))
             )
-            .push(Rule::vertical(RULE_SPACING))
-            .push(Column::new()
+            .push(vertical_rule(RULE_SPACING))
+            .push(column()
                 .width(Length::Fill)
                 .push(spells_label.height(Length::Fill))
                 .push_space(1)
                 .push(spells_col.height(Length::FillPortion(18)))
             );
 
-        Container::new(row.height(Length::Shrink))
+        container(row.height(Length::Shrink))
     }
 }

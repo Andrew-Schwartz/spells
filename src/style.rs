@@ -312,7 +312,6 @@ mod light {
 #[allow(clippy::cast_precision_loss)]
 mod dark {
     use iced::{Background, button, checkbox, Color, container, pick_list, progress_bar, scrollable, slider, text_input};
-    use iced::button::Style;
     use iced::slider::{Handle, HandleShape};
     use iced_aw::{number_input, tabs};
 
@@ -465,7 +464,7 @@ mod dark {
         fn active(&self) -> number_input::Style {
             number_input::Style {
                 button_background: color::SURFACE.into(),
-                icon_color: Default::default(),
+                icon_color: Color::WHITE,
             }
         }
         //
@@ -573,6 +572,8 @@ mod dark {
         fn active(&self) -> pick_list::Style {
             pick_list::Style {
                 text_color: Color::WHITE,
+                // todo
+                placeholder_color: Default::default(),
                 background: Background::Color(color::SURFACE),
                 border_radius: 3.0,
                 border_width: 0.0,
@@ -603,6 +604,8 @@ mod dark {
                 border_radius: 2.0,
                 border_width: 1.0,
                 border_color: color::ACTIVE,
+                // todo
+                text_color: None,
             }
         }
 
@@ -739,7 +742,7 @@ mod dark {
             }
         }
 
-        fn disabled(&self) -> Style {
+        fn disabled(&self) -> button::Style {
             button::Style {
                 background: Color::from_rgb8(
                     0x46,

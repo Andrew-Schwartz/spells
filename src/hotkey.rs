@@ -1,4 +1,4 @@
-use iced::keyboard::{self, KeyCode};
+use iced::keyboard::{self, KeyCode, Modifiers};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Move {
@@ -23,18 +23,15 @@ pub enum Message {
 }
 
 pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
-    type Modifiers = (bool, bool, bool);
-    const CTRL: Modifiers = (true, false, false);
-    const SHIFT: Modifiers = (false, false, true);
-    const CTRL_ALT: Modifiers = (true, true, false);
-    const CTRL_SHIFT: Modifiers = (true, false, true);
-    const NONE: Modifiers = (false, false, false);
+    const CTRL_ALT: Modifiers = Modifiers::CTRL.union(Modifiers::ALT);
+    const CTRL_SHIFT: Modifiers = Modifiers::CTRL.union(Modifiers::SHIFT);
+    const NONE: Modifiers = Modifiers::empty();
 
     match event {
         keyboard::Event::KeyPressed { key_code, modifiers } => {
-            let message = match (modifiers.is_command_pressed(), modifiers.alt, modifiers.shift) {
+            let message = match modifiers {
                 #[allow(clippy::match_same_arms)]
-                CTRL => match key_code {
+                Modifiers::CTRL => match key_code {
                     KeyCode::Grave => Some(Message::Find(true)),
                     KeyCode::Key1 => Some(Message::ToCharacter(1)),
                     KeyCode::Key2 => Some(Message::ToCharacter(2)),
@@ -71,7 +68,7 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::F | KeyCode::S => Some(Message::Find(true)),
                     _ => None,
                 }
-                SHIFT => match key_code {
+                Modifiers::SHIFT => match key_code {
                     KeyCode::Tab | KeyCode::Enter | KeyCode::NumpadEnter => Some(Message::CustomSpellNextField(false)),
                     _ => None,
                 }

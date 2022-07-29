@@ -1,4 +1,5 @@
 #![feature(array_methods)]
+#![feature(mixed_integer_ops)]
 
 // ignored on other targets
 #![windows_subsystem = "windows"]
@@ -18,24 +19,34 @@ clippy::wildcard_imports,
 clippy::enum_glob_use,
 )]
 // @formatter:on
+#![warn(elided_lifetimes_in_paths)]
+
 
 use std::{fs::{self, File}, mem};
 use std::cmp::min;
-use std::convert::TryFrom;
+use std::convert::{From, Into, TryFrom};
 use std::default::Default;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Debug, Display};
 use std::io::{BufRead, BufReader, ErrorKind, Write as _};
 use std::ops::{Deref, Not};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-// use iced_native
-use iced::{Align, Application, Button, button, Column, Command, Container, Element, Length, pick_list, ProgressBar, Row, Rule, Settings, Slider, slider, Text, text_input, Tooltip, VerticalAlignment};
-use iced::mouse::ScrollDelta;
-use iced::tooltip::Position;
-use iced::window::Icon;
-use iced_aw::{ICON_FONT, TabLabel, Tabs};
+use iced::{
+    Alignment,
+    alignment::Vertical,
+    Command,
+    Length,
+    mouse::ScrollDelta,
+    pure::{self},
+    pure::{Application, button, column, container, Element, horizontal_rule, progress_bar, row, slider, text},
+    pure::widget::{Button, Container, Row},
+    Settings,
+    tooltip::Position,
+    window::Icon,
+};
+use iced_aw::{ICON_FONT, TabLabel};
 use iced_native::{Event, Subscription, window};
 use itertools::Either;
 use once_cell::sync::Lazy;
@@ -53,7 +64,7 @@ use crate::search::{PLOption, Unwrap};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
-use crate::utils::{SpacingExt, Tap, TryRemoveExt};
+use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
 
 mod fetch;
 mod style;
@@ -144,29 +155,29 @@ pub enum UpdateState {
 }
 
 impl UpdateState {
-    pub fn view(&self, style: SettingsBarStyle) -> Element<crate::Message> {
+    pub fn view<'s, 'c: 's>(&'s self, style: SettingsBarStyle) -> Container<'c, Message> {
         const VER: &str = cargo_crate_version!();
         match self {
             &Self::Downloading(pct) => {
-                Row::new()
-                    .align_items(Align::Center)
-                    .push(Text::new("Downloading").size(10))
+                container(row()
+                    .align_items(Alignment::Center)
+                    .push(text("Downloading").size(10))
                     .push_space(5)
-                    .push(ProgressBar::new(0.0..=100.0, pct)
+                    .push(progress_bar(0.0..=100.0, pct)
                         .style(style)
                         .height(Length::Units(12)) // bottom bar is 20 pts
                         .width(Length::Units(100)))
-                    .into()
+                )
             }
             view_as_text => match view_as_text {
-                Self::Checking => Text::new("Checking for updates..."),
-                Self::Ready => Text::new("Preparing to download..."),
-                Self::Downloaded => Text::new("Downloaded new version! Restart program to get new features!"),
-                Self::UpToDate => Text::new(format!("Spells v{}", VER)),
-                Self::Errored(e) => Text::new(format!("Error downloading new version: {}. Running v{}", e, VER)),
+                Self::Checking => text("Checking for updates..."),
+                Self::Ready => text("Preparing to download..."),
+                Self::Downloaded => text("Downloaded new version! Restart program to get new features!"),
+                Self::UpToDate => text(format!("Spells v{}", VER)),
+                Self::Errored(e) => text(format!("Error downloading new version: {}. Running v{}", e, VER)),
                 Self::Downloading(_) => unreachable!(),
-            }.size(10).into()
-        }
+            }.size(10).tap(container)
+        }.style(style)
     }
 }
 
@@ -183,9 +194,6 @@ pub struct DndSpells {
     closed_characters: Vec<ClosedCharacter>,
     settings_page: SettingsPage,
     pub col_scale: f32,
-    col_reset: button::State,
-    col_slider: slider::State,
-    style_button: button::State,
     /// Vec<(characters, closed_characters)>
     save_states: Vec<(Vec<SerializeCharacter>, Vec<SerializeCharacter>)>,
     state: Option<usize>,
@@ -331,9 +339,6 @@ impl DndSpells {
             closed_characters,
             settings_page: SettingsPage::new(&custom_spells),
             col_scale: 1.0,
-            col_reset: Default::default(),
-            col_slider: Default::default(),
-            style_button: Default::default(),
             save_states: Default::default(),
             state: None,
             custom_spells,
@@ -370,19 +375,23 @@ impl DndSpells {
 }
 
 impl Application for DndSpells {
-    type Executor = iced_futures::executor::Tokio;
+    type Executor = iced_futures::backend::default::Executor;
     type Message = Message;
     type Flags = ();
 
     fn new((): Self::Flags) -> (Self, Command<Message>) {
         let window = Self::open().expect("failed to start");
+        // let commands = Command::batch([
+        //     async { Message::Search(search::Message::Refresh) }.into(),
+        //     async {
+        //         // wait briefly to so that loading doesn't take so long
+        //         tokio::time::sleep(Duration::from_millis(500)).await;
+        //         Message::Update(update::Message::CheckForUpdate)
+        //     }.into(),
+        // ]);
         let commands = Command::batch([
-            async { Message::Search(search::Message::Refresh) }.into(),
-            async {
-                // wait briefly to so that loading doesn't take so long
-                tokio::time::sleep(Duration::from_millis(500)).await;
-                Message::Update(update::Message::CheckForUpdate)
-            }.into(),
+            Command::perform(async { () }, |()| Message::Search(search::Message::Refresh)),
+            Command::perform(tokio::time::sleep(Duration::from_millis(500)), |()| Message::Update(update::Message::CheckForUpdate))
         ]);
         (window, commands)
     }
@@ -400,7 +409,7 @@ impl Application for DndSpells {
         }
     }
 
-    fn update(&mut self, message: Self::Message, clipboard: &mut iced::Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
                 self.update_state = UpdateState::Errored(e.to_string())
@@ -422,7 +431,8 @@ impl Application for DndSpells {
                         self.settings_page.name = name;
                     }
                     Message::SubmitCharacter => {
-                        self.settings_page.character_name_state.focus();
+                        // todo focus
+                        // self.settings_page.character_name_state.focus();
                         let name = &mut self.settings_page.name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
@@ -442,9 +452,9 @@ impl Application for DndSpells {
                             Either::Left(_) => {
                                 Either::Right(Default::default())
                             }
-                            Either::Right((_, name, _)) => {
+                            Either::Right(name) => {
                                 if !name.is_empty() {
-                                    let name = std::mem::take(name);
+                                    let name = mem::take(name);
                                     self.closed_characters[index].character.name = Arc::from(name);
                                     self.save().expect("ASDSADAS");
                                 }
@@ -454,7 +464,7 @@ impl Application for DndSpells {
                         self.closed_characters[index].rename = rename;
                     }
                     Message::RenameString(index, new) => {
-                        if let Either::Right((_, name, _)) = &mut self.closed_characters[index].rename {
+                        if let Either::Right(name) = &mut self.closed_characters[index].rename {
                             *name = new;
                         }
                     }
@@ -485,14 +495,14 @@ impl Application for DndSpells {
                     }
                     Message::OpenSpell(index) => {
                         if let SpellEditor::Searching { spells } = &mut self.settings_page.spell_editor {
-                            if let Some((spell, _, _, _)) = spells.try_remove(index) {
+                            if let Some(spell) = spells.try_remove(index) {
                                 self.settings_page.spell_editor = SpellEditor::Editing { spell };
                             }
                         }
                     }
                     Message::DeleteSpell(index) => {
                         if let SpellEditor::Searching { spells } = &mut self.settings_page.spell_editor {
-                            let spell = spells.remove(index).0;
+                            let spell = spells.remove(index);
                             if let Some(index) = self.custom_spells.iter().position(|cs| *cs == spell) {
                                 self.custom_spells.remove(index);
                             }
@@ -521,15 +531,15 @@ impl Application for DndSpells {
                                 Edit::Range(range) => spell.range = range,
                                 Edit::ComponentV(v) => match &mut spell.components {
                                     Some(components) => components.v = v,
-                                    none @ None => *none = Some(Components { v: true, s: false, m: None }),
+                                    none => *none = Some(Components { v: true, s: false, m: None }),
                                 },
                                 Edit::ComponentS(s) => match &mut spell.components {
                                     Some(components) => components.s = s,
-                                    none @ None => *none = Some(Components { v: false, s: true, m: None }),
+                                    none => *none = Some(Components { v: false, s: true, m: None }),
                                 },
                                 Edit::ComponentM(m) => match &mut spell.components {
                                     Some(components) => components.m = m.then(String::new),
-                                    none @ None => *none = Some(Components { v: false, s: false, m: Some(String::new()) }),
+                                    none => *none = Some(Components { v: false, s: false, m: Some(String::new()) }),
                                 },
                                 Edit::ComponentMaterial(mat) => match &mut spell.components {
                                     Some(components) => components.m = Some(mat),
@@ -597,7 +607,8 @@ impl Application for DndSpells {
                 // let must_save = self.character_pages.get_mut(&name)
                 //     .map(|c| c.update(msg, num_cols));
                 if add {
-                    self.search_page.search.state.focus();
+                    // todo
+                    // self.search_page.search.state.focus();
                     // have to update after adding the spell
                     self.refresh_search();
                 }
@@ -639,7 +650,7 @@ impl Application for DndSpells {
                             (true, _) => {
                                 self.tab = Tab::Search;
                                 self.search_page.update(
-                                    crate::search::Message::Search(String::new()),
+                                    search::Message::Search(String::new()),
                                     &self.custom_spells,
                                     &self.characters,
                                 );
@@ -651,7 +662,8 @@ impl Application for DndSpells {
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
                                     page.tab = 0;
-                                    page.search.state.focus();
+                                    // todo
+                                    // page.search.state.focus();
                                 }
                             }
                         }
@@ -756,43 +768,45 @@ impl Application for DndSpells {
                             }
                         }
                     }
-                    Message::CustomSpellNextField(forwards) => {
-                        if let Tab::Settings = self.tab {
-                            let mut states = vec![
-                                &mut self.settings_page.character_name_state,
-                                &mut self.settings_page.spell_name_state,
-                            ];
-                            if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
-                                states.extend([
-                                    &mut spell.casting_time_extra_state,
-                                    &mut spell.range_state
-                                ]);
-                                if matches!(&spell.components, Some(Components { m: Some(_), .. })) {
-                                    states.extend([&mut spell.material_state]);
-                                }
-                                states.extend([
-                                    // &mut spell.components_state,
-                                    &mut spell.duration_state,
-                                    &mut spell.description_state,
-                                    &mut spell.higher_levels_state,
-                                    // &mut spell.source_state,
-                                    // &mut spell.page_state
-                                ]);
-                            }
-                            for i in 0..states.len() {
-                                if states[i].is_focused() {
-                                    if forwards && i != states.len() - 1 {
-                                        states[i].unfocus();
-                                        states[i + 1].focus();
-                                        break;
-                                    } else if !forwards && i != 0 {
-                                        states[i].unfocus();
-                                        states[i - 1].focus();
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                    // todo
+                    Message::CustomSpellNextField(_forwards) => {
+                        // if let Tab::Settings = self.tab {
+                        //     let mut states = vec![
+                        //         &mut self.settings_page.character_name_state,
+                        //         &mut self.settings_page.spell_name_state,
+                        //     ];
+                        //     if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
+                        //         states.extend([
+                        //             &mut spell.casting_time_extra_state,
+                        //             &mut spell.range_state
+                        //         ]);
+                        //         if matches!(&spell.components, Some(Components { m: Some(_), .. })) {
+                        //             states.extend([&mut spell.material_state]);
+                        //         }
+                        //         // todo
+                        //         states.extend([
+                        //             // &mut spell.components_state,
+                        //             // &mut spell.duration_state,
+                        //             // &mut spell.description_state,
+                        //             // &mut spell.higher_levels_state,
+                        //             // &mut spell.source_state,
+                        //             // &mut spell.page_state
+                        //         ]);
+                        //     }
+                        //     for i in 0..states.len() {
+                        //         if states[i].is_focused() {
+                        //             if forwards && i != states.len() - 1 {
+                        //                 states[i].unfocus();
+                        //                 states[i + 1].focus();
+                        //                 break;
+                        //             } else if !forwards && i != 0 {
+                        //                 states[i].unfocus();
+                        //                 states[i - 1].focus();
+                        //                 break;
+                        //             }
+                        //         }
+                        //     }
+                        // }
                     }
                 }
             }
@@ -810,10 +824,7 @@ impl Application for DndSpells {
                         self.mouse.press = ctor(Instant::now(), self.mouse.pt);
                         match self.mouse.press {
                             ButtonPress::Middle(_, pt) => {
-                                return Command::from(async move {
-                                    println!("pt = {:?}", pt);
-                                    Message::ScrollIGuessHopefully(pt)
-                                });
+                                return Command::perform(async move { pt }, Message::ScrollIGuessHopefully);
                             }
                             ButtonPress::Left(_, _)
                             | ButtonPress::Right(_, _) => {}
@@ -824,11 +835,11 @@ impl Application for DndSpells {
                         use iced::mouse::Button as Button;
                         if let (Button::Right, ButtonPress::Right(_, pt)) = (button, self.mouse.press) {
                             if let Some(message) = hotmouse::gesture(self.mouse.pt - pt) {
-                                return self.update(message, clipboard);
+                                return self.update(message);
                             }
                         };
                         if self.mouse.press == button {
-                            self.mouse.press = hotmouse::ButtonPress::None;
+                            self.mouse.press = ButtonPress::None;
                         }
                     }
                     hotmouse::StateMessage::Scroll(delta) => {
@@ -885,7 +896,7 @@ impl Application for DndSpells {
         }
     }
 
-    fn view(&mut self) -> Element<Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         let style = self.style;
         let num_cols = self.num_cols;
         let num_characters = self.characters.len();
@@ -894,9 +905,9 @@ impl Application for DndSpells {
             .saturating_sub(26)  // height of tab bar
             .saturating_sub(20); // height of bottom bar
 
-        let tabs = Tabs::new(self.tab.index(num_characters), crate::Message::SelectTab)
+        let tabs = iced_aw::pure::Tabs::new(self.tab.index(num_characters), Message::SelectTab)
             .push(TabLabel::Text("Search".into()), self.search_page.view(style).max_height(height));
-        let tabs = self.characters.iter_mut()
+        let tabs = self.characters.iter()
             .enumerate()
             .map(|(index, page)| (
                 TabLabel::Text(page.character.name.to_string()),
@@ -904,56 +915,45 @@ impl Application for DndSpells {
             )).fold(
             tabs,
             |tabs, (label, tab)| tabs.push(label, tab),
-        ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&mut self.closed_characters, self.width, style).max_height(height))
+        ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width, style).max_height(height))
             .tab_bar_style(style)
             .icon_size(10)
             .icon_font(ICON_FONT)
             // .on_close(Message::CloseTab)
             ;
 
-        let mut col_slider_reset = Button::new(
-            &mut self.col_reset,
-            Text::new("Reset")
-                .vertical_alignment(VerticalAlignment::Center)
+        let col_slider_reset: Button<'_, Message> = button(
+            text("Reset")
+                .vertical_alignment(Vertical::Center)
                 .size(12),
-        ).style(style.settings_bar());
-        // set to exactly 1.0 in code so it's fine
-        #[allow(clippy::float_cmp)]
-        if self.col_scale != 1.0 {
-            col_slider_reset = col_slider_reset.on_press(crate::Message::SetColScale(1.0));
-        }
+        ).style(style.settings_bar())
+            .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
 
         // todo monospace font and pad with spaces
-        let slider_text = Text::new(
+        let slider_text = text(
             format!("{:3.0}%", self.col_scale * 100.0)
         ).size(10)
-            .vertical_alignment(VerticalAlignment::Center);
+            .vertical_alignment(Vertical::Center);
 
-        let col_slider = Slider::new(
-            &mut self.col_slider,
+        let col_slider = slider(
             0.5..=4.0,
             self.col_scale,
-            crate::Message::SetColScale,
+            Message::SetColScale,
         )
             .width(Length::Units(120))
             .step(0.01)
             .style(style);
 
-        let toggle_style = Button::new(
-            &mut self.style_button,
-            Text::new(iced_aw::Icon::BrightnessHigh)
+        let toggle_style = button(
+            text(iced_aw::Icon::BrightnessHigh)
                 .font(ICON_FONT)
                 .size(12),
         ).style(style.settings_bar())
-            .on_press(crate::Message::ToggleTheme);
+            .on_press(Message::ToggleTheme)
+            .tooltip_at(&format!("Switch to {} theme", !style), Position::Top)
+            .size(10);
 
-        let toggle_style = Tooltip::new(
-            toggle_style,
-            format!("Switch to {} theme", !style),
-            Position::Top,
-        ).size(10);
-
-        let bottom_bar = Container::new(Row::new()
+        let bottom_bar = container(row()
             .spacing(2)
             .push_space(4)
             .push(self.update_state.view(style.settings_bar()))
@@ -963,20 +963,20 @@ impl Application for DndSpells {
             .push(slider_text)
             .push(toggle_style)
             .height(Length::Units(20))
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
         ).style(style.settings_bar())
-            .align_y(Align::Center);
+            .align_y(Vertical::Center);
 
-        let content = Column::new()
+        let content = column()
             .push(tabs.height(Length::Shrink))
             .push_space(Length::Fill)
             .push(bottom_bar);
 
-        Container::new(content)
+        container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
-            .align_y(Align::End)
+            .align_y(Vertical::Bottom)
             .style(style)
             .into()
     }
@@ -1022,7 +1022,7 @@ impl Class {
 }
 
 impl Display for Class {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Artificer => "Artificer",
             Self::Bard => "Bard",
@@ -1075,7 +1075,7 @@ impl School {
 }
 
 impl Display for School {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Abjuration => "Abjuration",
             Self::Conjuration => "Conjuration",
@@ -1158,7 +1158,7 @@ impl CastingTime {
 }
 
 impl Display for CastingTime {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Special => f.write_str("Special"),
             Self::Action => f.write_str("1 Action"),
@@ -1168,8 +1168,8 @@ impl Display for CastingTime {
             } else {
                 f.write_str("1 Reaction")
             }
-            &Self::Minute(n) => write!(f, "{} Minute{}", n, if n == 1 { "" } else { "s" }),
-            &Self::Hour(n) => write!(f, "{} Hour{}", n, if n == 1 { "" } else { "s" }),
+            &Self::Minute(n) => write!(f, "{n} Minute{}", if n == 1 { "" } else { "s" }),
+            &Self::Hour(n) => write!(f, "{n} Hour{}", if n == 1 { "" } else { "s" }),
         }
     }
 }
@@ -1233,7 +1233,7 @@ pub struct Components {
 }
 
 impl Display for Components {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut prev = false;
         if self.v {
             write!(f, "V")?;
@@ -1304,7 +1304,7 @@ pub enum Source {
 }
 
 impl Display for Source {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(Self::STRINGS[*self as usize])
     }
 }
@@ -1448,49 +1448,22 @@ impl TryFrom<DeserializeSpell> for Spell {
 pub struct CustomSpell {
     name: Arc<str>,
     name_lower: String,
-    // todo this was for allowing spells to be renamed
-    // #[serde(skip)]
-    // name_state: text_input::State,
     level: usize,
-    #[serde(skip)]
-    level_state: pick_list::State<usize>,
     casting_time: CastingTime,
-    #[serde(skip)]
-    casting_time_state: pick_list::State<CastingTime>,
-    #[serde(skip)]
-    pub casting_time_extra_state: text_input::State,
-    // #[serde(skip)]
-    // casting_time_state: text_input::State,
     range: String,
-    #[serde(skip)]
-    pub range_state: text_input::State,
     pub components: Option<Components>,
-    #[serde(skip)]
-    pub material_state: text_input::State,
     duration: String,
-    #[serde(skip)]
-    pub duration_state: text_input::State,
     school: School,
-    #[serde(skip)]
-    school_state: pick_list::State<School>,
     #[serde(default)]
     ritual: bool,
     #[serde(default)]
     conc: bool,
     description: String,
     desc_lower: String,
-    #[serde(skip)]
-    pub description_state: text_input::State,
     higher_levels: Option<String>,
     higher_levels_lower: Option<String>,
-    #[serde(skip)]
-    pub higher_levels_state: text_input::State,
     classes: Vec<Class>,
-    #[serde(skip)]
-    pub classes_state: pick_list::State<PLOption<Class>>,
     page: Option<u32>,
-    #[serde(skip)]
-    pub page_state: text_input::State,
 }
 
 impl PartialEq for CustomSpell {
@@ -1508,30 +1481,19 @@ impl CustomSpell {
             name_lower,
             // name_state: Default::default(),
             level: 0,
-            level_state: Default::default(),
             casting_time: CastingTime::Action,
-            casting_time_state: Default::default(),
-            casting_time_extra_state: Default::default(),
             range: String::new(),
-            range_state: Default::default(),
             duration: String::new(),
-            duration_state: Default::default(),
             components: None,
-            material_state: Default::default(),
             school: School::Abjuration,
-            school_state: Default::default(),
             ritual: false,
             conc: false,
             description: String::new(),
             desc_lower: String::new(),
-            description_state: Default::default(),
             higher_levels: None,
             higher_levels_lower: None,
-            higher_levels_state: Default::default(),
             classes: Vec::new(),
-            classes_state: Default::default(),
             page: None,
-            page_state: Default::default(),
         }
     }
 
@@ -1545,32 +1507,36 @@ impl CustomSpell {
 
     // TODO add a option to add source to custom spells, then merge this with the SAME METHOD in
     //  Spell into StaticCustomSpell
-    pub fn view<'a, B: SpellButtons<'a>>(
-        &'a self,
+    pub fn view<'s, 'c: 's, B: SpellButtons>(
+        &'s self,
         button: B,
         data: B::Data,
         collapse: bool,
         style: Style,
-    ) -> Container<'a, Message> {
-        fn text<T: Into<String>>(label: T) -> Row<'static, Message> {
-            Row::new()
-                .push_space(Length::Fill)
-                .push(Text::new(label).size(16).width(Length::FillPortion(18)))
-                .push_space(Length::Fill)
-        }
+    ) -> Container<'c, Message> {
+        let text = |label| row()
+            .push_space(Length::Fill)
+            .push(text(label).size(16).width(Length::FillPortion(18)))
+            .push_space(Length::Fill);
+        // fn text<T: Into<String>>(label: T) -> Row<'_, Message> {
+        //     row()
+        //         .push_space(Length::Fill)
+        //         .push(pure::text(label).size(16).width(Length::FillPortion(18)))
+        //         .push_space(Length::Fill)
+        // }
 
         let (buttons, title) = button.view(self.id(), data, style);
-        let title = Row::new()
+        let title = row()
             .push_space(Length::Fill)
             .push(title)
             .push_space(Length::Fill);
 
-        let buttons = Row::new()
+        let buttons = row()
             .push_space(Length::Fill)
             .push(buttons.width(Length::FillPortion(18)))
             .push_space(Length::Fill);
 
-        let mut column = Column::new()
+        let mut column = column()
             .push(title)
             .push(buttons);
         if !collapse {
@@ -1590,8 +1556,8 @@ impl CustomSpell {
             );
 
             column = column
-                .push(Rule::horizontal(8))
-                .push(text(self.school))
+                .push(horizontal_rule(8))
+                .push(text(self.school.to_string()))
                 .push_space(4)
                 .push(text(format!("Level: {}", self.level)))
                 .push(text(format!("Casting Time: {}", self.casting_time)))
@@ -1599,29 +1565,29 @@ impl CustomSpell {
                 .push(text(format!("Components: {}", self.components.as_ref().map_or_else(String::new, |c| c.to_string()))))
                 .push(text(format!("Duration: {}", self.duration)))
                 .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
-                .push(Rule::horizontal(10))
-                .push(text(&self.description))
+                .push(horizontal_rule(10))
+                .push(text(self.description.clone()))
                 .tap_if_some(self.higher_levels.as_ref(), |col, higher| col
-                    .push(Rule::horizontal(8))
-                    .push(Row::new()
+                    .push(horizontal_rule(8))
+                    .push(row()
                         .push_space(Length::Fill)
-                        .push(Text::new("At higher levels").size(20).width(Length::FillPortion(18)))
+                        .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
                         .push_space(Length::Fill))
                     .push_space(3)
-                    .push(text(higher)))
+                    .push(text(higher.clone())))
                 .tap_if(about != "A spell", |col| col
-                    .push(Rule::horizontal(8))
+                    .push(horizontal_rule(8))
                     .push(text(about)))
             ;
         }
-        Container::new(column)
+        container(column)
     }
 }
 
-pub trait SpellButtons<'a> {
+pub trait SpellButtons {
     type Data;
 
-    fn view(self, id: SpellId, data: Self::Data, style: Style) -> (Row<'a, Message>, Element<'a, Message>);
+    fn view<'c>(self, id: SpellId, data: Self::Data, style: Style) -> (Row<'c, Message>, Element<'c, Message>);
 }
 
 impl Spell {
@@ -1633,38 +1599,42 @@ impl Spell {
         }
     }
 
-    fn view<'a, B: SpellButtons<'a> + 'a>(
-        &'a self,
+    fn view<'s, 'c: 's, B: SpellButtons>(
+        &'s self,
         button: B,
         data: B::Data,
         collapse: bool,
         style: Style,
-    ) -> Container<'a, Message> {
-        fn text<T: Into<String>>(label: T) -> Row<'static, Message> {
-            Row::new()
-                .push_space(Length::Fill)
-                .push(Text::new(label).size(16).width(Length::FillPortion(18)))
-                .push_space(Length::Fill)
-        }
+    ) -> Container<'c, Message> {
+        let text = |label: String| row()
+            .push_space(Length::Fill)
+            .push(text(label).size(16).width(Length::FillPortion(18)))
+            .push_space(Length::Fill);
+        // fn text<T: Into<String>>(label: T) -> Row<'_, Message> {
+        //     row()
+        //         .push_space(Length::Fill)
+        //         .push(pure::text(label).size(16).width(Length::FillPortion(18)))
+        //         .push_space(Length::Fill)
+        // }
 
         let (buttons, title) = button.view(self.id(), data, style);
-        let title = Row::new()
+        let title = row()
             .push_space(Length::Fill)
             .push(title)
             .push_space(Length::Fill);
 
-        let buttons = Row::new()
+        let buttons = row()
             .push_space(Length::Fill)
             .push(buttons.width(Length::FillPortion(18)))
             .push_space(Length::Fill);
 
-        let mut column = Column::new()
+        let mut column = column()
             .push(title)
             .push(buttons);
         if !collapse {
             column = column
-                .push(Rule::horizontal(8))
-                .push(text(self.school))
+                .push(horizontal_rule(8))
+                .push(text(self.school.to_string()))
                 .push_space(4)
                 .push(text(format!("Level: {}", self.level)))
                 .push(text(format!("Casting time: {}", self.casting_time)))
@@ -1672,27 +1642,27 @@ impl Spell {
                 .push(text(format!("Components: {}", self.components)))
                 .push(text(format!("Duration: {}", self.duration)))
                 .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
-                .push(Rule::horizontal(10))
-                .push(text(self.description));
+                .push(horizontal_rule(10))
+                .push(text(self.description.to_string()));
             if let Some(higher) = self.higher_levels {
                 column = column
-                    .push(Rule::horizontal(8))
-                    .push(Row::new()
+                    .push(horizontal_rule(8))
+                    .push(row()
                         .push_space(Length::Fill)
-                        .push(Text::new("At higher levels").size(20).width(Length::FillPortion(18)))
+                        .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
                         .push_space(Length::Fill))
                     .push_space(3)
-                    .push(text(higher));
+                    .push(text(higher.to_string()));
             }
             let classes = self.classes.iter().list_grammatically();
             let an_grammar = classes.chars().next()
                 .filter(|c| *c == 'A')
                 .map_or('\0', |_| 'n');
             column = column
-                .push(Rule::horizontal(8))
+                .push(horizontal_rule(8))
                 .push(text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page)));
         }
-        Container::new(column)
+        container(column)
     }
 }
 
@@ -1769,7 +1739,7 @@ impl<'a, T: ?Sized + PartialEq> PartialEq<&'a T> for StArc<T> {
 // }
 
 impl<T: ?Sized> Display for StArc<T> where T: Display {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StArc::Static(t) => t.fmt(f),
             StArc::Arc(t) => (&**t).fmt(f),
@@ -1878,7 +1848,13 @@ impl StaticCustomSpell {
         }
     }
 
-    fn view<'a, B: SpellButtons<'a> + 'a>(&'a self, button: B, data: B::Data, collapse: bool, style: Style) -> Container<'a, Message> {
+    fn view<'s, 'c: 's, B: SpellButtons>(
+        &'s self,
+        button: B,
+        data: B::Data,
+        collapse: bool,
+        style: Style,
+    ) -> Container<'c, Message> {
         match self {
             Self::Static(spell) => spell.view(button, data, collapse, style),
             Self::Custom(spell) => spell.view(button, data, collapse, style),

@@ -1,16 +1,14 @@
-use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::sync::Arc;
 
-use iced::{Align, button, Button, Checkbox, Column, Container, Element, Length, pick_list, PickList, Row, Scrollable, Text, TextInput};
-use iced::widget::{scrollable, text_input};
-use iced_aw::{Icon, ICON_FONT};
+use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced_aw::Icon;
 use itertools::Itertools;
 
 use crate::{CastingTime, character, Class, CustomSpell, School, Source, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
 use crate::character::CharacterPage;
 use crate::style::Style;
-use crate::utils::{IterExt, SpacingExt, Tap};
+use crate::utils::{IterExt, SpacingExt, Tap, text_icon};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -70,7 +68,7 @@ impl<T: PLNone + Display + Eq> From<Option<T>> for PLOption<T> {
 }
 
 impl<T: PLNone + Display + Eq> Display for PLOption<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PLOption::None => f.write_str(T::title()),
             PLOption::Some(t) => t.fmt(f),
@@ -116,7 +114,7 @@ impl Mode {
 }
 
 impl Display for Mode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // not debug
         f.write_str(match self {
             Mode::Level => "Level",
@@ -162,7 +160,7 @@ impl Unwrap<u8> for PickListLevel {
 }
 
 impl Display for PickListLevel {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             l @ 0..=9 => Display::fmt(&l, f),
             _ => f.write_str("Level"),
@@ -175,60 +173,38 @@ pub trait Searcher {
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool;
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message>;
+    ) -> Row<'c, crate::Message>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct WithButton<T> {
     pub t: T,
-    state: button::State,
 }
 
 impl<T> WithButton<T> {
     pub fn new(t: T) -> Self {
-        Self { t, state: Default::default() }
+        Self { t }
     }
 }
 
-impl<T: PartialEq> PartialEq for WithButton<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.t == other.t
-    }
-}
-
-impl<T: Eq> Eq for WithButton<T> {}
-
-impl<T: PartialOrd> PartialOrd for WithButton<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.t.partial_cmp(&other.t)
-    }
-}
-
-impl<T: Ord> Ord for WithButton<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.t.cmp(&other.t)
-    }
-}
-
-fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
-    vec: &'a mut Vec<WithButton<T>>,
+fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
+    vec: &'s [WithButton<T>],
     on_press: F,
     character: Option<usize>,
     style: Style,
-    row: Row<'a, crate::Message>,
-) -> Row<'a, crate::Message> {
+    row: Row<'c, crate::Message>,
+) -> Row<'c, crate::Message> {
     let len = vec.len();
-    vec.iter_mut()
+    vec.iter()
         .enumerate()
-        .map(|(i, WithButton { t, state })| {
-            Button::new(
-                state,
-                Text::new(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13),
+        .map(|(i, WithButton { t })| {
+            button(
+                text(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13)
             ).on_press({
                 let message = on_press(t.clone());
                 match character {
@@ -238,8 +214,7 @@ fn add_buttons<'a, T: Display + Clone, F: Fn(T) -> Message>(
             })
                 .style(style.background())
                 .padding(0)
-        }
-        )
+        })
         .fold(row.push_space(3), Row::push)
         .push_space(5)
 }
@@ -274,7 +249,6 @@ fn on_selected<T, F, U>(character: Option<usize>, f: F) -> impl Fn(U) -> crate::
 #[derive(Debug, Default)]
 pub struct LevelSearch {
     pub levels: Vec<WithButton<u8>>,
-    state: pick_list::State<PickListLevel>,
 }
 
 impl Searcher for LevelSearch {
@@ -287,30 +261,31 @@ impl Searcher for LevelSearch {
         self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
+    ) -> Row<'c, crate::Message> {
         let levels = PickListLevel::ALL.into_iter()
             .filter(|lvl| self.levels.iter().none(|wb| wb.t == lvl.0))
             .collect_vec();
 
-        let pick_list = PickList::new(
-            &mut self.state,
+        // todo placeholder
+        let pick_list = pick_list(
             levels,
             Some(PickListLevel::NONE),
             on_selected(character, Message::PickLevel),
-        ).style(style).text_size(14);
-        add_buttons(&mut self.levels, Message::PickLevel, character, style, row.push(pick_list))
+        ).style(style)
+            .text_size(14);
+        // .pla;
+        add_buttons(&self.levels, Message::PickLevel, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ClassSearch {
     pub classes: Vec<WithButton<Class>>,
-    state: pick_list::State<PLOption<Class>>,
 }
 
 impl Searcher for ClassSearch {
@@ -323,24 +298,23 @@ impl Searcher for ClassSearch {
             .any(|class| self.classes.iter().any(|WithButton { t, .. }| class == t))
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
+    ) -> Row<'c, crate::Message> {
         let classes = Class::ALL.into_iter()
             .filter(|class| self.classes.iter().none(|wb| wb.t == *class))
             .map(PLOption::Some)
             .collect_vec();
 
-        let pick_list = PickList::new(
-            &mut self.state,
+        let pick_list = pick_list(
             classes,
             Some(PLOption::None),
             on_selected(character, Message::PickClass),
         ).style(style).text_size(14);
-        add_buttons(&mut self.classes, Message::PickClass, character, style, row.push(pick_list))
+        add_buttons(&self.classes, Message::PickClass, character, style, row.push(pick_list))
     }
 }
 
@@ -349,7 +323,6 @@ plopt!(CastingTime, "Casting Time");
 #[derive(Debug, Default)]
 pub struct CastingTimeSearch {
     pub times: Vec<WithButton<CastingTime>>,
-    state: pick_list::State<PLOption<CastingTime>>,
 }
 
 impl Searcher for CastingTimeSearch {
@@ -363,12 +336,12 @@ impl Searcher for CastingTimeSearch {
         )
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
+    ) -> Row<'c, crate::Message> {
         let durations = [
             CastingTime::Action,
             CastingTime::BonusAction,
@@ -385,20 +358,18 @@ impl Searcher for CastingTimeSearch {
             .map(PLOption::Some)
             .collect_vec();
 
-        let pick_list = PickList::new(
-            &mut self.state,
+        let pick_list = pick_list(
             durations,
             Some(PLOption::None),
             on_selected(character, Message::PickCastingTime),
         ).style(style).text_size(14);
-        add_buttons(&mut self.times, Message::PickCastingTime, character, style, row.push(pick_list))
+        add_buttons(&self.times, Message::PickCastingTime, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct SchoolSearch {
     pub schools: Vec<WithButton<School>>,
-    state: pick_list::State<PLOption<School>>,
 }
 
 impl Searcher for SchoolSearch {
@@ -410,24 +381,23 @@ impl Searcher for SchoolSearch {
         self.schools.iter().any(|WithButton { t, .. }| *t == spell.school())
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
+    ) -> Row<'c, crate::Message> {
         let schools = School::ALL.into_iter()
             .filter(|school| self.schools.iter().none(|wb| wb.t == *school))
             .map(PLOption::Some)
             .collect_vec();
 
-        let pick_list = PickList::new(
-            &mut self.state,
+        let pick_list = pick_list(
             schools,
             Some(PLOption::None),
             on_selected(character, Message::PickSchool),
         ).style(style).text_size(14);
-        add_buttons(&mut self.schools, Message::PickSchool, character, style, row.push(pick_list))
+        add_buttons(&self.schools, Message::PickSchool, character, style, row.push(pick_list))
     }
 }
 
@@ -445,15 +415,15 @@ impl Searcher for RitualSearch {
         spell.ritual() == self.ritual
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
-        let checkbox = Checkbox::new(
-            self.ritual,
+    ) -> Row<'c, crate::Message> {
+        let checkbox = checkbox(
             "Ritual",
+            self.ritual,
             on_selected(character, Message::ToggleRitual),
         ).style(style);
         row.push(checkbox).push_space(5)
@@ -474,15 +444,15 @@ impl Searcher for ConcentrationSearch {
         spell.concentration() == self.concentration
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
-        let checkbox = Checkbox::new(
-            self.concentration,
+    ) -> Row<'c, crate::Message> {
+        let checkbox = checkbox(
             "Concentration",
+            self.concentration,
             on_selected(character, Message::ToggleConcentration),
         ).style(style);
         row.push(checkbox).push_space(5)
@@ -492,7 +462,6 @@ impl Searcher for ConcentrationSearch {
 #[derive(Debug, Default)]
 pub struct TextSearch {
     pub text: String,
-    state: text_input::State,
 }
 
 impl Searcher for TextSearch {
@@ -511,15 +480,14 @@ impl Searcher for TextSearch {
             )
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
-        let text = Text::new("Spell Text:");
-        let input = TextInput::new(
-            &mut self.state,
+    ) -> Row<'c, crate::Message> {
+        let text = "Spell Text:";
+        let input = text_input(
             "int|wis",
             &self.text,
             on_selected(character, Message::SearchText),
@@ -531,7 +499,6 @@ impl Searcher for TextSearch {
 #[derive(Debug, Default)]
 pub struct SourceSearch {
     pub sources: Vec<WithButton<Source>>,
-    state: pick_list::State<PLOption<Source>>,
 }
 
 impl Searcher for SourceSearch {
@@ -543,33 +510,29 @@ impl Searcher for SourceSearch {
         self.sources.iter().any(|wb| wb.t == spell.source())
     }
 
-    fn add_to_row<'a>(
-        &'a mut self,
-        row: Row<'a, crate::Message>,
+    fn add_to_row<'s, 'c: 's>(
+        &'s self,
+        row: Row<'c, crate::Message>,
         character: Option<usize>,
         style: Style,
-    ) -> Row<'a, crate::Message> {
+    ) -> Row<'c, crate::Message> {
         let sources = Source::ALL.into_iter()
             .filter(|source| self.sources.iter().none(|wb| wb.t == *source))
             .map(PLOption::Some)
             .collect_vec();
 
-        let pick_list = PickList::new(
-            &mut self.state,
+        let pick_list = pick_list(
             sources,
             Some(PLOption::None),
             on_selected(character, Message::PickSource),
         ).style(style).text_size(14);
-        add_buttons(&mut self.sources, Message::PickSource, character, style, row.push(pick_list))
+        add_buttons(&self.sources, Message::PickSource, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Default)]
 pub struct SearchOptions {
-    pub state: text_input::State,
     pub search: String,
-    pub mode_state: pick_list::State<PLOption<Mode>>,
-    pub reset_modes: button::State,
     // todo make them always appear?
     pub level_search: Option<LevelSearch>,
     pub class_search: Option<ClassSearch>,
@@ -618,62 +581,59 @@ impl SearchOptions {
             .collect()
     }
 
-    pub fn view<'s, S, M>(
-        &'s mut self,
-        before_search_bar: impl Into<Option<Button<'s, crate::Message>>>,
+    pub fn view<'s, 'c: 's, S, M>(
+        &'s self,
+        before_search_bar: impl Into<Option<Button<'c, crate::Message>>>,
         search_message: S,
         mode_message: M,
         reset_message: crate::Message,
         character: Option<usize>,
         style: Style,
-    ) -> Container<'s, crate::Message>
+    ) -> Container<'c, crate::Message>
         where
-            S: 'static + Fn(String) -> crate::Message,
-            M: 'static + Fn(Mode) -> crate::Message,
+            S: Fn(String) -> crate::Message + 'static,
+            M: Fn(Mode) -> crate::Message + 'static,
     {
-        let search = TextInput::new(
-            &mut self.state,
+        let search = text_input(
             "search for a spell",
             self.search.as_str(),
             search_message,
         ).style(style)
             .width(Length::FillPortion(4));
-        let mode = PickList::new(
-            &mut self.mode_state,
+        let mode = pick_list(
             Mode::ALL.as_ref(),
             Some(PLOption::None),
             move |m| mode_message(m.unwrap()),
         ).style(style)
             .width(Length::Units(114))
             .text_size(15);
-        let reset_modes = Button::new(
-            &mut self.reset_modes,
-            Text::new("Reset").size(14),
+        let reset_modes = button(
+            text("Reset").size(14),
         ).style(style)
             .on_press(reset_message);
 
         // todo this doesn't work on character pages
         // additional search stuff
         let advanced_search = [
-            self.level_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.class_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.school_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.casting_time_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.ritual_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.concentration_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.text_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
-            self.source_search.as_mut().map::<&mut dyn Searcher, _>(|x| x),
+            self.level_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.class_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.school_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.casting_time_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.ritual_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.concentration_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.text_search.as_ref().map::<&dyn Searcher, _>(|x| x),
+            self.source_search.as_ref().map::<&dyn Searcher, _>(|x| x),
         ].into_iter()
             .flatten()
             .fold(
-                Row::new().align_items(Align::Center),
+                row().align_items(Alignment::Center),
                 |row, searcher| searcher.add_to_row(row, character, style),
             );
 
-        Container::new(
-            Column::new()
-                .push(Row::new()
-                    .align_items(Align::Center)
+        container(
+            column()
+                .push(row()
+                    .align_items(Alignment::Center)
                     .push_space(Length::Fill)
                     .push(reset_modes)
                     .push_space(4)
@@ -685,9 +645,10 @@ impl SearchOptions {
                         .push(btn))
                     .push_space(Length::Fill)
                 )
-                .push(Row::new()
+                .push(row()
                     .push_space(Length::Fill)
                     .push(advanced_search.width(Length::FillPortion(18)))
+                    // .push(advanced_search.width(Length::FillPortion(18)))
                     .push_space(Length::Fill)
                 )
         )
@@ -696,18 +657,15 @@ impl SearchOptions {
 
 #[derive(Default)]
 pub struct SearchPage {
-    collapse_state: button::State,
     collapse: bool,
     pub search: SearchOptions,
-    pub scroll: scrollable::State,
     pub spells: Vec<Spell>,
 }
 
 pub struct Spell {
     pub spell: StaticCustomSpell,
     collapse: Option<bool>,
-    name: button::State,
-    buttons: Vec<(Arc<str>, button::State, bool)>,
+    buttons: Vec<(Arc<str>, bool)>,
 }
 
 impl Spell {
@@ -717,13 +675,12 @@ impl Spell {
                 let active = !page.character.spells.iter()
                     .flatten()
                     .any(|(s, _)| s.spell == spell);
-                (Arc::clone(&page.character.name), Default::default(), active)
+                (Arc::clone(&page.character.name), active)
             })
             .collect();
         Self {
             spell,
             collapse: None,
-            name: Default::default(),
             buttons,
         }
     }
@@ -821,33 +778,32 @@ impl SearchPage {
         }
     }
 
-    pub fn view(&mut self, style: Style) -> Container<crate::Message> {
-        if !matches!(&self.search.text_search, Some(ts) if ts.state.is_focused()) {
-            self.search.state.focus();
-        }
+    pub fn view<'s, 'c: 's>(&'s self, style: Style) -> Container<'c, crate::Message> {
+        // todo focus
+        // if !matches!(&self.search.text_search, Some(ts) if ts.state.is_focused()) {
+        //     self.search.state.focus();
+        // }
 
-        let collapse_button = Button::new(
-            &mut self.collapse_state,
-            Text::new(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
-                .font(ICON_FONT)
+        let collapse_button = button(
+            text_icon(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                 .size(15),
         ).style(style)
             .on_press(crate::Message::Search(Message::CollapseAll));
 
         // scroll bar of spells
         let collapse_all = self.collapse;
-        let scroll = self.spells.iter_mut()
-            .fold(Scrollable::new(&mut self.scroll), |scroll, spell| {
+        let scroll = self.spells.iter()
+            .fold(column(), |col, spell| {
                 let collapse = match spell.collapse {
                     Some(collapse) => collapse,
                     None => collapse_all,
                 };
-                scroll.push(spell.spell.view(SearchPageButtons(&mut spell.name, &mut spell.buttons), (), collapse, style))
+                col.push(spell.spell.view(SearchPageButtons(&spell.buttons), (), collapse, style))
                     .push_space(40)
             });
 
-        let column = Column::new()
-            .align_items(Align::Center)
+        let column = column()
+            .align_items(Alignment::Center)
             .spacing(6)
             .push_space(10)
             .push(self.search.view(
@@ -858,28 +814,28 @@ impl SearchPage {
                 None,
                 style,
             ))
-            .push(scroll);
+            .push(scrollable(scroll));
 
-        Container::new(column)
+        container(column)
     }
 }
 
-struct SearchPageButtons<'a>(&'a mut button::State, &'a mut [(Arc<str>, button::State, bool)]);
+struct SearchPageButtons<'a>(&'a [(Arc<str>, bool)]);
 
-impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
+impl SpellButtons for SearchPageButtons<'_> {
     type Data = ();
 
-    fn view(self, id: SpellId, (): Self::Data, style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
-        let mut buttons = Row::new();
-        if !self.1.is_empty() {
-            buttons = buttons.push(Text::new("Add to:"))
+    fn view<'c>(self, id: SpellId, (): Self::Data, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
+        let mut buttons = row();
+        if !self.0.is_empty() {
+            buttons = buttons.push("Add to:")
                 .push_space(15);
         }
-        let buttons = self.1.iter_mut()
+        let buttons = self.0.iter()
             .enumerate()
-            .fold(buttons, |row, (character, (name, state, active))|
+            .fold(buttons, |row, (character, (name, active))|
                 row.push({
-                    let mut button = Button::new(state, Text::new(name.as_ref()).size(12))
+                    let mut button = button(text(name.as_ref()).size(12))
                         .style(style);
                     if *active {
                         button = button.on_press(crate::Message::Character(character, character::Message::AddSpell(id.clone())));
@@ -887,10 +843,8 @@ impl<'a> SpellButtons<'a> for SearchPageButtons<'a> {
                     button
                 }).push_space(5),
             );
-        let name = Button::new(
-            self.0,
-            Text::new(&*id.name)
-                .size(36),
+        let name = button(
+            text(&*id.name).size(36),
         ).width(Length::FillPortion(18))
             .on_press(crate::Message::Search(Message::Collapse(id)))
             .style(style.background())

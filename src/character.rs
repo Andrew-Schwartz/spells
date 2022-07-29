@@ -1,16 +1,16 @@
 use std::cmp::min;
 use std::sync::Arc;
 
-use iced::{Align, button, Button, Column, Container, Element, Length, Row, Rule, Scrollable, scrollable, Text, Tooltip};
-use iced::tooltip::Position;
-use iced_aw::{Icon, ICON_FONT, number_input, NumberInput};
+use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced::alignment::Vertical;
+use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{CustomSpell, find_spell, search, SpellButtons, SpellId, StArc, StaticCustomSpell};
 use crate::search::{Mode, Searcher, SearchOptions, WithButton};
 use crate::style::Style;
-use crate::utils::SpacingExt;
+use crate::utils::{SpacingExt, text_icon, TooltipExt};
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveSpell {
@@ -45,25 +45,33 @@ pub enum Message {
     /// delta to move the spell
     MoveSpell(SpellId, MoveSpell),
     Search(search::Message),
-    // level, num
-    SlotsNum(usize, u32),
-    SlotsReset(usize),
+    // level, delta
+    ChangeNumSlots(usize, i32),
     SlotsCast(usize),
+    SlotsReset,
 }
 
 pub const TABS: usize = 11;
+
+#[derive(Default)]
+pub struct Slots {
+    total: u32,
+    used: u32,
+}
+
+impl Slots {
+    const MAX_BY_LEVEL: [u32; 9] = [4, 3, 3, 3, 3, 2, 2, 1, 1];
+}
 
 pub struct Character {
     pub name: Arc<str>,
     /// the spells this character knows, by level, and if it's prepared
     pub spells: [Vec<(Spell, bool)>; 10],
     /// slots (total, left) by level
-    pub slots: [(u32, u32, (number_input::State, button::State, button::State)); 9],
+    pub slots: [Slots; 9],
 }
 
 impl Character {
-    const MAX_SLOTS_BY_LEVEL: [u32; 9] = [4, 3, 3, 3, 3, 2, 2, 1, 1];
-
     pub fn from_serialized(serialized: &SerializeCharacter, custom: &[CustomSpell]) -> Self {
         let mut spells: [Vec<(Spell, bool)>; 10] = Default::default();
         serialized.spells.iter()
@@ -75,7 +83,7 @@ impl Character {
             .for_each(|spell_prepared| spells[spell_prepared.0.spell.level()].push(spell_prepared));
         let slots = serialized.slots.map_or_else(
             Default::default,
-            |arr| arr.map(|(tot, left)| (tot, left, Default::default())),
+            |arr| arr.map(|(total, used)| Slots { total, used }),
         );
         Self {
             name: Arc::clone(&serialized.name),
@@ -91,7 +99,7 @@ impl Character {
                 .flatten()
                 .map(|(spell, prepared)| (spell.spell.name(), *prepared))
                 .collect(),
-            slots: Some(self.slots.each_ref().map(|&(tot, left, _)| (tot, left))),
+            slots: Some(self.slots.each_ref().map(|&Slots { total, used, .. }| (total, used))),
         }
     }
 }
@@ -108,31 +116,15 @@ pub struct SerializeCharacter {
 pub struct CharacterPage {
     pub character: Character,
     should_collapse_all: bool,
-    collapse_all: button::State,
     should_collapse_unprepared: bool,
-    collapse_unprepared: button::State,
-    prepare_all: button::State,
-    unprepare_all: button::State,
-    move_left: button::State,
-    move_right: button::State,
-    delete: button::State,
     pub tab: usize,
-    tabs: [button::State; TABS],
-    all_scroll: scrollable::State,
-    scroll: scrollable::State,
     pub search: SearchOptions,
 }
 
+// todo does this need to exist now that it doesn't store state?
 #[derive(Debug)]
 pub struct Spell {
     pub spell: StaticCustomSpell,
-    name: button::State,
-    prepare: button::State,
-    remove: button::State,
-    left: button::State,
-    right: button::State,
-    up: button::State,
-    down: button::State,
 }
 
 impl PartialEq for Spell {
@@ -145,13 +137,6 @@ impl From<StaticCustomSpell> for Spell {
     fn from(spell: StaticCustomSpell) -> Self {
         Self {
             spell,
-            name: Default::default(),
-            prepare: Default::default(),
-            remove: Default::default(),
-            left: Default::default(),
-            right: Default::default(),
-            up: Default::default(),
-            down: Default::default(),
         }
     }
 }
@@ -167,18 +152,8 @@ impl From<Character> for CharacterPage {
         Self {
             character,
             should_collapse_all: false,
-            collapse_all: Default::default(),
             should_collapse_unprepared: true,
-            collapse_unprepared: Default::default(),
-            prepare_all: Default::default(),
-            unprepare_all: Default::default(),
-            move_left: Default::default(),
-            move_right: Default::default(),
-            delete: Default::default(),
             tab: 0,
-            tabs: Default::default(),
-            all_scroll: Default::default(),
-            scroll: Default::default(),
             search: Default::default(),
         }
     }
@@ -338,31 +313,32 @@ impl CharacterPage {
                 }
                 false
             }
-            Message::SlotsNum(level, n) => {
-                println!("n = {:?}", n);
-                let (tot, left, _) = &mut self.character.slots[level - 1];
-                *tot = n;
-                *left = (*left).clamp(0, n);
-                println!("*left = {:?}", *left);
-                true
-            }
-            Message::SlotsReset(level) => {
-                println!("reset level {level}");
-                let (tot, left, _) = &mut self.character.slots[level - 1];
-                *left = *tot;
+            Message::ChangeNumSlots(level, delta) => {
+                println!("Set slots num {} level {level}", self.character.name);
+                println!("delta = {:?}", delta);
+                let Slots { total, used, .. } = &mut self.character.slots[level];
+                *total = total.saturating_add_signed(delta).clamp(0, Slots::MAX_BY_LEVEL[level - 1]);
+                *used = (*used).clamp(0, *total);
                 true
             }
             Message::SlotsCast(level) => {
-                println!("cast level {level}");
-                let (tot, left, _) = &mut self.character.slots[level - 1];
-                *left += 1;
-                *left = (*left).clamp(0, *tot);
+                println!("Cast spell {} level {level}", self.character.name);
+                let Slots { used, total, .. } = &mut self.character.slots[level];
+                *used += 1;
+                *used = (*used).clamp(0, *total);
+                true
+            }
+            Message::SlotsReset => {
+                println!("Reset slots {}", self.character.name);
+                for slots in &mut self.character.slots {
+                    slots.used = 0;
+                }
                 true
             }
         }
     }
 
-    pub fn view(&mut self, index: usize, num_cols: usize, style: Style) -> Container<crate::Message> {
+    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize, style: Style) -> Container<'c, crate::Message> {
         let message = move |message: Message| crate::Message::Character(index, message);
 
         let Self {
@@ -372,119 +348,85 @@ impl CharacterPage {
                 slots,
             },
             should_collapse_all,
-            collapse_all,
             should_collapse_unprepared,
-            collapse_unprepared,
-            prepare_all,
-            unprepare_all,
-            move_left,
-            move_right,
-            delete,
             tab,
-            tabs,
-            all_scroll,
-            scroll,
             search
         } = self;
         let selected_level = *tab;
 
         // row with details: delete, move tab, etc
-        let name_text = Text::new(name.to_string()).size(30);
-        let buttons_row = Row::new()
+        let name_text = text(name.to_string()).size(30);
+        let buttons_row = row()
             .spacing(6)
             .push_space(Length::Fill)
-            .push(Tooltip::new(
-                Button::new(
-                    collapse_all,
-                    Text::new(if *should_collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
-                        .font(ICON_FONT))
-                    .style(style)
-                    .on_press(message(Message::ToggleCollapseAll)),
-                if *should_collapse_all { "Expand all spells" } else { "Collapse all spells" },
-                Position::FollowCursor,
-            ))
-            .push(Tooltip::new(
-                Button::new(
-                    collapse_unprepared,
-                    Text::new(if *should_collapse_unprepared { Icon::ChevronExpand } else { Icon::ChevronContract })
-                        .font(ICON_FONT))
-                    .style(style)
-                    .on_press(message(Message::ToggleCollapse)),
-                if *should_collapse_unprepared { "Expand unprepared spells" } else { "Collapse unprepared spells" },
-                Position::FollowCursor))
-            .push(Tooltip::new(
-                Button::new(prepare_all, Text::new(Icon::Check).font(ICON_FONT))
-                    .style(style)
-                    .on_press(message(Message::PrepareAll(true))),
-                "Prepare All",
-                Position::FollowCursor))
-            .push(Tooltip::new(
-                Button::new(unprepare_all, Text::new(Icon::X).font(ICON_FONT))
-                    .style(style)
-                    .on_press(message(Message::PrepareAll(false))),
-                "Unprepare All",
-                Position::FollowCursor))
-            .push(Tooltip::new(
-                Button::new(move_left, Text::new(Icon::ArrowLeft).font(ICON_FONT))
-                    .style(style)
-                    .on_press(crate::Message::MoveCharacter(index, -1)),
-                "Move character left",
-                Position::FollowCursor))
-            .push(Tooltip::new(
-                Button::new(move_right, Text::new(Icon::ArrowRight).font(ICON_FONT))
-                    .style(style)
-                    .on_press(crate::Message::MoveCharacter(index, 1)),
-                "Move character right",
-                Position::FollowCursor))
-            .push(Tooltip::new(
-                Button::new(delete, Text::new(Icon::Archive).font(ICON_FONT))
-                    .style(style)
-                    .on_press(crate::Message::CloseCharacter(index)),
-                "Close character",
-                Position::FollowCursor))
+            .push(button(text_icon(Icon::ArrowClockwise))
+                .style(style)
+                .on_press(message(Message::SlotsReset))
+                .tooltip("Long Rest"))
+            .push(button(
+                text_icon(if *should_collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse }))
+                .style(style)
+                .on_press(message(Message::ToggleCollapseAll))
+                .tooltip(if *should_collapse_all { "Expand all spells" } else { "Collapse all spells" }))
+            .push(button(
+                text_icon(if *should_collapse_unprepared { Icon::ChevronExpand } else { Icon::ChevronContract }))
+                .style(style)
+                .on_press(message(Message::ToggleCollapse))
+                .tooltip(if *should_collapse_unprepared { "Expand unprepared spells" } else { "Collapse unprepared spells" }))
+            .push(button(text_icon(Icon::Check))
+                .style(style)
+                .on_press(message(Message::PrepareAll(true)))
+                .tooltip("Prepare All"))
+            .push(button(text_icon(Icon::X))
+                .style(style)
+                .on_press(message(Message::PrepareAll(false)))
+                .tooltip("Unprepare All"))
+            .push(button(text_icon(Icon::ArrowLeft))
+                .style(style)
+                .on_press(crate::Message::MoveCharacter(index, -1))
+                .tooltip("Move character left"))
+            .push(button(text(Icon::ArrowRight))
+                .style(style)
+                .on_press(crate::Message::MoveCharacter(index, 1))
+                .tooltip("Move character right"))
+            .push(button(text(Icon::Archive))
+                .style(style)
+                .on_press(crate::Message::CloseCharacter(index))
+                .tooltip("Close character"))
             .push_space(Length::Fill);
 
         // spell tabs
-        let make_button = |state, name, level| {
-            let mut button = Button::new(state, Text::new(name))
+        let make_button = |name, level| {
+            let mut button = button(text(name))
                 .style(style.tab_button());
             if level != selected_level {
                 button = button.on_press(message(Message::SpellTab(level)));
             }
             button
         };
-        let mut tabs_row = Row::new()
+        let mut tabs_row = row()
             .push_space(Length::Fill);
 
-        // iterate through tabs, allowing for specific handling for "all" and "cantrip" tabs
-        let mut iter = tabs.iter_mut();
-        // all spells tab
-        let all = iter.next().unwrap();
-        tabs_row = tabs_row.push(make_button(all, "All".into(), 0));
-
-        // attach spell levels
-        // name cantrip tab
-        let cantrip = iter.next().unwrap();
-        tabs_row = tabs_row.push(make_button(cantrip, "Cantrip".to_string(), 1));
-
-        // generic spell tab with some `level`
-        for (level, state) in iter.enumerate() {
-            let level = level + 1;
+        tabs_row = tabs_row.push(make_button("All".into(), 0));
+        tabs_row = tabs_row.push(make_button("Cantrip".to_string(), 1));
+        // todo only go up to max level this character knows
+        for level in 1..=9 {
             // spaces to pad the tab width
-            tabs_row = tabs_row.push(make_button(state, format!(" {} ", level), level + 1));
+            tabs_row = tabs_row.push(make_button(format!(" {} ", level), level + 1));
         }
         let tabs_row = tabs_row.push_space(Length::Fill);
 
-        let page: Element<crate::Message> = if selected_level == 0 {
+        let page: Element<'_, crate::Message> = if selected_level == 0 {
             // 'All' tab
             let needle = search.search.to_lowercase();
 
-            let group_by = spells.iter_mut().flatten().group_by(|(s, _)| s.spell.level());
-            let scroll = (&group_by).into_iter()
+            let group_by = spells.iter().flatten().group_by(|(s, _)| s.spell.level());
+            let col = (&group_by).into_iter()
                 .zip(slots)
-                .map(|((level, g), stuff)| (
+                // .zip(&mut slots[1..])
+                .map(|((level, g), slots)| (
                     level,
-                    stuff,
+                    slots,
                     g.filter(|(spell, _)| [
                         search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                         search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
@@ -501,165 +443,236 @@ impl CharacterPage {
                     )
                         .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
                         .fold(
-                            Column::new().spacing(2),
-                            |col, (spell, _)| col.push(Row::new()
+                            column().spacing(2),
+                            |col, (spell, _)| col.push(row()
                                 .push_space(Length::Fill)
-                                .push(Text::new(&*spell.spell.name()).size(15).width(Length::FillPortion(18)))
+                                .push(text(&*spell.spell.name()).size(15).width(Length::FillPortion(18)))
                                 .push_space(Length::Fill)
                             ),
                         )
                 ))
                 .fold(
-                    Scrollable::new(all_scroll).padding(20),
-                    move |scroll, (level, (total, left, (num_state, reset_state, cast_state)), col)| {
-                        // I really don't know why it doesn't know the type of col??
-                        let col: Column<crate::Message> = col;
-                        let mut row = Row::new().padding(2).align_items(Align::Center);
+                    column().padding(20),
+                    move |scroll, (level, Slots { total, used }, col)| {
+                        let mut slots_row = row().padding(2).align_items(Alignment::Center);
                         if level == 0 {
-                            row = row.push_space(Length::Fill)
-                                .push(Text::new("Cantrips").size(22).width(Length::FillPortion(18)))
+                            slots_row = slots_row.push_space(Length::Fill)
+                                .push(text("Cantrips").size(22).width(Length::FillPortion(18)))
                                 .push_space(Length::Fill)
                         } else {
-                            let slots = (0..*total).fold(
-                                Row::new().spacing(2).align_items(Align::Center),
-                                |row, i| row.push(
-                                    Text::new(if i < *total - *left { Icon::DiamondFill } else { Icon::Diamond })
+                            let slot_max_picker = column().align_items(Alignment::Center)
+                                .push(button(
+                                    text(Icon::ArrowUp)
                                         .font(ICON_FONT)
-                                        .vertical_alignment(VerticalAlignment::Center)
-                                        .size(15)
-                                ),
+                                        .size(10),
+                                ).style(style.background())
+                                    .padding(0)
+                                    .on_press(message(Message::ChangeNumSlots(level, 1))))
+                                .push(button(
+                                    text(Icon::ArrowDown)
+                                        .font(ICON_FONT)
+                                        .size(10),
+                                ).style(style.background())
+                                    .padding(0)
+                                    .on_press(message(Message::ChangeNumSlots(level, -1))));
+                            let slots_text = format!("{empty}{filled}",
+                                                     filled = Icon::DiamondFill.to_string().repeat(*used as usize),
+                                                     empty = Icon::Diamond.to_string().repeat((*total - *used) as usize),
                             );
-                            row = row.push_space(Length::Fill)
-                                .push(Row::new().width(Length::FillPortion(18)).align_items(Align::Center)
-                                    .push(Text::new(level.to_string()).size(22))
-                                    .push_space(40)
-                                    .push(NumberInput::new(
-                                        num_state,
-                                        *total,
-                                        Character::MAX_SLOTS_BY_LEVEL[level - 1],
-                                        move |n| {
-                                            println!("n = {:?}", n);
-                                            crate::Message::Character(index, Message::SlotsNum(level, n))
-                                        },
-                                    ).style(style))
-                                    .push_space(20)
-                                    .push(Button::new(
-                                        reset_state,
-                                        Text::new(Icon::ArrowClockwise).font(ICON_FONT).size(22),
-                                    ).on_press(crate::Message::Character(index, Message::SlotsReset(level)))
-                                        .style(style))
-                                    .push_space(20)
-                                    .push(Button::new(
-                                        cast_state,
-                                        Text::new(Icon::Lightning).font(ICON_FONT).size(22),
-                                    ).on_press(crate::Message::Character(index, Message::SlotsCast(level)))
-                                        .style(style))
+                            let slots = button(
+                                text(slots_text)
+                                    .font(ICON_FONT)
+                                    .vertical_alignment(Vertical::Center)
+                                    .size(15),
+                            ).style(style.background())
+                                .on_press(message(Message::SlotsCast(level)));
+                            slots_row = slots_row.push_space(Length::Fill)
+                                .push(row().width(Length::FillPortion(18)).align_items(Alignment::Center)
+                                    .push(text(level.to_string()).size(24))
+                                    .push_space(10)
+                                    .push(slot_max_picker)
                                     .push_space(Length::Fill)
                                     .push(slots)
                                 )
                                 .push_space(Length::Fill)
                         }
-                        scroll.push(Rule::horizontal(0))
-                            .push(row)
-                            .push(Rule::horizontal(0))
+                        scroll.push(horizontal_rule(0))
+                            .push(slots_row)
+                            .push(horizontal_rule(0))
                             .spacing(6)
                             .push(col)
                     },
                 );
 
-            // let (_, scroll) = spells.iter_mut()
-            //     .flatten()
-            //     .filter(|(spell, _)| [
-            //         search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //         search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-            //     ].into_iter()
-            //         .flatten()
-            //         .filter(|searcher| !searcher.is_empty())
-            //         .all(|searcher| searcher.matches(&spell.spell)))
-            //     .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
-            //     // .sorted_unstable_by_key(|(spell, _)| spell.spell.name())
-            //     .fold(
-            //         (0, Scrollable::new(all_scroll).padding(20)),
-            //         |(mut next_level, mut scroll), (spell, prepared)| {
-            //             let level = spell.spell.level();
-            //             if level >= next_level {
-            //                 let mut row = Row::new().padding(2).align_items(Align::Center);
-            //                 if level == 0 {
-            //                     row = row.push_space(Length::Fill)
-            //                         .push(Text::new("Cantrips").size(22).width(Length::FillPortion(18)))
-            //                         .push_space(Length::Fill)
-            //                 } else {
-            //                     let (total, left, (num_state, reset_state, cast_state)) = &mut slots[level - 1];
-            //                     let slots = (0..*total).fold(
-            //                         Row::new().spacing(2).align_items(Align::Center),
-            //                         |row, i| row.push(
-            //                             Text::new(if i < *total - *left { Icon::DiamondFill } else { Icon::Diamond })
-            //                                 .font(ICON_FONT)
-            //                                 .vertical_alignment(VerticalAlignment::Center)
-            //                                 .size(15)
-            //                         ),
-            //                     );
-            //                     row = row.push_space(Length::Fill)
-            //                         .push(Row::new().width(Length::FillPortion(18)).align_items(Align::Center)
-            //                             .push(Text::new(level.to_string()).size(22))
-            //                             .push_space(40)
-            //                             .push(NumberInput::new(
-            //                                 num_state,
-            //                                 *total,
-            //                                 Character::MAX_SLOTS_BY_LEVEL[level - 1],
-            //                                 |n| crate::Message::Character(index, Message::SlotsNum(level, n)),
-            //                             ).style(style))
-            //                             .push_space(20)
-            //                             .push(Button::new(
-            //                                 reset_state,
-            //                                 Text::new(Icon::ArrowClockwise).font(ICON_FONT).size(22),
-            //                             ).on_press(crate::Message::Character(index, Message::SlotsReset(level)))
-            //                                 .style(style))
-            //                             .push_space(20)
-            //                             .push(Button::new(
-            //                                 cast_state,
-            //                                 Text::new(Icon::Lightning).font(ICON_FONT).size(22),
-            //                             ).on_press(crate::Message::Character(index, Message::SlotsCast(level)))
-            //                                 .style(style))
-            //                             .push_space(Length::Fill)
-            //                             .push(slots)
-            //                         )
-            //                         .push_space(Length::Fill)
-            //                 }
-            //                 scroll = scroll.push(Rule::horizontal(2))
-            //                     .push(row)
-            //                     .push(Rule::horizontal(2));
-            //                 next_level = level + 1;
-            //             }
-            //             scroll = scroll.push(Row::new()
-            //                 .push_space(Length::Fill)
-            //                 .push(Text::new(&*spell.spell.name()).size(15).width(Length::FillPortion(18)))
-            //                 .push_space(Length::Fill)
-            //             );
-            //             (next_level, scroll)
-            //         });
-
-            Row::new()
-                .align_items(Align::Start)
-                .push(scroll.width(Length::Fill))
+            /*            let (_, scroll) = spells.iter_mut()
+                            .flatten()
+                            .filter(|(spell, _)| [
+                                search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                                search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                            ].into_iter()
+                                .flatten()
+                                .filter(|searcher| !searcher.is_empty())
+                                .all(|searcher| searcher.matches(&spell.spell)))
+                            .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
+                            // .sorted_unstable_by_key(|(spell, _)| spell.spell.name())
+                            .fold(
+                                (0, Scrollable::new(all_scroll).padding(20)),
+                                |(mut next_level, mut scroll), (spell, prepared)| {
+                                    let level = spell.spell.level();
+                                    if level >= next_level {
+                                        let mut row = row().padding(2).align_items(Alignment::Center);
+                                        if level == 0 {
+                                            row = row.push_space(Length::Fill)
+                                                .push(text("Cantrips").size(22).width(Length::FillPortion(18)))
+                                                .push_space(Length::Fill)
+                                        } else {
+                                            let (total, left, (num_state, reset_state, cast_state)) = &mut slots[level - 1];
+                                            let slots = (0..*total).fold(
+                                                row().spacing(2).align_items(Alignment::Center),
+                                                |row, i| row.push(
+                                                    text(if i < *total - *left { Icon::DiamondFill } else { Icon::Diamond })
+                                                        .font(ICON_FONT)
+                                                        .vertical_alignment(Alignment::Center)
+                                                        .size(15)
+                                                ),
+                                            );
+                                            row = row.push_space(Length::Fill)
+                                                .push(row().width(Length::FillPortion(18)).align_items(Alignment::Center)
+                                                    .push(text(level.to_string()).size(22))
+                                                    .push_space(40)
+                                                    .push(NumberInput::new(
+                                                        num_state,
+                                                        *total,
+                                                        Character::MAX_SLOTS_BY_LEVEL[level - 1],
+                                                        |n| crate::Message::Character(index, Message::SlotsNum(level, n)),
+                                                    ).style(style))
+                                                    .push_space(20)
+                                                    .push(Button::new(
+                                                        reset_state,
+                                                        text(Icon::ArrowClockwise).font(ICON_FONT).size(22),
+                                                    ).on_press(crate::Message::Character(index, Message::SlotsReset(level)))
+                                                        .style(style))
+                                                    .push_space(20)
+                                                    .push(Button::new(
+                                                        cast_state,
+                                                        text(Icon::Lightning).font(ICON_FONT).size(22),
+                                                    ).on_press(crate::Message::Character(index, Message::SlotsCast(level)))
+                                                        .style(style))
+                                                    .push_space(Length::Fill)
+                                                    .push(slots)
+                                                )
+                                                .push_space(Length::Fill)
+                                        }
+                                        scroll = scroll.push(Rule::horizontal(2))
+                                            .push(row)
+                                            .push(Rule::horizontal(2));
+                                        next_level = level + 1;
+                                    }
+                                    scroll = scroll.push(row()
+                                        .push_space(Length::Fill)
+                                        .push(text(&*spell.spell.name()).size(15).width(Length::FillPortion(18)))
+                                        .push_space(Length::Fill)
+                                    );
+                                    (next_level, scroll)
+                                });
+            */
+            row()
+                .align_items(Alignment::Start)
+                .push(scrollable(col.width(Length::Fill)))
                 .push_space(30)
                 .push_space(Length::FillPortion(2))
                 .into()
         } else {
             let len = spells[selected_level - 1].len();
-            let chunks = spells[selected_level - 1].iter_mut()
+            let chunks = spells[selected_level - 1].iter()
                 .enumerate()
                 .chunks(num_cols);
             (&chunks).into_iter()
-                .fold(Column::new().spacing(18), |spells_col, mut chunk| {
-                    let row = (0..num_cols).fold(Row::new(), |row, _| {
+                .fold(column().spacing(18), |spells_col, mut chunk| {
+                    let row = (0..num_cols).fold(row(), |row, _| {
                         if let Some((idx, (spell, prepared))) = chunk.next() {
+                            let all_tab = selected_level == 0;
+                            let button = CharacterPageButtons {
+                                character: index,
+                                left: !(all_tab || idx == 0),
+                                right: !(all_tab || idx == len - 1),
+                                up: !all_tab && idx >= num_cols,
+                                down: !all_tab && len - idx - 1 > {
+                                    // this works but really... whyyyyyy is it a block
+                                    let a = len % num_cols;
+                                    let bottom_start_idx = if a == 0 { num_cols } else { a };
+                                    bottom_start_idx - 1
+                                },
+                            };
+                            let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
+                            row.push(spell.spell.view(button, *prepared, collapse, style).width(Length::Fill))
+                        } else {
+                            row.push_space(Length::Fill)
+                        }
+                    });
+                    spells_col.push(row)
+                }).into()
+        };
+
+        /*// slightly cursed way to flatten spells if we're in the `all` tab
+        let (spells, search_col, level) = if selected_level == 0 {
+            let needle = search.search.to_lowercase();
+            let spells = spells.iter_mut()
+                .flatten()
+                .filter(|(spell, _)| [
+                    search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                ].into_iter()
+                    .flatten()
+                    .filter(|searcher| !searcher.is_empty())
+                    .all(|searcher| searcher.matches(&spell.spell)))
+                .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
+                // .sorted_unstable_by_key(|(spell, _)| spell.spell.name())
+                .collect_vec();
+            // let spells = spells.iter_mut()
+            //     .flatten()
+            //     .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
+            //     .collect_vec();
+            // only thing to focus on
+            search.state.focus();
+            let search_col = column()
+                .align_items(Alignment::Center)
+                .push(search.view(
+                    None,
+                    move |s| message(Message::Search(search::Message::Search(s))),
+                    move |m| message(Message::Search(search::Message::PickMode(m))),
+                    message(Message::Search(search::Message::ResetModes)),
+                    Some(index),
+                    style,
+                ));
+            (spells, search_col, None)
+        } else {
+            (spells[selected_level - 1].iter_mut().collect(), column(), (selected_level >= 2).then(|| selected_level - 2))
+        };
+
+        let len = spells.len();
+
+        let spells_col = if num_cols == 0 {
+            column()
+        } else {
+            (&spells.into_iter().enumerate().chunks(num_cols))
+                .into_iter()
+                .fold(column().spacing(18), |spells_col, mut chunk| {
+                    let row = (0..num_cols).fold(row(), |row, _| {
+                        if let Some((idx, (spell, prepared))) = chunk.next() {
+                            // let spell: &mut Spell = spell;
                             let all_tab = selected_level == 0;
                             let button = CharacterPageButtons {
                                 character: index,
@@ -683,95 +696,14 @@ impl CharacterPage {
                         }
                     });
                     spells_col.push(row)
-                }).into()
-        };
+                })
+        };*/
 
-        // // slightly cursed way to flatten spells if we're in the `all` tab
-        // let (spells, search_col, level) = if selected_level == 0 {
-        //     let needle = search.search.to_lowercase();
-        //     let spells = spells.iter_mut()
-        //         .flatten()
-        //         .filter(|(spell, _)| [
-        //             search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //             search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-        //         ].into_iter()
-        //             .flatten()
-        //             .filter(|searcher| !searcher.is_empty())
-        //             .all(|searcher| searcher.matches(&spell.spell)))
-        //         .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
-        //         // .sorted_unstable_by_key(|(spell, _)| spell.spell.name())
-        //         .collect_vec();
-        //     // let spells = spells.iter_mut()
-        //     //     .flatten()
-        //     //     .filter(|(spell, _)| spell.spell.name().to_lowercase().contains(&needle))
-        //     //     .collect_vec();
-        //     // only thing to focus on
-        //     search.state.focus();
-        //     let search_col = Column::new()
-        //         .align_items(Align::Center)
-        //         .push(search.view(
-        //             None,
-        //             move |s| message(Message::Search(search::Message::Search(s))),
-        //             move |m| message(Message::Search(search::Message::PickMode(m))),
-        //             message(Message::Search(search::Message::ResetModes)),
-        //             Some(index),
-        //             style,
-        //         ));
-        //     (spells, search_col, None)
-        // } else {
-        //     (spells[selected_level - 1].iter_mut().collect(), Column::new(), (selected_level >= 2).then(|| selected_level - 2))
-        // };
-        //
-        // let len = spells.len();
-        //
-        // let spells_col = if num_cols == 0 {
-        //     Column::new()
-        // } else {
-        //     (&spells.into_iter().enumerate().chunks(num_cols))
-        //         .into_iter()
-        //         .fold(Column::new().spacing(18), |spells_col, mut chunk| {
-        //             let row = (0..num_cols).fold(Row::new(), |row, _| {
-        //                 if let Some((idx, (spell, prepared))) = chunk.next() {
-        //                     // let spell: &mut Spell = spell;
-        //                     let all_tab = selected_level == 0;
-        //                     let button = CharacterPageButtons {
-        //                         character: index,
-        //                         name: &mut spell.name,
-        //                         prepare: &mut spell.prepare,
-        //                         remove: &mut spell.remove,
-        //                         left: if all_tab || idx == 0 { None } else { Some(&mut spell.left) },
-        //                         right: if all_tab || idx == len - 1 { None } else { Some(&mut spell.right) },
-        //                         up: if all_tab || idx < num_cols { None } else { Some(&mut spell.up) },
-        //                         down: if all_tab || len - idx - 1 <= {
-        //                             // this works but really... whyyyyyy is it a block
-        //                             let a = len % num_cols;
-        //                             let bottom_start_idx = if a == 0 { num_cols } else { a };
-        //                             bottom_start_idx - 1
-        //                         } { None } else { Some(&mut spell.down) },
-        //                     };
-        //                     let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
-        //                     row.push(spell.spell.view(button, *prepared, collapse, style).width(Length::Fill))
-        //                 } else {
-        //                     row.push_space(Length::Fill)
-        //                 }
-        //             });
-        //             spells_col.push(row)
-        //         })
-        // };
+        let scroll = scrollable(page)
+            .height(Length::Fill);
 
-        let scroll = Scrollable::new(scroll)
-            .push(page)
-            .height(Length::Fill)
-            ;
-
-        Container::new(Column::new()
-            .align_items(Align::Center)
+        container(column()
+            .align_items(Alignment::Center)
             .spacing(6)
             .push_space(10)
             .push(name_text)
@@ -783,42 +715,38 @@ impl CharacterPage {
     }
 }
 
-struct CharacterPageButtons<'a> {
+struct CharacterPageButtons {
     character: usize,
-    name: &'a mut button::State,
-    prepare: &'a mut button::State,
-    remove: &'a mut button::State,
-    left: Option<&'a mut button::State>,
-    right: Option<&'a mut button::State>,
-    up: Option<&'a mut button::State>,
-    down: Option<&'a mut button::State>,
+    left: bool,
+    right: bool,
+    up: bool,
+    down: bool,
 }
 
-impl<'a> SpellButtons<'a> for CharacterPageButtons<'a> {
+impl SpellButtons for CharacterPageButtons {
     /// if this spell is prepared right now
     type Data = bool;
 
-    fn view(self, id: SpellId, is_prepared: bool, style: Style) -> (Row<'a, crate::Message>, Element<'a, crate::Message>) {
+    fn view<'c>(self, id: SpellId, is_prepared: bool, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
         let character = self.character;
         let buttons = [
             (self.left, Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
             (self.up, Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
-            (Some(self.prepare), if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
-            (Some(self.remove), Icon::Trash, Message::RemoveSpell(id.clone())),
+            (true, if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
+            (true, Icon::Trash, Message::RemoveSpell(id.clone())),
             (self.down, Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
             (self.right, Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
         ].into_iter()
-            .fold(Row::new().spacing(2), |row, (state, icon, msg)|
-                if let Some(state) = state {
-                    row.push(Button::new(state, Text::new(icon).size(12).font(ICON_FONT))
+            .fold(row().spacing(2), |row, (enable, icon, msg)|
+                if enable {
+                    row.push(button(text(icon).size(12).font(ICON_FONT))
                         .style(style)
                         .on_press(crate::Message::Character(character, msg)))
                 } else {
                     row
                 });
-        let name = Button::new(
-            self.name,
-            Text::new(&*id.name).size(36),
+        let name = button(
+            text(&*id.name).size(36),
         ).width(Length::FillPortion(23))
             .on_press(crate::Message::Character(self.character, Message::Prepare(id)))
             .style(style.background())
