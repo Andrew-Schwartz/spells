@@ -849,8 +849,8 @@ dependencies = [
     "indexmap",
     "slab",
     "tokio",
- "tokio-util",
- "tracing",
+    "tokio-util",
+    "tracing",
 ]
 
 [[package]]
@@ -917,13 +917,13 @@ dependencies = [
     "http-body",
     "httparse",
     "httpdate",
- "itoa",
- "pin-project-lite",
- "socket2",
- "tokio",
- "tower-service",
- "tracing",
- "want",
+    "itoa",
+    "pin-project-lite",
+    "socket2",
+    "tokio",
+    "tower-service",
+    "tracing",
+    "want",
 ]
 
 [[package]]
@@ -1378,7 +1378,7 @@ dependencies = [
     "schannel",
     "security-framework",
     "security-framework-sys",
- "tempfile",
+    "tempfile",
 ]
 
 [[package]]
@@ -1900,14 +1900,14 @@ dependencies = [
     "http",
     "http-body",
     "hyper",
- "hyper-rustls",
- "hyper-tls",
- "ipnet",
- "js-sys",
- "lazy_static",
- "log",
- "mime",
- "native-tls",
+    "hyper-rustls",
+    "hyper-tls",
+    "ipnet",
+    "js-sys",
+    "lazy_static",
+    "log",
+    "mime",
+    "native-tls",
     "percent-encoding",
     "pin-project-lite",
     "rustls",

@@ -793,17 +793,18 @@ impl SearchPage {
         // scroll bar of spells
         let collapse_all = self.collapse;
         let scroll = self.spells.iter()
-            .fold(column(), |col, spell| {
+            .fold(column().align_items(Alignment::Fill), |col, spell| {
                 let collapse = match spell.collapse {
                     Some(collapse) => collapse,
                     None => collapse_all,
                 };
                 col.push(spell.spell.view(SearchPageButtons(&spell.buttons), (), collapse, style))
                     .push_space(40)
-            });
+            })
+            .tap(scrollable);
 
         let column = column()
-            .align_items(Alignment::Center)
+            .align_items(Alignment::Fill)
             .spacing(6)
             .push_space(10)
             .push(self.search.view(
@@ -814,7 +815,7 @@ impl SearchPage {
                 None,
                 style,
             ))
-            .push(scrollable(scroll));
+            .push(scroll);
 
         container(column)
     }

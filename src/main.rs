@@ -967,8 +967,12 @@ impl Application for DndSpells {
         ).style(style.settings_bar())
             .align_y(Vertical::Center);
 
+        let main_content = container(tabs)
+            .height(Length::Units((self.height - 20) as _))
+            .width(Length::FillPortion(18));
+
         let content = column()
-            .push(tabs.height(Length::Shrink))
+            .push(main_content)
             .push_space(Length::Fill)
             .push(bottom_bar);
 
@@ -976,7 +980,7 @@ impl Application for DndSpells {
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
-            .align_y(Vertical::Bottom)
+            .align_y(Vertical::Top)
             .style(style)
             .into()
     }
@@ -1607,9 +1611,10 @@ impl Spell {
         style: Style,
     ) -> Container<'c, Message> {
         let text = |label: String| row()
-            .push_space(Length::Fill)
+            // // .push_space(Length::Fill)
             .push(text(label).size(16).width(Length::FillPortion(18)))
-            .push_space(Length::Fill);
+            // // .push_space(Length::Fill)
+            ;
         // fn text<T: Into<String>>(label: T) -> Row<'_, Message> {
         //     row()
         //         .push_space(Length::Fill)
@@ -1619,16 +1624,19 @@ impl Spell {
 
         let (buttons, title) = button.view(self.id(), data, style);
         let title = row()
-            .push_space(Length::Fill)
+            // .push_space(Length::Fill)
             .push(title)
-            .push_space(Length::Fill);
+            // .push_space(Length::Fill)
+            ;
 
         let buttons = row()
-            .push_space(Length::Fill)
+            // .push_space(Length::Fill)
             .push(buttons.width(Length::FillPortion(18)))
-            .push_space(Length::Fill);
+            // .push_space(Length::Fill)
+            ;
 
         let mut column = column()
+            .align_items(Alignment::Center)
             .push(title)
             .push(buttons);
         if !collapse {
@@ -1648,9 +1656,10 @@ impl Spell {
                 column = column
                     .push(horizontal_rule(8))
                     .push(row()
-                        .push_space(Length::Fill)
-                        .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
-                        .push_space(Length::Fill))
+                              // .push_space(Length::Fill)
+                              .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
+                          // .push_space(Length::Fill))
+                    )
                     .push_space(3)
                     .push(text(higher.to_string()));
             }
@@ -1662,7 +1671,14 @@ impl Spell {
                 .push(horizontal_rule(8))
                 .push(text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page)));
         }
-        container(column)
+
+        container(row()
+            .push_space(Length::FillPortion(1))
+            .push(column.width(Length::FillPortion(18)))
+            .push_space(Length::FillPortion(1))
+        )
+            .width(Length::Fill)
+            .center_x()
     }
 }
 
