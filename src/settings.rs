@@ -3,7 +3,6 @@ use itertools::{Either, Itertools};
 
 use crate::{CastingTime, Class, Components, CustomSpell, School};
 use crate::character::Character;
-use crate::search::PLOption;
 use crate::style::Style;
 use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
@@ -41,7 +40,7 @@ pub enum Edit {
     Description(String),
     // DescEnter,
     HigherLevels(String),
-    Class(PLOption<Class>),
+    Class(Class),
     // Source(String),
     // Page(String),
 }
@@ -419,10 +418,11 @@ impl SettingsPage {
                 ).style(style);
 
                 let classes = pick_list(
-                    &Class::PL_ALL[..],
-                    Some(PLOption::None),
+                    &Class::ALL[..],
+                    None,
                     edit_message(Edit::Class),
-                ).style(style);
+                ).style(style)
+                    .placeholder("Class");
 
                 // let page = TextInput::new(
                 //     &mut spell.page_state,

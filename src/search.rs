@@ -42,48 +42,6 @@ impl<T> Unwrap<T> for Option<T> {
     }
 }
 
-/// `PickListOption`, meant to be used as the title for a `PickList` but not in the set of items
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum PLOption<T> {
-    None,
-    Some(T),
-}
-
-impl<T> Unwrap<T> for PLOption<T> {
-    fn unwrap(self) -> T {
-        match self {
-            PLOption::Some(t) => t,
-            PLOption::None => panic!("called `PLOption::unwrap()` on a `None` value"),
-        }
-    }
-}
-
-impl<T: PLNone + Display + Eq> From<Option<T>> for PLOption<T> {
-    fn from(option: Option<T>) -> Self {
-        match option {
-            Some(t) => Self::Some(t),
-            None => Self::None,
-        }
-    }
-}
-
-impl<T: PLNone + Display + Eq> Display for PLOption<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PLOption::None => f.write_str(T::title()),
-            PLOption::Some(t) => t.fmt(f),
-        }
-    }
-}
-
-macro_rules! plopt {
-    ($ty:ty, $none:literal) => {
-        impl PLNone for $ty {
-            fn title() -> &'static str { $none }
-        }
-    };
-}
-
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash, Ord, PartialOrd)]
 pub enum Mode {
     Level,
@@ -95,21 +53,17 @@ pub enum Mode {
     Text,
     Source,
 }
-plopt!(Mode, "Advanced Search");
-plopt!(Class, "Class");
-plopt!(School, "School");
-plopt!(Source, "Source");
 
 impl Mode {
-    pub(crate) const ALL: [PLOption<Self>; 8] = [
-        PLOption::Some(Self::Level),
-        PLOption::Some(Self::Class),
-        PLOption::Some(Self::School),
-        PLOption::Some(Self::CastingTime),
-        PLOption::Some(Self::Ritual),
-        PLOption::Some(Self::Concentration),
-        PLOption::Some(Self::Text),
-        PLOption::Some(Self::Source),
+    pub(crate) const ALL: [Self; 8] = [
+        Self::Level,
+        Self::Class,
+        Self::School,
+        Self::CastingTime,
+        Self::Ritual,
+        Self::Concentration,
+        Self::Text,
+        Self::Source,
     ];
 }
 
@@ -129,45 +83,6 @@ impl Display for Mode {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Ord, PartialOrd)]
-struct PickListLevel(u8);
-
-impl PickListLevel {
-    const ALL: [Self; 10] = [
-        Self(0),
-        Self(1),
-        Self(2),
-        Self(3),
-        Self(4),
-        Self(5),
-        Self(6),
-        Self(7),
-        Self(8),
-        Self(9),
-    ];
-
-    const NONE: Self = Self(u8::MAX);
-}
-
-impl Unwrap<u8> for PickListLevel {
-    fn unwrap(self) -> u8 {
-        if self == Self::NONE {
-            panic!("called `PickListLevel::unwrap()` on a `NONE` value")
-        } else {
-            self.0
-        }
-    }
-}
-
-impl Display for PickListLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            l @ 0..=9 => Display::fmt(&l, f),
-            _ => f.write_str("Level"),
-        }
-    }
-}
-
 pub trait Searcher {
     fn is_empty(&self) -> bool;
 
@@ -181,19 +96,8 @@ pub trait Searcher {
     ) -> Row<'c, crate::Message>;
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct WithButton<T> {
-    pub t: T,
-}
-
-impl<T> WithButton<T> {
-    pub fn new(t: T) -> Self {
-        Self { t }
-    }
-}
-
 fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
-    vec: &'s [WithButton<T>],
+    vec: &'s [T],
     on_press: F,
     character: Option<usize>,
     style: Style,
@@ -202,7 +106,7 @@ fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
     let len = vec.len();
     vec.iter()
         .enumerate()
-        .map(|(i, WithButton { t })| {
+        .map(|(i, t)| {
             button(
                 text(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13)
             ).on_press({
@@ -219,26 +123,12 @@ fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
         .push_space(5)
 }
 
-// kinda cheaty, for ones that are guaranteed to be present
-impl Unwrap<bool> for bool {
-    fn unwrap(self) -> bool {
-        self
-    }
-}
-
-impl Unwrap<String> for String {
-    fn unwrap(self) -> String {
-        self
-    }
-}
-
-fn on_selected<T, F, U>(character: Option<usize>, f: F) -> impl Fn(U) -> crate::Message + 'static
+fn on_selected<F, R>(character: Option<usize>, f: F) -> impl Fn(R) -> crate::Message + 'static
     where
-        F: 'static + Fn(T) -> Message,
-        U: Unwrap<T>,
+        F: 'static + Fn(R) -> Message,
 {
-    move |u: U| {
-        let search_message = f(u.unwrap());
+    move |r: R| {
+        let search_message = f(r);
         match character {
             Some(i) => crate::Message::Character(i, character::Message::Search(search_message)),
             None => crate::Message::Search(search_message),
@@ -248,7 +138,7 @@ fn on_selected<T, F, U>(character: Option<usize>, f: F) -> impl Fn(U) -> crate::
 
 #[derive(Debug, Default)]
 pub struct LevelSearch {
-    pub levels: Vec<WithButton<u8>>,
+    pub levels: Vec<u8>,
 }
 
 impl Searcher for LevelSearch {
@@ -258,7 +148,7 @@ impl Searcher for LevelSearch {
 
     #[allow(clippy::cast_possible_truncation)]
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.levels.iter().any(|WithButton { t, .. }| *t == spell.level() as u8)
+        self.levels.iter().any(|&t| t == spell.level() as u8)
     }
 
     fn add_to_row<'s, 'c: 's>(
@@ -267,25 +157,25 @@ impl Searcher for LevelSearch {
         character: Option<usize>,
         style: Style,
     ) -> Row<'c, crate::Message> {
-        let levels = PickListLevel::ALL.into_iter()
-            .filter(|lvl| self.levels.iter().none(|wb| wb.t == lvl.0))
+        let levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].into_iter()
+            .filter(|&lvl| self.levels.iter().none(|&l| l == lvl))
             .collect_vec();
 
         // todo placeholder
         let pick_list = pick_list(
             levels,
-            Some(PickListLevel::NONE),
+            None,
             on_selected(character, Message::PickLevel),
         ).style(style)
-            .text_size(14);
-        // .pla;
+            .text_size(14)
+            .placeholder("Level");
         add_buttons(&self.levels, Message::PickLevel, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ClassSearch {
-    pub classes: Vec<WithButton<Class>>,
+    pub classes: Vec<Class>,
 }
 
 impl Searcher for ClassSearch {
@@ -295,7 +185,7 @@ impl Searcher for ClassSearch {
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
         spell.classes().iter()
-            .any(|class| self.classes.iter().any(|WithButton { t, .. }| class == t))
+            .any(|class| self.classes.iter().any(|t| class == t))
     }
 
     fn add_to_row<'s, 'c: 's>(
@@ -305,24 +195,23 @@ impl Searcher for ClassSearch {
         style: Style,
     ) -> Row<'c, crate::Message> {
         let classes = Class::ALL.into_iter()
-            .filter(|class| self.classes.iter().none(|wb| wb.t == *class))
-            .map(PLOption::Some)
+            .filter(|&class| self.classes.iter().none(|&c| c == class))
             .collect_vec();
 
         let pick_list = pick_list(
             classes,
-            Some(PLOption::None),
+            None,
             on_selected(character, Message::PickClass),
-        ).style(style).text_size(14);
+        ).style(style)
+            .placeholder("Class")
+            .text_size(14);
         add_buttons(&self.classes, Message::PickClass, character, style, row.push(pick_list))
     }
 }
 
-plopt!(CastingTime, "Casting Time");
-
 #[derive(Debug, Default)]
 pub struct CastingTimeSearch {
-    pub times: Vec<WithButton<CastingTime>>,
+    pub times: Vec<CastingTime>,
 }
 
 impl Searcher for CastingTimeSearch {
@@ -331,7 +220,7 @@ impl Searcher for CastingTimeSearch {
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.times.iter().any(|WithButton { t, .. }|
+        self.times.iter().any(|t|
             t.equals_ignore_reaction(spell.casting_time())
         )
     }
@@ -354,22 +243,23 @@ impl Searcher for CastingTimeSearch {
             CastingTime::Hour(24),
             CastingTime::Special,
         ].into_iter()
-            .filter(|ct| self.times.iter().none(|t| t.t == *ct))
-            .map(PLOption::Some)
+            .filter(|ct| self.times.iter().none(|t| t == ct))
             .collect_vec();
 
         let pick_list = pick_list(
             durations,
-            Some(PLOption::None),
+            None,
             on_selected(character, Message::PickCastingTime),
-        ).style(style).text_size(14);
+        ).style(style)
+            .placeholder("Casting Time")
+            .text_size(14);
         add_buttons(&self.times, Message::PickCastingTime, character, style, row.push(pick_list))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct SchoolSearch {
-    pub schools: Vec<WithButton<School>>,
+    pub schools: Vec<School>,
 }
 
 impl Searcher for SchoolSearch {
@@ -378,7 +268,7 @@ impl Searcher for SchoolSearch {
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.schools.iter().any(|WithButton { t, .. }| *t == spell.school())
+        self.schools.iter().any(|t| *t == spell.school())
     }
 
     fn add_to_row<'s, 'c: 's>(
@@ -388,15 +278,16 @@ impl Searcher for SchoolSearch {
         style: Style,
     ) -> Row<'c, crate::Message> {
         let schools = School::ALL.into_iter()
-            .filter(|school| self.schools.iter().none(|wb| wb.t == *school))
-            .map(PLOption::Some)
+            .filter(|&school| self.schools.iter().none(|&s| s == school))
             .collect_vec();
 
         let pick_list = pick_list(
             schools,
-            Some(PLOption::None),
+            None,
             on_selected(character, Message::PickSchool),
-        ).style(style).text_size(14);
+        ).style(style)
+            .placeholder("School")
+            .text_size(14);
         add_buttons(&self.schools, Message::PickSchool, character, style, row.push(pick_list))
     }
 }
@@ -498,7 +389,7 @@ impl Searcher for TextSearch {
 
 #[derive(Debug, Default)]
 pub struct SourceSearch {
-    pub sources: Vec<WithButton<Source>>,
+    pub sources: Vec<Source>,
 }
 
 impl Searcher for SourceSearch {
@@ -507,7 +398,7 @@ impl Searcher for SourceSearch {
     }
 
     fn matches(&self, spell: &StaticCustomSpell) -> bool {
-        self.sources.iter().any(|wb| wb.t == spell.source())
+        self.sources.iter().any(|&t| t == spell.source())
     }
 
     fn add_to_row<'s, 'c: 's>(
@@ -517,15 +408,16 @@ impl Searcher for SourceSearch {
         style: Style,
     ) -> Row<'c, crate::Message> {
         let sources = Source::ALL.into_iter()
-            .filter(|source| self.sources.iter().none(|wb| wb.t == *source))
-            .map(PLOption::Some)
+            .filter(|&source| self.sources.iter().none(|&s| s == source))
             .collect_vec();
 
         let pick_list = pick_list(
             sources,
-            Some(PLOption::None),
+            None,
             on_selected(character, Message::PickSource),
-        ).style(style).text_size(14);
+        ).style(style)
+            .placeholder("Source Book")
+            .text_size(14);
         add_buttons(&self.sources, Message::PickSource, character, style, row.push(pick_list))
     }
 }
@@ -602,9 +494,10 @@ impl SearchOptions {
             .width(Length::FillPortion(4));
         let mode = pick_list(
             Mode::ALL.as_ref(),
-            Some(PLOption::None),
-            move |m| mode_message(m.unwrap()),
+            None,
+            mode_message,
         ).style(style)
+            .placeholder("Advanced Search")
             .width(Length::Units(114))
             .text_size(15);
         let reset_modes = button(
@@ -688,11 +581,11 @@ impl Spell {
 
 impl SearchPage {
     pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) {
-        fn toggle<T: Ord>(vec: &mut Vec<WithButton<T>>, entry: T) {
-            if let Some(idx) = vec.iter().position(|WithButton { t, .. }| *t == entry) {
+        fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
+            if let Some(idx) = vec.iter().position(|t| *t == entry) {
                 vec.remove(idx);
             } else {
-                vec.push(WithButton::new(entry));
+                vec.push(entry);
                 vec.sort();
             }
         }

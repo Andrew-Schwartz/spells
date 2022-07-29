@@ -60,7 +60,6 @@ use utils::ListGrammaticallyExt;
 use crate::character::{Character, CharacterPage, SerializeCharacter};
 use crate::hotkey::Move;
 use crate::hotmouse::{ButtonPress, Pt};
-use crate::search::{PLOption, Unwrap};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
@@ -567,7 +566,6 @@ impl Application for DndSpells {
                                 // }
                                 Edit::HigherLevels(higher) => spell.higher_levels = nullify(higher),
                                 Edit::Class(class) => {
-                                    let class = class.unwrap();
                                     if let Some(idx) = spell.classes.iter().position(|&c| c == class) {
                                         spell.classes.remove(idx);
                                     } else {
@@ -968,12 +966,11 @@ impl Application for DndSpells {
             .align_y(Vertical::Center);
 
         let main_content = container(tabs)
-            .height(Length::Units((self.height - 20) as _))
+            .height(Length::Fill)
             .width(Length::FillPortion(18));
 
         let content = column()
             .push(main_content)
-            .push_space(Length::Fill)
             .push(bottom_bar);
 
         container(content)
@@ -1010,18 +1007,6 @@ impl Class {
         Self::Sorcerer,
         Self::Warlock,
         Self::Wizard,
-    ];
-
-    pub const PL_ALL: [PLOption<Self>; 9] = [
-        PLOption::Some(Self::Artificer),
-        PLOption::Some(Self::Bard),
-        PLOption::Some(Self::Cleric),
-        PLOption::Some(Self::Druid),
-        PLOption::Some(Self::Paladin),
-        PLOption::Some(Self::Ranger),
-        PLOption::Some(Self::Sorcerer),
-        PLOption::Some(Self::Warlock),
-        PLOption::Some(Self::Wizard),
     ];
 }
 
@@ -1063,18 +1048,6 @@ impl School {
         Self::Illusion,
         Self::Transmutation,
         Self::Necromancy,
-    ];
-
-    // todo use array::map when that's const stable
-    pub const PL_ALL: [PLOption<Self>; 8] = [
-        PLOption::Some(Self::Abjuration),
-        PLOption::Some(Self::Conjuration),
-        PLOption::Some(Self::Divination),
-        PLOption::Some(Self::Enchantment),
-        PLOption::Some(Self::Evocation),
-        PLOption::Some(Self::Illusion),
-        PLOption::Some(Self::Transmutation),
-        PLOption::Some(Self::Necromancy),
     ];
 }
 

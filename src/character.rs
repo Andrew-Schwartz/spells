@@ -8,7 +8,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{CustomSpell, find_spell, search, SpellButtons, SpellId, StArc, StaticCustomSpell};
-use crate::search::{Mode, Searcher, SearchOptions, WithButton};
+use crate::search::{Mode, Searcher, SearchOptions};
 use crate::style::Style;
 use crate::utils::{SpacingExt, text_icon, TooltipExt};
 
@@ -231,11 +231,11 @@ impl CharacterPage {
                 })
             }
             Message::Search(search) => {
-                fn toggle<T: Ord>(vec: &mut Vec<WithButton<T>>, entry: T) {
-                    if let Some(idx) = vec.iter().position(|WithButton { t, .. }| *t == entry) {
+                fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
+                    if let Some(idx) = vec.iter().position(|t| *t == entry) {
                         vec.remove(idx);
                     } else {
-                        vec.push(WithButton::new(entry));
+                        vec.push(entry);
                         vec.sort();
                     }
                 }

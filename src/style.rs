@@ -573,7 +573,7 @@ mod dark {
             pick_list::Style {
                 text_color: Color::WHITE,
                 // todo
-                placeholder_color: Default::default(),
+                placeholder_color: Color::WHITE,
                 background: Background::Color(color::SURFACE),
                 border_radius: 3.0,
                 border_width: 0.0,
