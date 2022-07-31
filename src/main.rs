@@ -79,7 +79,7 @@ mod slots_widget;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
-pub static SPELLS: Lazy<Vec<Spell>> = Lazy::new(|| serde_json::from_str(JSON).expect("json error in `data/spells.json`"));
+pub static SPELLS: Lazy<Vec<StaticSpell>> = Lazy::new(|| serde_json::from_str(JSON).expect("json error in `data/spells.json`"));
 
 static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let path = dirs::data_local_dir().unwrap_or_default()
@@ -333,7 +333,7 @@ impl DndSpells {
             width,
             height,
             control_pressed: false,
-            search_page: Default::default(),
+            search_page: SearchPage::new(&custom_spells, &characters),
             characters,
             closed_characters,
             settings_page: SettingsPage::new(&custom_spells),
@@ -388,10 +388,10 @@ impl Application for DndSpells {
         //         Message::Update(update::Message::CheckForUpdate)
         //     }.into(),
         // ]);
-        let commands = Command::batch([
-            Command::perform(async { () }, |()| Message::Search(search::Message::Refresh)),
-            Command::perform(tokio::time::sleep(Duration::from_millis(500)), |()| Message::Update(update::Message::CheckForUpdate))
-        ]);
+        let commands = Command::perform(
+            tokio::time::sleep(Duration::from_millis(500)),
+            |()| Message::Update(update::Message::CheckForUpdate),
+        );
         (window, commands)
     }
 
@@ -400,8 +400,7 @@ impl Application for DndSpells {
         match self.tab {
             Tab::Search | Tab::Settings => SPELLS.into(),
             Tab::Character { index } => format!(
-                "{} - {}",
-                SPELLS,
+                "{SPELLS} - {}",
                 self.characters.get(index)
                     .map_or("Character", |c| &c.character.name)
             )
@@ -805,6 +804,46 @@ impl Application for DndSpells {
                         //         }
                         //     }
                         // }
+                    }
+                    Message::CharacterSpellUpDown(delta) => {
+                        if let Tab::Character { index } = self.tab {
+                            if let Some(page) = self.characters.get_mut(index) {
+                                // all tab
+                                if page.tab == 0 {
+                                    if let Some(curr_view) = &mut page.view_spell {
+                                        let spells = &page.character.spells;
+                                        if let Some(pos) = spells[curr_view.level]
+                                            .iter()
+                                            .position(|(s, _)| s.name() == curr_view.name) {
+                                            let first_spell = spells.iter()
+                                                .flatten()
+                                                .next()
+                                                .expect("Not empty, since have `view_spell`")
+                                                .0.id();
+                                            let idx = if first_spell == *curr_view {
+                                                pos.saturating_add_signed(delta)
+                                            } else {
+                                                pos.wrapping_add_signed(delta)
+                                            };
+                                            let new_view = spells[curr_view.level].get(idx)
+                                                .or_else(|| {
+                                                    let level_added = curr_view.level.saturating_add_signed(delta);
+                                                    spells.get(level_added)
+                                                        .and_then(|other_level| match delta {
+                                                            1 => other_level.first(),
+                                                            -1 => other_level.last(),
+                                                            _ => unreachable!(),
+                                                        })
+                                                })
+                                                .map(|(s, _)| s.id());
+                                            if let Some(new_view) = new_view {
+                                                *curr_view = new_view;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1323,7 +1362,7 @@ impl Serialize for Source {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(try_from = "DeserializeSpell")]
-pub struct Spell {
+pub struct StaticSpell {
     name: &'static str,
     #[serde(skip_serializing)]
     name_lower: &'static str,
@@ -1364,7 +1403,7 @@ struct DeserializeSpell {
     page: u32,
 }
 
-impl TryFrom<DeserializeSpell> for Spell {
+impl TryFrom<DeserializeSpell> for StaticSpell {
     type Error = String;
 
     fn try_from(value: DeserializeSpell) -> Result<Self, Self::Error> {
@@ -1492,33 +1531,19 @@ impl CustomSpell {
         style: Style,
     ) -> Container<'c, Message> {
         let text = |label| row()
-            .push_space(Length::Fill)
-            .push(text(label).size(16).width(Length::FillPortion(18)))
-            .push_space(Length::Fill);
-        // fn text<T: Into<String>>(label: T) -> Row<'_, Message> {
-        //     row()
-        //         .push_space(Length::Fill)
-        //         .push(pure::text(label).size(16).width(Length::FillPortion(18)))
-        //         .push_space(Length::Fill)
-        // }
+            .push(text(label).size(16).width(Length::FillPortion(18)));
 
         let (buttons, title) = button.view(self.id(), data, style);
-        let title = row()
-            .push_space(Length::Fill)
-            .push(title)
-            .push_space(Length::Fill);
+        let title = row().push(title);
 
-        let buttons = row()
-            .push_space(Length::Fill)
-            .push(buttons.width(Length::FillPortion(18)))
-            .push_space(Length::Fill);
+        let buttons = row().push(buttons.width(Length::FillPortion(18)));
 
         let mut column = column()
+            .align_items(Alignment::Center)
             .push(title)
             .push(buttons);
         if !collapse {
             let classes = self.classes.iter().list_grammatically();
-
             #[allow(clippy::if_not_else)]
                 let about = format!(
                 // "A {}{}spell{}{}{}{}{}",
@@ -1546,12 +1571,9 @@ impl CustomSpell {
                 .push(text(self.description.clone()))
                 .tap_if_some(self.higher_levels.as_ref(), |col, higher| col
                     .push(horizontal_rule(8))
-                    .push(row()
-                        .push_space(Length::Fill)
-                        .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
-                        .push_space(Length::Fill))
-                    .push_space(3)
-                    .push(text(higher.clone())))
+                    .push(row().push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
+                        .push_space(3)
+                        .push(text(higher.clone()))))
                 .tap_if(about != "A spell", |col| col
                     .push(horizontal_rule(8))
                     .push(text(about)))
@@ -1567,7 +1589,7 @@ pub trait SpellButtons {
     fn view<'c>(self, id: SpellId, data: Self::Data, style: Style) -> (Row<'c, Message>, Element<'c, Message>);
 }
 
-impl Spell {
+impl StaticSpell {
     #[must_use]
     pub fn id(&self) -> SpellId {
         SpellId {
@@ -1584,35 +1606,24 @@ impl Spell {
         style: Style,
     ) -> Container<'c, Message> {
         let text = |label: String| row()
-            // // .push_space(Length::Fill)
-            .push(text(label).size(16).width(Length::FillPortion(18)))
-            // // .push_space(Length::Fill)
-            ;
-        // fn text<T: Into<String>>(label: T) -> Row<'_, Message> {
-        //     row()
-        //         .push_space(Length::Fill)
-        //         .push(pure::text(label).size(16).width(Length::FillPortion(18)))
-        //         .push_space(Length::Fill)
-        // }
+            .push(text(label).size(16).width(Length::FillPortion(18)));
 
         let (buttons, title) = button.view(self.id(), data, style);
-        let title = row()
-            // .push_space(Length::Fill)
-            .push(title)
-            // .push_space(Length::Fill)
-            ;
+        let title = row().push(title);
 
-        let buttons = row()
-            // .push_space(Length::Fill)
-            .push(buttons.width(Length::FillPortion(18)))
-            // .push_space(Length::Fill)
-            ;
+        let buttons = row().push(buttons.width(Length::FillPortion(18)));
 
         let mut column = column()
             .align_items(Alignment::Center)
             .push(title)
             .push(buttons);
         if !collapse {
+            let classes = self.classes.iter().list_grammatically();
+            let an_grammar = classes.chars().next()
+                .filter(|c| *c == 'A')
+                .map_or('\0', |_| 'n');
+            let about = text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page));
+
             column = column
                 .push(horizontal_rule(8))
                 .push(text(self.school.to_string()))
@@ -1624,25 +1635,14 @@ impl Spell {
                 .push(text(format!("Duration: {}", self.duration)))
                 .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
                 .push(horizontal_rule(10))
-                .push(text(self.description.to_string()));
-            if let Some(higher) = self.higher_levels {
-                column = column
+                .push(text(self.description.to_string()))
+                .tap_if_some(self.higher_levels, |col, higher| col
                     .push(horizontal_rule(8))
-                    .push(row()
-                              // .push_space(Length::Fill)
-                              .push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
-                          // .push_space(Length::Fill))
-                    )
+                    .push(row().push(pure::text("At higher levels").size(20).width(Length::FillPortion(18))))
                     .push_space(3)
-                    .push(text(higher.to_string()));
-            }
-            let classes = self.classes.iter().list_grammatically();
-            let an_grammar = classes.chars().next()
-                .filter(|c| *c == 'A')
-                .map_or('\0', |_| 'n');
-            column = column
+                    .push(text(higher.to_string())))
                 .push(horizontal_rule(8))
-                .push(text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page)));
+                .push(about);
         }
 
         container(row()
@@ -1743,8 +1743,8 @@ pub struct SpellId {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum StaticCustomSpell {
-    Static(&'static Spell),
+pub enum Spell {
+    Static(&'static StaticSpell),
     Custom(CustomSpell),
 }
 
@@ -1763,7 +1763,7 @@ macro_rules! delegate {
     };
 }
 
-impl StaticCustomSpell {
+impl Spell {
     #[must_use]
     pub fn id(&self) -> SpellId {
         delegate!(self, id())
@@ -1852,9 +1852,9 @@ impl StaticCustomSpell {
 }
 
 #[must_use]
-pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<StaticCustomSpell> {
+pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<Spell> {
     // TODO remove this after its been enough time that everyone probably updated it
-    fn fix_name_changes(spell_name: &str, spell: &Spell) -> bool {
+    fn fix_name_changes(spell_name: &str, spell: &StaticSpell) -> bool {
         match spell_name {
             // Feb 21, 2022
             "Enemies abound" => spell.name == "Enemies Abound",
@@ -1864,9 +1864,9 @@ pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<StaticCust
 
     SPELLS.iter()
         .find(|s| &*s.name == spell_name || fix_name_changes(spell_name, s))
-        .map(StaticCustomSpell::Static)
+        .map(Spell::Static)
         .or_else(|| custom.iter()
             .find(|s| &*s.name == spell_name)
             .cloned()
-            .map(StaticCustomSpell::Custom))
+            .map(Spell::Custom))
 }

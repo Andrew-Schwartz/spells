@@ -20,6 +20,8 @@ pub enum Message {
     AddSpell(usize),
     /// true -> forwards, false -> backwards
     CustomSpellNextField(bool),
+    /// ±1 up or down
+    CharacterSpellUpDown(isize),
 }
 
 pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
@@ -85,6 +87,8 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::Key9 => Some(Message::CharacterTab(10)),
                     KeyCode::A => Some(Message::CharacterTab(0)),
                     KeyCode::Tab | KeyCode::Enter | KeyCode::NumpadEnter => Some(Message::CustomSpellNextField(true)),
+                    KeyCode::Up => Some(Message::CharacterSpellUpDown(-1)),
+                    KeyCode::Down => Some(Message::CharacterSpellUpDown(1)),
                     _ => None,
                 }
                 _ => None

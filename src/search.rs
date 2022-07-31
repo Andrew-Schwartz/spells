@@ -5,7 +5,7 @@ use iced::{Alignment, Length, pure::{*, widget::*}};
 use iced_aw::Icon;
 use itertools::Itertools;
 
-use crate::{CastingTime, character, Class, CustomSpell, School, Source, SpellButtons, SpellId, SPELLS, StaticCustomSpell};
+use crate::{CastingTime, character, Class, CustomSpell, School, Source, Spell, SpellButtons, SpellId, SPELLS};
 use crate::character::CharacterPage;
 use crate::style::Style;
 use crate::utils::{IterExt, SpacingExt, Tap, text_icon};
@@ -86,7 +86,7 @@ impl Display for Mode {
 pub trait Searcher {
     fn is_empty(&self) -> bool;
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool;
+    fn matches(&self, spell: &Spell) -> bool;
 
     fn add_to_row<'s, 'c: 's>(
         &'s self,
@@ -147,7 +147,7 @@ impl Searcher for LevelSearch {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         self.levels.iter().any(|&t| t == spell.level() as u8)
     }
 
@@ -183,7 +183,7 @@ impl Searcher for ClassSearch {
         self.classes.is_empty()
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         spell.classes().iter()
             .any(|class| self.classes.iter().any(|t| class == t))
     }
@@ -219,7 +219,7 @@ impl Searcher for CastingTimeSearch {
         self.times.is_empty()
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         self.times.iter().any(|t|
             t.equals_ignore_reaction(spell.casting_time())
         )
@@ -267,7 +267,7 @@ impl Searcher for SchoolSearch {
         self.schools.is_empty()
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         self.schools.iter().any(|t| *t == spell.school())
     }
 
@@ -302,7 +302,7 @@ impl Searcher for RitualSearch {
         false
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         spell.ritual() == self.ritual
     }
 
@@ -331,7 +331,7 @@ impl Searcher for ConcentrationSearch {
         false
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         spell.concentration() == self.concentration
     }
 
@@ -360,7 +360,7 @@ impl Searcher for TextSearch {
         self.text.is_empty()
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         self.text.split('|')
             .any(|search|
                 spell.desc_lower().contains(search) ||
@@ -397,7 +397,7 @@ impl Searcher for SourceSearch {
         self.sources.is_empty()
     }
 
-    fn matches(&self, spell: &StaticCustomSpell) -> bool {
+    fn matches(&self, spell: &Spell) -> bool {
         self.sources.iter().any(|&t| t == spell.source())
     }
 
@@ -444,14 +444,14 @@ impl SearchOptions {
         };
     }
 
-    pub fn search(&mut self, custom: &[CustomSpell], characters: &[CharacterPage]) -> Vec<Spell> {
+    pub fn search(&self, custom: &[CustomSpell], characters: &[CharacterPage]) -> Vec<SearchSpell> {
         let needle = &self.search;
         SPELLS.iter()
-            .map(StaticCustomSpell::Static)
+            .map(Spell::Static)
             .chain(custom.iter()
                 // todo not clone them
                 .cloned()
-                .map(StaticCustomSpell::Custom))
+                .map(Spell::Custom))
             .filter(|spell| [
                 self.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
                 self.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
@@ -466,9 +466,9 @@ impl SearchOptions {
                 .filter(|searcher| !searcher.is_empty())
                 .all(|searcher| searcher.matches(spell)))
             .filter(|spell| spell.name_lower().contains(needle))
-            .sorted_unstable_by_key(StaticCustomSpell::name)
+            .sorted_unstable_by_key(Spell::name)
             // .sorted_unstable_by_key(|spell| levenshtein(spell.name_lower(), needle))
-            .map(|spell| Spell::from(spell, characters))
+            .map(|spell| SearchSpell::from(spell, characters))
             .take(100)
             .collect()
     }
@@ -548,26 +548,37 @@ impl SearchOptions {
     }
 }
 
-#[derive(Default)]
 pub struct SearchPage {
     collapse: bool,
     pub search: SearchOptions,
-    pub spells: Vec<Spell>,
+    pub spells: Vec<SearchSpell>,
 }
 
-pub struct Spell {
-    pub spell: StaticCustomSpell,
+impl SearchPage {
+    pub fn new(custom: &[CustomSpell], characters: &[CharacterPage]) -> Self {
+        let search = SearchOptions::default();
+        let spells = search.search(custom, characters);
+        Self {
+            collapse: false,
+            search,
+            spells,
+        }
+    }
+}
+
+pub struct SearchSpell {
+    pub spell: Spell,
     collapse: Option<bool>,
     buttons: Vec<(Arc<str>, bool)>,
 }
 
-impl Spell {
-    fn from(spell: StaticCustomSpell, characters: &[CharacterPage]) -> Self {
+impl SearchSpell {
+    fn from(spell: Spell, characters: &[CharacterPage]) -> Self {
         let buttons = characters.iter()
             .map(|page| {
                 let active = !page.character.spells.iter()
                     .flatten()
-                    .any(|(s, _)| s.spell == spell);
+                    .any(|(s, _)| *s == spell);
                 (Arc::clone(&page.character.name), active)
             })
             .collect();

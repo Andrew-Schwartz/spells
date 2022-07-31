@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::iter;
 use std::sync::Arc;
 
 use iced::{Alignment, Length, pure::{*, widget::*}};
@@ -7,7 +8,7 @@ use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{CustomSpell, find_spell, search, SpellButtons, SpellId, StArc, StaticCustomSpell, Tap};
+use crate::{CustomSpell, find_spell, search, Spell, SpellButtons, SpellId, StArc, Tap};
 use crate::search::{Mode, Searcher, SearchOptions};
 use crate::style::Style;
 use crate::utils::{SpacingExt, text_icon, TooltipExt};
@@ -25,10 +26,10 @@ impl MoveSpell {
         matches!(self, Self::Up | Self::Left)
     }
 
-    pub fn delta(self, num_cols: usize) -> usize {
+    pub fn delta(self, num_cols: usize, all_tab: bool) -> usize {
         match self {
-            Self::Up | Self::Down => num_cols,
-            Self::Left | Self::Right => 1,
+            Self::Up | Self::Down if !all_tab => num_cols,
+            _ => 1,
         }
     }
 }
@@ -81,7 +82,7 @@ impl Character {
                     .map(Spell::from)
                     .map(|spell| (spell, *prepared))
             })
-            .for_each(|spell_prepared| spells[spell_prepared.0.spell.level()].push(spell_prepared));
+            .for_each(|spell_prepared| spells[spell_prepared.0.level()].push(spell_prepared));
         let slots = serialized.slots.map_or_else(
             Default::default,
             |arr| arr.map(|(total, used)| Slots { total, used }),
@@ -98,7 +99,7 @@ impl Character {
             name: Arc::clone(&self.name),
             spells: self.spells.iter()
                 .flatten()
-                .map(|(spell, prepared)| (spell.spell.name(), *prepared))
+                .map(|(spell, prepared)| (spell.name(), *prepared))
                 .collect(),
             slots: Some(self.slots.each_ref().map(|&Slots { total, used, .. }| (total, used))),
         }
@@ -116,31 +117,12 @@ pub struct SerializeCharacter {
 
 pub struct CharacterPage {
     pub character: Character,
-    view_spell: Option<SpellId>,
+    pub view_spell: Option<SpellId>,
     should_collapse_all: bool,
     should_collapse_unprepared: bool,
     pub tab: usize,
     pub search: SearchOptions,
-}
-
-// todo does this need to exist now that it doesn't store state?
-#[derive(Debug, Clone)]
-pub struct Spell {
-    pub spell: StaticCustomSpell,
-}
-
-impl PartialEq for Spell {
-    fn eq(&self, other: &Self) -> bool {
-        self.spell == other.spell
-    }
-}
-
-impl From<StaticCustomSpell> for Spell {
-    fn from(spell: StaticCustomSpell) -> Self {
-        Self {
-            spell,
-        }
-    }
+    pub search_results: [Vec<usize>; 10],
 }
 
 impl From<Arc<str>> for CharacterPage {
@@ -151,23 +133,65 @@ impl From<Arc<str>> for CharacterPage {
 
 impl From<Character> for CharacterPage {
     fn from(character: Character) -> Self {
+        let search_results = character.spells.each_ref()
+            .map(|spells| (0..spells.len()).collect_vec());
+        let view_spell = character.spells.iter()
+            .flatten()
+            .next()
+            .map(|(s, _)| s.id());
         Self {
             character,
-            view_spell: None,
+            view_spell,
             should_collapse_all: false,
             should_collapse_unprepared: true,
             tab: 0,
             search: Default::default(),
+            search_results,
         }
     }
 }
 
 impl CharacterPage {
-    pub fn add_spell(&mut self, spell: StaticCustomSpell) {
+    pub fn add_spell(&mut self, spell: Spell) {
         let level = spell.level();
         let spell = spell.into();
         if !self.character.spells[level].iter().any(|(s, _)| *s == spell) {
             self.character.spells[level].push((spell, true));
+        }
+    }
+
+    fn search(&mut self) {
+        let needle = self.search.search.to_lowercase();
+        self.search_results = self.character.spells.each_ref()
+            .map(|spells| spells.iter()
+                .enumerate()
+                .filter(|(_, (spell, _))| [
+                    self.search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                    self.search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
+                ].into_iter()
+                    .flatten()
+                    .filter(|searcher| !searcher.is_empty())
+                    .all(|searcher| searcher.matches(spell)))
+                .filter(|(_, (spell, _))| spell.name_lower().contains(&needle))
+                .map(|(index, _)| index)
+                .collect_vec());
+        let n_results = self.search_results.iter()
+            .flatten()
+            .count();
+        if self.tab == 0 && n_results == 1 {
+            let id = self.search_results.iter()
+                .enumerate()
+                .filter_map(|(level, indices)| indices.first().map(|&idx| &self.character.spells[level][idx].0))
+                .next()
+                .map(Spell::id)
+                .unwrap();
+            self.view_spell = Some(id);
         }
     }
 
@@ -185,7 +209,7 @@ impl CharacterPage {
             Message::Prepare(id) => {
                 let spells = &mut self.character.spells[id.level];
                 let idx = spells.iter()
-                    .position(|(spell, _)| spell.spell.name() == &*id.name);
+                    .position(|(spell, _)| spell.name() == &*id.name);
                 idx.map_or(false, |idx| {
                     spells[idx].1 = !spells[idx].1;
                     true
@@ -207,31 +231,34 @@ impl CharacterPage {
             Message::AddSpell(id) => {
                 let spell = find_spell(&id.name, custom).unwrap();
                 self.add_spell(spell);
+                self.search();
                 true
             }
             Message::RemoveSpell(id) => {
                 let spells = &mut self.character.spells[id.level];
                 let idx = spells.iter()
-                    .position(|(spell, _)| spell.spell.name() == &*id.name);
-                idx.map_or(false, |idx| {
+                    .position(|(spell, _)| spell.name() == &*id.name);
+                if let Some(idx) = idx {
                     spells.remove(idx);
-                    true
-                })
+                    self.search();
+                }
+                idx.is_some()
             }
             Message::MoveSpell(id, move_spell) => {
                 let spells = &mut self.character.spells[id.level];
                 let idx = spells.iter()
-                    .position(|(spell, _)| spell.spell.name() == &*id.name);
-                idx.map_or(false, |idx| {
+                    .position(|(spell, _)| spell.name() == &*id.name);
+                if let Some(idx) = idx {
+                    let all_tab = self.tab == 0;
                     let new_idx = if move_spell.is_negative() {
-                        idx.saturating_sub(move_spell.delta(num_cols))
+                        idx.saturating_sub(move_spell.delta(num_cols, all_tab))
                     } else {
-                        min(idx + move_spell.delta(num_cols), spells.len() - 1)
+                        min(idx + move_spell.delta(num_cols, all_tab), spells.len() - 1)
                     };
-                    // let new_idx = max(0, min(new_idx, spells.len() - 1));
                     spells.swap(idx, new_idx);
-                    true
-                })
+                    self.search();
+                }
+                idx.is_some()
             }
             Message::Search(search) => {
                 fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
@@ -249,10 +276,7 @@ impl CharacterPage {
                         self.search.search = search;
                         true
                     }
-                    search::Message::Refresh => {
-                        // self.search.search()
-                        false
-                    }
+                    search::Message::Refresh => true,
                     search::Message::PickMode(mode) => {
                         match mode {
                             Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
@@ -312,27 +336,23 @@ impl CharacterPage {
                         .is_some(),
                 };
                 if search {
-                    // todo!()
+                    self.search();
                 }
                 false
             }
             Message::ChangeNumSlots(level, delta) => {
-                println!("Set slots num {} level {level}", self.character.name);
-                println!("delta = {:?}", delta);
-                let Slots { total, used, .. } = &mut self.character.slots[level];
+                let Slots { total, used, .. } = &mut self.character.slots[level - 1];
                 *total = total.saturating_add_signed(delta).clamp(0, Slots::MAX_BY_LEVEL[level - 1]);
                 *used = (*used).clamp(0, *total);
                 true
             }
             Message::SlotsCast(level) => {
-                println!("Cast spell {} level {level}", self.character.name);
-                let Slots { used, total, .. } = &mut self.character.slots[level];
+                let Slots { used, total, .. } = &mut self.character.slots[level - 1];
                 *used += 1;
                 *used = (*used).clamp(0, *total);
                 true
             }
             Message::SlotsReset => {
-                println!("Reset slots {}", self.character.name);
                 for slots in &mut self.character.slots {
                     slots.used = 0;
                 }
@@ -358,8 +378,10 @@ impl CharacterPage {
             should_collapse_all,
             should_collapse_unprepared,
             tab,
-            search
+            search,
+            search_results,
         } = self;
+        // todo rename tab?
         let selected_level = *tab;
 
         // row with details: delete, move tab, etc
@@ -417,8 +439,7 @@ impl CharacterPage {
 
         tabs_row = tabs_row.push(make_button("All".into(), 0));
         tabs_row = tabs_row.push(make_button("Cantrip".to_string(), 1));
-        // todo only go up to max level this character knows
-        for level in 1..=9 {
+        for level in (1..=9).filter(|&l| !spells[l].is_empty()) {
             // spaces to pad the tab width
             tabs_row = tabs_row.push(make_button(format!(" {} ", level), level + 1));
         }
@@ -426,41 +447,31 @@ impl CharacterPage {
 
         let page: Element<'_, crate::Message> = if selected_level == 0 {
             // 'All' tab
-            let needle = search.search.to_lowercase();
-
-            let group_by = spells.iter().flatten().group_by(|(s, _)| s.spell.level());
-            let col = (&group_by).into_iter()
-                .zip(slots)
-                // .zip(&mut slots[1..])
-                .map(|((level, g), slots)| (
+            let col = search_results.iter()
+                .enumerate()
+                .filter(|(_, indices)| !indices.is_empty())
+                // cantrip always have no slot
+                .zip(iter::once(&Slots::default()).chain(slots))
+                .map(|((level, indices), slots)| (
                     level,
                     slots,
-                    g.filter(|(spell, _)| [
-                        search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                        search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    ].into_iter()
-                        .flatten()
-                        .filter(|searcher| !searcher.is_empty())
-                        .all(|searcher| searcher.matches(&spell.spell))
-                    )
-                        .filter(|(spell, _)| spell.spell.name_lower().contains(&needle))
+                    indices.iter()
+                        .map(|&idx| &spells[level][idx])
                         .fold(
                             column(),
                             |col, (spell, _)| col.push(row()
-                                .push(button(text(&*spell.spell.name()).size(18))
+                                .push(text(&*spell.name())
+                                    .size(18)
+                                    .tap_if(
+                                        view_spell.as_ref().filter(|s| s.name == spell.name()).is_some(),
+                                        |text| text.color([0.85, 0.85, 1.0]))
+                                    .tap(button)
                                     .style(style.background())
                                     .padding(0)
-                                    .on_press(message(Message::ViewSpell(spell.spell.id())))
+                                    .on_press(message(Message::ViewSpell(spell.id())))
                                 )
                             ),
-                        )
-                ))
+                        )))
                 .fold(
                     column().padding(20),
                     move |col, (level, Slots { total, used }, spells_col)| {
@@ -484,9 +495,10 @@ impl CharacterPage {
                                 ).style(style.background())
                                     .padding(0)
                                     .on_press(message(Message::ChangeNumSlots(level, -1))));
-                            let slots_text = format!("{empty}{filled}",
-                                                     filled = Icon::DiamondFill.to_string().repeat(*used as usize),
-                                                     empty = Icon::Diamond.to_string().repeat((*total - *used) as usize),
+                            let slots_text = format!(
+                                "{empty}{filled}",
+                                filled = Icon::DiamondFill.to_string().repeat(*used as usize),
+                                empty = Icon::Diamond.to_string().repeat((*total - *used) as usize),
                             );
                             let slots = button(
                                 text(slots_text)
@@ -515,13 +527,14 @@ impl CharacterPage {
             let view_spell = view_spell.as_ref()
                 .and_then(|id| self.character.spells[id.level]
                     .iter()
-                    .find(|(s, _)| s.spell.name() == id.name))
-                .map(|(spell, _)| spell.spell.view(CharacterPageButtons {
+                    .find(|(s, _)| s.name() == id.name))
+                .map(|(spell, _)| spell.view(CharacterPageButtons {
                     character: index,
                     left: false,
                     right: false,
-                    up: false,
-                    down: false,
+                    // todo false if can't move up (down)
+                    up: true,
+                    down: true,
                 }, true, false, style))
                 .unwrap_or_else(|| container(""));
 
@@ -531,21 +544,26 @@ impl CharacterPage {
                 .push(container(scrollable(view_spell)).width(Length::FillPortion(4)))
                 .into()
         } else {
-            let len = spells[selected_level - 1].len();
-            let chunks = spells[selected_level - 1].iter()
+            let level = selected_level - 1;
+            let len = search_results[level].len();
+            let chunks = search_results[level].iter()
+                .map(|&idx| &spells[level][idx])
                 .enumerate()
                 .chunks(num_cols);
+            // let len = spells[level].len();
+            // let chunks = spells[level].iter()
+            //     .enumerate()
+            //     .chunks(num_cols);
             (&chunks).into_iter()
                 .fold(column().spacing(18), |spells_col, mut chunk| {
                     let row = (0..num_cols).fold(row(), |row, _| {
                         if let Some((idx, (spell, prepared))) = chunk.next() {
-                            let all_tab = selected_level == 0;
                             let button = CharacterPageButtons {
                                 character: index,
-                                left: !(all_tab || idx == 0),
-                                right: !(all_tab || idx == len - 1),
-                                up: !all_tab && idx >= num_cols,
-                                down: !all_tab && len - idx - 1 > {
+                                left: idx != 0,
+                                right: idx != len - 1,
+                                up: idx >= num_cols,
+                                down: len - idx - 1 > {
                                     // this works but really... whyyyyyy is it a block
                                     let a = len % num_cols;
                                     let bottom_start_idx = if a == 0 { num_cols } else { a };
@@ -553,7 +571,7 @@ impl CharacterPage {
                                 },
                             };
                             let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
-                            row.push(spell.spell.view(button, *prepared, collapse, style).width(Length::Fill))
+                            row.push(spell.view(button, *prepared, collapse, style).width(Length::Fill))
                         } else {
                             row.push_space(Length::Fill)
                         }
@@ -603,18 +621,19 @@ impl SpellButtons for CharacterPageButtons {
     fn view<'c>(self, id: SpellId, is_prepared: bool, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
         let character = self.character;
         let buttons = [
-            (self.left, Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
-            (self.up, Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
-            (true, if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
-            (true, Icon::Trash, Message::RemoveSpell(id.clone())),
-            (self.down, Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
-            (self.right, Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
+            (self.left, "Move left", Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
+            (self.up, "Move up", Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
+            (true, if is_prepared { "Unprepare" } else { "Prepare" }, if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
+            (true, "Remove", Icon::Trash, Message::RemoveSpell(id.clone())),
+            (self.down, "Move down", Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
+            (self.right, "Move right", Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
         ].into_iter()
-            .fold(row().spacing(2), |row, (enable, icon, msg)|
+            .fold(row().spacing(2), |row, (enable, tooltip, icon, msg)|
                 if enable {
                     row.push(button(text(icon).size(12).font(ICON_FONT))
                         .style(style)
-                        .on_press(crate::Message::Character(character, msg)))
+                        .on_press(crate::Message::Character(character, msg))
+                        .tooltip(tooltip))
                 } else {
                     row
                 });

@@ -1,11 +1,8 @@
 use std::fmt::Display;
 
-use iced::{Color, Length, Point, pure::{self, *, widget::*}, Rectangle};
+use iced::{Color, Length, pure::{self, *, widget::*}};
 use iced::tooltip::Position;
 use iced_aw::{Icon, ICON_FONT};
-use iced_native::Layout;
-use iced_native::layout::{Limits, Node};
-use iced_native::renderer::Style;
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
@@ -145,41 +142,6 @@ pub trait TooltipExt<'a, Message>: Into<Element<'a, Message>> {
 }
 
 impl<'a, M, E: Into<Element<'a, M>>> TooltipExt<'a, M> for E {}
-
-// pub fn text_button<T: Into<String>>(text: T) -> TextButton {
-//     TextButton { text: pure::text(text) }
-// }
-//
-// struct TextButton {
-//     text: Text,
-//     button: Button<>
-// }
-//
-// impl TextButton {
-//     pub fn font()
-// }
-//
-// impl<Message, Renderer> Widget<Message, Renderer> for TextButton<Message> {
-//     fn width(&self) -> Length {
-//         Length::Shrink
-//     }
-//
-//     fn height(&self) -> Length {
-//         Length::Shrink
-//     }
-//
-//     fn layout(&self, renderer: &Renderer, limits: &Limits) -> Node {
-//         todo!()
-//     }
-//
-//     fn draw(&self, state: &iced_pure::widget::tree::Tree, renderer: &mut Renderer, style: &Style, layout: Layout<'_>, cursor_position: Point, viewport: &Rectangle) {
-//         button(self.text).draw(state, )
-//     }
-//
-//     fn tag(&self) -> iced_pure::widget::tree::Tag {
-//         button.
-//     }
-// }
 
 pub fn text_icon(icon: Icon) -> Text {
     text(icon).font(ICON_FONT)
