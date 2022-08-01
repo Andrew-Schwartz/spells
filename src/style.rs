@@ -2,7 +2,7 @@ use std::fmt::{self, Display};
 use std::ops::Not;
 
 use iced::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text_input};
-use iced_aw::{number_input, tabs};
+use iced_aw::tabs;
 
 macro_rules! from {
     (
@@ -144,7 +144,6 @@ impl AlternatingStyle {
 from! { Style =>
     container: dark = Container;
     text_input: dark = TextInput;
-    number_input: dark = NumberInput;
     scrollable: dark = Scrollable;
     button: light = Button, dark = Button;
     pick_list: dark = PickList;
@@ -170,6 +169,7 @@ from! { TabButtonStyle =>
 }
 
 impl AlternatingStyle {
+    #[allow(clippy::unused_self)]
     pub fn transparent(self) -> TransparentStyle { TransparentStyle::Light }
 }
 
@@ -313,7 +313,7 @@ mod light {
 mod dark {
     use iced::{Background, button, checkbox, Color, container, pick_list, progress_bar, scrollable, slider, text_input};
     use iced::slider::{Handle, HandleShape};
-    use iced_aw::{number_input, tabs};
+    use iced_aw::tabs;
 
     pub use super::transparent::Transparent;
 
@@ -456,25 +456,6 @@ mod dark {
                 ..self.focused()
             }
         }
-    }
-
-    pub struct NumberInput;
-
-    impl number_input::StyleSheet for NumberInput {
-        fn active(&self) -> number_input::Style {
-            number_input::Style {
-                button_background: color::SURFACE.into(),
-                icon_color: Color::WHITE,
-            }
-        }
-        //
-        // fn pressed(&self) -> number_input::Style {
-        //     todo!()
-        // }
-        //
-        // fn disabled(&self) -> number_input::Style {
-        //     todo!()
-        // }
     }
 
     pub struct Scrollable;

@@ -142,6 +142,7 @@ impl CastingTime {
     }
 
     pub fn equals_ignore_reaction(&self, other: &Self) -> bool {
+        #[allow(clippy::match_same_arms)]
         match (self, other) {
             (Self::Special, Self::Special) => true,
             (Self::Action, Self::Action) => true,
@@ -269,18 +270,18 @@ impl<'de> Deserialize<'de> for Components {
 
         let ((v, s, _), material) = if let (Some(start), Some(end)) = (str.find('('), str.rfind(')')) {
             let vsm = vsm(&str[..start]);
-            assert_eq!(vsm.2, true);
+            assert!(vsm.2);
             (vsm, Some(&str[start + 1..end]))
         } else {
             let vsm = vsm(str);
-            assert_eq!(vsm.2, false);
+            assert!(!vsm.2);
             (vsm, None)
         };
 
         let components = Self {
             v,
             s,
-            m: material.map(|str| str.to_string()),
+            m: material.map(str::to_string),
         };
         Ok(components)
     }
@@ -378,8 +379,8 @@ impl Level {
         }
     }
 
-    pub const fn as_u8(&self) -> u8 {
-        *self as u8
+    pub const fn as_u8(self) -> u8 {
+        self as u8
     }
 
     pub const fn next_checked(self) -> Option<Self> {
@@ -420,6 +421,7 @@ impl Display for Level {
 impl<'de> Deserialize<'de> for Level {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let num = u8::deserialize(d)?;
+        #[allow(clippy::cast_lossless)]
         Self::from_u8(num)
             .ok_or_else(|| D::Error::invalid_value(Unexpected::Unsigned(num as _), &"An integer in the range 0..=9"))
     }

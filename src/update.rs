@@ -89,7 +89,8 @@ impl<H: Hasher, E> Recipe<H, E> for Download {
                         match response.chunk().await {
                             Ok(Some(bytes)) => {
                                 downloaded += bytes.len() as u64;
-                                let percent = downloaded as f32 / total as f32 * 100.0;
+                                #[allow(clippy::cast_precision_loss)]
+                                    let percent = downloaded as f32 / total as f32 * 100.0;
                                 buf.extend_from_slice(&bytes);
                                 Some((Progress::Advanced(percent), State::Downloading {
                                     response,
@@ -108,8 +109,10 @@ impl<H: Hasher, E> Recipe<H, E> for Download {
                         // We do not let the stream die, as it would start a
                         // new download repeatedly if the user is not careful
                         // in case of errors.
-                        let _: () = iced::futures::future::pending().await;
-
+                        #[allow(clippy::let_unit_value)]
+                        {
+                            let _: () = iced::futures::future::pending().await;
+                        }
                         None
                     }
                 }
@@ -122,7 +125,7 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
     match message {
         Message::CheckForUpdate => {
             // ignore any errors here
-            let _ = delete_backup_temp_directories();
+            let _res = delete_backup_temp_directories();
 
             let latest_release = self_update::backends::github::ReleaseList::configure()
                 .repo_owner("Andrew-Schwartz")
@@ -130,13 +133,12 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
                 .build()?
                 .fetch()?
                 .into_iter()
-                .filter(|release| release.has_target_asset(self_update::get_target()))
-                .next();
+                .find(|release| release.has_target_asset(self_update::get_target()));
 
             app.update_state = if let Some(latest_release) = latest_release {
                 if Version::parse(&latest_release.version)? > Version::parse(cargo_crate_version!())? {
                     if let Some(asset) = latest_release.asset_for(self_update::get_target()) {
-                        app.update_url = asset.download_url.clone();
+                        app.update_url = asset.download_url;
                         UpdateState::Ready
                     } else {
                         UpdateState::UpToDate
@@ -153,10 +155,10 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
             app.update_state = match progress {
                 Progress::Started => UpdateState::Downloading(0.0),
                 Progress::Advanced(pct) => UpdateState::Downloading(pct),
-                Progress::Finished(None) => UpdateState::UpToDate,
                 Progress::Errored(e) => UpdateState::Errored(e),
+                Progress::Finished(None) => UpdateState::UpToDate,
                 Progress::Finished(Some(bytes)) => {
-                    update_extended(bytes)?;
+                    update_extended(&bytes)?;
                     UpdateState::Downloaded
                 }
             };
@@ -166,8 +168,8 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
     }
 }
 
-/// taken from self_update, but modified so that it uses the downloaded file
-fn update_extended(bytes: Vec<u8>) -> anyhow::Result<()> {
+/// taken from `self_update`, but modified so that it uses the downloaded file
+fn update_extended(bytes: &[u8]) -> anyhow::Result<()> {
     let current_exe = std::env::current_exe()?;
 
     let current_exe_string = current_exe.file_name().unwrap()
@@ -187,7 +189,7 @@ fn update_extended(bytes: Vec<u8>) -> anyhow::Result<()> {
         // into it during an update. We clean up any previously created temporary directories here.
         // Ignore errors during cleanup since this is not critical for completing the update.
         for entry in fs::read_dir(&tmp_dir_parent)? {
-            let _ = cleanup_backup_temp_directories(
+            let _res = cleanup_backup_temp_directories(
                 entry,
                 &tmp_backup_dir_prefix,
                 &tmp_backup_dir_prefix,
@@ -201,17 +203,17 @@ fn update_extended(bytes: Vec<u8>) -> anyhow::Result<()> {
         .tempdir_in(&tmp_dir_parent)?;
     let tmp_archive_path = tmp_archive_dir.path().join(bin_name);
     let mut tmp_archive = fs::File::create(&tmp_archive_path)?;
-    tmp_archive.write_all(&bytes)?;
+    tmp_archive.write_all(bytes)?;
 
     // Make executable
     #[cfg(not(windows))]
-        {
-            use std::os::unix::fs::PermissionsExt;
+    {
+        use std::os::unix::fs::PermissionsExt;
 
-            let mut permissions = fs::metadata(&tmp_archive_path)?.permissions();
-            permissions.set_mode(0o755);
-            fs::set_permissions(&tmp_archive_path, permissions)?;
-        }
+        let mut permissions = fs::metadata(&tmp_archive_path)?.permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&tmp_archive_path, permissions)?;
+    }
 
     let tmp_backup_dir = tempfile::Builder::new()
         .prefix(&tmp_backup_dir_prefix)
@@ -246,7 +248,7 @@ pub fn delete_backup_temp_directories() -> anyhow::Result<()> {
         let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
 
         for entry in fs::read_dir(&tmp_dir_parent)? {
-            let _ = cleanup_backup_temp_directories(
+            let _res = cleanup_backup_temp_directories(
                 entry,
                 &tmp_backup_dir_prefix,
                 &tmp_backup_dir_prefix,

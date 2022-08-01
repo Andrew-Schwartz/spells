@@ -154,6 +154,7 @@ impl From<Character> for CharacterPage {
 }
 
 impl CharacterPage {
+    #[allow(clippy::cast_possible_truncation)]
     pub fn tab_index(&self) -> usize {
         match self.tab {
             None => 0,
@@ -170,7 +171,6 @@ impl CharacterPage {
 
     pub fn add_spell(&mut self, spell: Spell) {
         let level = spell.level();
-        let spell = spell.into();
         if !self.character.spells[level].iter().any(|(s, _)| *s == spell) {
             self.character.spells[level].push((spell, true));
         }
@@ -203,8 +203,7 @@ impl CharacterPage {
         if self.tab == None && n_results == 1 {
             let id = self.search_results.iter()
                 .enumerate()
-                .filter_map(|(level, indices)| indices.first().map(|&idx| &self.character.spells[level][idx].0))
-                .next()
+                .find_map(|(level, indices)| indices.first().map(|&idx| &self.character.spells[level][idx].0))
                 .map(Spell::id)
                 .unwrap();
             self.view_spell = Some(id);
@@ -531,7 +530,7 @@ impl CharacterPage {
                         let mut slots_row = row().padding(2).align_items(Alignment::Center);
                         if level == 0 {
                             slots_row = slots_row
-                                .push(text("Cantrips").size(26))
+                                .push(text("Cantrips").size(26));
                         } else {
                             let slot_max_picker = column().align_items(Alignment::Center)
                                 .push(button(
@@ -576,7 +575,7 @@ impl CharacterPage {
                                     .push_space(Length::Fill)
                                     .push(slots)
                                     .push(uncast)
-                                )
+                                );
                         }
                         col.push(horizontal_rule(0))
                             .push(slots_row)
@@ -591,15 +590,15 @@ impl CharacterPage {
                 .and_then(|id| self.character.spells[id.level]
                     .iter()
                     .find(|(s, _)| s.name() == id.name))
-                .map(|(spell, _)| spell.view(CharacterPageButtons {
-                    character: index,
-                    left: false,
-                    right: false,
-                    // todo false if can't move up (down)
-                    up: true,
-                    down: true,
-                }, true, false, style))
-                .unwrap_or_else(|| container(""));
+                .map_or_else(|| container(""),
+                             |(spell, _)| spell.view(CharacterPageButtons {
+                                 character: index,
+                                 left: false,
+                                 right: false,
+                                 // todo false if can't move up/down
+                                 up: true,
+                                 down: true,
+                             }, true, false, style));
 
             row()
                 .align_items(Alignment::Fill)
@@ -632,6 +631,7 @@ impl CharacterPage {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 struct CharacterPageButtons {
     character: usize,
     left: bool,

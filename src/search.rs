@@ -163,7 +163,6 @@ impl Searcher for LevelSearch {
             .filter(|&lvl| self.levels.iter().none(|&l| l == lvl))
             .collect_vec();
 
-        // todo placeholder
         let pick_list = pick_list(
             levels,
             None,
@@ -507,7 +506,6 @@ impl SearchOptions {
         ).style(style)
             .on_press(reset_message);
 
-        // todo this doesn't work on character pages
         // additional search stuff
         let advanced_search = [
             self.level_search.as_ref().map::<&dyn Searcher, _>(|x| x),

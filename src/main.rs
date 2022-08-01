@@ -22,7 +22,6 @@ clippy::enum_glob_use,
 // @formatter:on
 #![warn(elided_lifetimes_in_paths)]
 
-
 use std::{fs::{self, File}, mem};
 use std::cmp::min;
 use std::convert::{From, Into};
@@ -34,7 +33,33 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use iced::{Alignment, alignment::Vertical, Command, Font, Length, mouse::ScrollDelta, pure::{Application, button, column, container, Element, horizontal_rule, progress_bar, row, slider, text}, pure::widget::{Button, Container, Row}, Settings, tooltip::Position, window::Icon};
+use iced::{
+    Alignment,
+    alignment::Vertical,
+    Command,
+    Length,
+    mouse::ScrollDelta,
+    pure::{
+        Application,
+        button,
+        column,
+        container,
+        Element,
+        horizontal_rule,
+        progress_bar,
+        row,
+        slider,
+        text,
+    },
+    pure::widget::{
+        Button,
+        Container,
+        Row,
+    },
+    Settings,
+    tooltip::Position,
+    window::Icon,
+};
 use iced_aw::{ICON_FONT, TabLabel};
 use iced_native::{Event, Subscription, window};
 use itertools::{Either, Itertools};
@@ -154,6 +179,7 @@ pub enum UpdateState {
 }
 
 impl UpdateState {
+    #[must_use]
     pub fn view<'s, 'c: 's>(&'s self, style: SettingsBarStyle) -> Container<'c, Message> {
         const VER: &str = cargo_crate_version!();
         match self {
@@ -320,9 +346,9 @@ impl DndSpells {
     }
 
     fn open() -> anyhow::Result<Self> {
-        let custom_spells = Self::read_spells(&*SPELL_FILE)?;
-        let characters = Self::read_characters(&*CHARACTER_FILE, &custom_spells)?;
-        let closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &custom_spells)?;
+        let custom_spells = Self::read_spells(&SPELL_FILE)?;
+        let characters = Self::read_characters(&CHARACTER_FILE, &custom_spells)?;
+        let closed_characters = Self::read_characters(&CLOSED_CHARACTER_FILE, &custom_spells)?;
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
             update_state: UpdateState::Checking,
@@ -410,7 +436,7 @@ impl Application for DndSpells {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
-                self.update_state = UpdateState::Errored(e.to_string())
+                self.update_state = UpdateState::Errored(e.to_string());
             },
             Message::ToggleTheme => self.style = match self.style {
                 Style::Light => Style::Dark,
@@ -456,7 +482,7 @@ impl Application for DndSpells {
                                     self.closed_characters[index].character.name = Arc::from(name);
                                     self.save().expect("ASDSADAS");
                                 }
-                                Either::Left(Default::default())
+                                Either::Left(())
                             }
                         };
                         self.closed_characters[index].rename = rename;
@@ -478,7 +504,8 @@ impl Application for DndSpells {
                         };
                         if let Some(spell) = self.custom_spells.iter()
                             .find(|spell| spell.name_lower == name)
-                            .cloned() {
+                            .cloned()
+                            .map(Box::new) {
                             self.settings_page.spell_editor = SpellEditor::Editing { spell }
                         } else {
                             self.settings_page.spell_editor = SpellEditor::searching(&name, &self.custom_spells);
@@ -488,12 +515,12 @@ impl Application for DndSpells {
                         let name = mem::take(&mut self.settings_page.spell_name);
                         let spell = CustomSpell::new(name);
                         self.custom_spells.push(spell.clone());
-                        self.settings_page.spell_editor = SpellEditor::Editing { spell };
+                        self.settings_page.spell_editor = SpellEditor::Editing { spell: Box::new(spell) };
                         self.save().unwrap();
                     }
                     Message::OpenSpell(index) => {
                         if let SpellEditor::Searching { spells } = &mut self.settings_page.spell_editor {
-                            if let Some(spell) = spells.try_remove(index) {
+                            if let Some(spell) = spells.try_remove(index).map(Box::new) {
                                 self.settings_page.spell_editor = SpellEditor::Editing { spell };
                             }
                         }
@@ -579,9 +606,10 @@ impl Application for DndSpells {
                                 // },
                             };
                             if let Some(saved_spell) = self.custom_spells.iter_mut().find(|s| s.name == spell.name) {
-                                *saved_spell = spell.clone();
+                                saved_spell.clone_from(spell);
+                                // *saved_spell = *spell.clone();
                             } else {
-                                self.custom_spells.push(spell.clone());
+                                self.custom_spells.push(*spell.clone());
                             }
                             self.refresh_search();
                             self.save().unwrap();
@@ -616,7 +644,7 @@ impl Application for DndSpells {
             }
             Message::MoveCharacter(idx, delta) => {
                 let new_idx = if delta.is_negative() {
-                    idx.saturating_sub(delta.abs() as usize)
+                    idx.saturating_sub(delta.unsigned_abs())
                 } else {
                     min(idx + delta as usize, self.characters.len() - 1)
                 };
@@ -736,6 +764,7 @@ impl Application for DndSpells {
                                     self.characters.get_mut(character).unwrap().tab = if tab == 0 {
                                         None
                                     } else {
+                                        #[allow(clippy::cast_possible_truncation)]
                                         self.characters[character].character.spells.iter()
                                             .enumerate()
                                             .map(|(index, s)| (Level::from_u8(index as _).unwrap(), s))
@@ -985,6 +1014,7 @@ impl Application for DndSpells {
             // .on_close(Message::CloseTab)
             ;
 
+        #[allow(clippy::float_cmp)]
         let col_slider_reset: Button<'_, Message> = button(
             text("Reset")
                 .vertical_alignment(Vertical::Center)

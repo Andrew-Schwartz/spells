@@ -201,6 +201,8 @@ impl Spell {
 
     #[must_use]
     pub fn name(&self) -> StArc<str> {
+        // pedantic clippy wrong
+        #[allow(clippy::needless_borrow)]
         match self {
             Self::Static(spell) => spell.name.into(),
             Self::Custom(spell) => (&spell.name).into(),
@@ -372,7 +374,7 @@ pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<Spell> {
     }
 
     SPELLS.iter()
-        .find(|s| &*s.name == spell_name || fix_name_changes(spell_name, s))
+        .find(|s| s.name == spell_name || fix_name_changes(spell_name, s))
         .map(Spell::Static)
         .or_else(|| custom.iter()
             .find(|s| &*s.name == spell_name)

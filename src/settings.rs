@@ -56,7 +56,7 @@ impl From<Character> for ClosedCharacter {
     fn from(character: Character) -> Self {
         Self {
             character,
-            rename: Either::Left(Default::default()),
+            rename: Either::Left(()),
         }
     }
 }
@@ -83,7 +83,7 @@ pub enum SpellEditor {
         spells: Vec<CustomSpell>,
     },
     Editing {
-        spell: CustomSpell,
+        spell: Box<CustomSpell>,
     },
 }
 
@@ -164,7 +164,7 @@ impl SettingsPage {
                     Either::Right(name) => {
                         let cancel_input = text_input(
                             "Submit now to cancel",
-                            &*name,
+                            name,
                             move |s| crate::Message::Settings(Message::RenameString(index, s)),
                         ).style(style)
                             .width(Length::Units(140))
@@ -377,15 +377,11 @@ impl SettingsPage {
                     .push(s)
                     .push_space(Length::Fill)
                     .push(mat);
-                let material_component = if let Some(mat) = m {
-                    Some(text_input(
-                        "material",
-                        &mat,
-                        edit_message(Edit::ComponentMaterial),
-                    ).style(style))
-                } else {
-                    None
-                };
+                let material_component = m.map(|mat| text_input(
+                    "material",
+                    &mat,
+                    edit_message(Edit::ComponentMaterial),
+                ).style(style));
 
                 let duration = text_input(
                     "",
@@ -441,7 +437,7 @@ impl SettingsPage {
                     .push_space(2)
                     .push(make_row("Level:", level))
                     .push(make_row("Casting Time:", casting_time))
-                    .tap_if_some(casting_time_extra, |col, cte| col.push(cte))
+                    .tap_if_some(casting_time_extra, Column::push)
                     .push(make_row("Range:", range))
                     .push(make_row("Components:", components))
                     .tap_if_some(material_component, |col, mat| col.push(make_row("Material:", mat)))

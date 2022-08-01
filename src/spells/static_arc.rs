@@ -71,11 +71,11 @@ impl<'a, T: ?Sized + PartialEq> PartialEq<&'a T> for StArc<T> {
     }
 }
 
-impl<T: ?Sized> Display for StArc<T> where T: Display {
+impl<T: ?Sized + Display> Display for StArc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StArc::Static(t) => t.fmt(f),
-            StArc::Arc(t) => (&**t).fmt(f),
+            StArc::Arc(t) => (**t).fmt(f),
         }
     }
 }
