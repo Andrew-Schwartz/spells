@@ -1,8 +1,10 @@
 use iced::{Alignment, Length, pure::{*, widget::*}};
 use itertools::{Either, Itertools};
 
-use crate::{CastingTime, Class, Components, CustomSpell, School};
 use crate::character::Character;
+use crate::Level;
+use crate::spells::data::{CastingTime, Class, Components, School};
+use crate::spells::spell::CustomSpell;
 use crate::style::Style;
 use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
@@ -25,7 +27,7 @@ pub enum Message {
 #[derive(Debug, Clone)]
 pub enum Edit {
     School(School),
-    Level(usize),
+    Level(Level),
     CastingTime(CastingTime),
     CastingTimeN(String),
     CastingTimeWhen(String),
@@ -311,7 +313,7 @@ impl SettingsPage {
                 ).style(style);
 
                 let level = pick_list(
-                    &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9][..],
+                    &Level::ALL[..],
                     Some(spell.level),
                     edit_message(Edit::Level),
                 ).style(style).text_size(14);
@@ -348,7 +350,7 @@ impl SettingsPage {
 
                 let range = text_input(
                     "",
-                    &spell.range,
+                    spell.range.as_deref().unwrap_or(""),
                     edit_message(Edit::Range),
                 ).style(style);
 
@@ -387,7 +389,7 @@ impl SettingsPage {
 
                 let duration = text_input(
                     "",
-                    &spell.duration,
+                    spell.duration.as_deref().unwrap_or(""),
                     edit_message(Edit::Duration),
                 ).style(style);
 

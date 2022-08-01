@@ -1,5 +1,6 @@
 #![feature(array_methods)]
 #![feature(mixed_integer_ops)]
+#![feature(const_option_ext)]
 
 // ignored on other targets
 #![windows_subsystem = "windows"]
@@ -24,35 +25,22 @@ clippy::enum_glob_use,
 
 use std::{fs::{self, File}, mem};
 use std::cmp::min;
-use std::convert::{From, Into, TryFrom};
+use std::convert::{From, Into};
 use std::default::Default;
-use std::fmt::{self, Debug, Display};
+use std::fmt::Debug;
 use std::io::{BufRead, BufReader, ErrorKind, Write as _};
-use std::ops::{Deref, Not};
+use std::ops::Not;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use iced::{
-    Alignment,
-    alignment::Vertical,
-    Command,
-    Length,
-    mouse::ScrollDelta,
-    pure::{self},
-    pure::{Application, button, column, container, Element, horizontal_rule, progress_bar, row, slider, text},
-    pure::widget::{Button, Container, Row},
-    Settings,
-    tooltip::Position,
-    window::Icon,
-};
+use iced::{Alignment, alignment::Vertical, Command, Font, Length, mouse::ScrollDelta, pure::{Application, button, column, container, Element, horizontal_rule, progress_bar, row, slider, text}, pure::widget::{Button, Container, Row}, Settings, tooltip::Position, window::Icon};
 use iced_aw::{ICON_FONT, TabLabel};
 use iced_native::{Event, Subscription, window};
-use itertools::Either;
+use itertools::{Either, Itertools};
 use once_cell::sync::Lazy;
 use self_update::cargo_crate_version;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::Error as _;
+use serde::Deserialize;
 
 use search::SearchPage;
 use utils::ListGrammaticallyExt;
@@ -61,9 +49,15 @@ use crate::character::{Character, CharacterPage, SerializeCharacter};
 use crate::hotkey::Move;
 use crate::hotmouse::{ButtonPress, Pt};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
+use crate::spells::data::GetLevel;
+use crate::spells::spell::{find_spell, SpellId};
 use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
 use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
+
+use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
+use self::spells::spell::{CustomSpell, StaticSpell};
+use self::spells::static_arc::StArc;
 
 mod fetch;
 mod style;
@@ -76,6 +70,7 @@ mod hotmouse;
 mod utils;
 mod update;
 mod slots_widget;
+mod spells;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -117,6 +112,11 @@ fn icon() -> Icon {
 }
 
 const WIDTH: u32 = 1100;
+
+// const CONSOLAS: Font = Font::External {
+//     name: "consolas",
+//     bytes: include_bytes!("../resources/consola.ttf"),
+// };
 
 /// want two columns for starting window size with a bit of room to expand
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
@@ -526,7 +526,7 @@ impl Application for DndSpells {
                                 Edit::CastingTimeWhen(new) => if let CastingTime::Reaction(when) = &mut spell.casting_time {
                                     *when = Some(StArc::Arc(Arc::from(new)));
                                 },
-                                Edit::Range(range) => spell.range = range,
+                                Edit::Range(range) => spell.range = (!range.is_empty()).then_some(range),
                                 Edit::ComponentV(v) => match &mut spell.components {
                                     Some(components) => components.v = v,
                                     none => *none = Some(Components { v: true, s: false, m: None }),
@@ -543,7 +543,7 @@ impl Application for DndSpells {
                                     Some(components) => components.m = Some(mat),
                                     None => spell.components = Some(Components { v: false, s: false, m: Some(mat) }),
                                 },
-                                Edit::Duration(duration) => spell.duration = duration,
+                                Edit::Duration(duration) => spell.duration = (!duration.is_empty()).then_some(duration),
                                 Edit::Ritual(ritual) => spell.ritual = ritual,
                                 Edit::Concentration(conc) => spell.conc = conc,
                                 Edit::Description(mut desc) => {
@@ -658,7 +658,7 @@ impl Application for DndSpells {
                             }
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
-                                    page.tab = 0;
+                                    page.tab = None;
                                     // todo
                                     // page.search.state.focus();
                                 }
@@ -694,31 +694,57 @@ impl Application for DndSpells {
                                 }
                             }
                         } else {
-                            let new_tab_idx = self.characters.len() * character::TABS + 1;
+                            let tabs_by_character = self.characters.iter()
+                                .map(|page| page.character.spells.iter()
+                                    .filter(|spells| !spells.is_empty())
+                                    .count() + 1)
+                                .collect_vec();
+                            // add 1 bc empty is [search, settings] which has max idx 1
+                            let max_tab_idx = tabs_by_character.iter().sum::<usize>() + 1;
                             let orig_idx = match self.tab {
                                 Tab::Search => 0,
                                 Tab::Character { index } => {
                                     let character = &self.characters[index];
-                                    // let character_tab = self.characters.get(character).unwrap().tab;
-                                    1 + character::TABS * index + character.tab
+                                    1 // search
+                                        + tabs_by_character[..index].iter().sum::<usize>() // previous characters
+                                        + character.tab_index() // index in this character
                                 }
-                                Tab::Settings => new_tab_idx,
+                                Tab::Settings => max_tab_idx,
                             };
                             let idx = match dir {
-                                Move::Left => min(orig_idx.wrapping_sub(1), new_tab_idx),
+                                Move::Left => {
+                                    let idx = orig_idx.wrapping_sub(1);
+                                    min(idx, max_tab_idx)
+                                },
                                 Move::Right => {
                                     let idx = orig_idx + 1;
-                                    if idx > new_tab_idx { 0 } else { idx }
+                                    if idx > max_tab_idx { 0 } else { idx }
                                 }
                             };
                             match idx {
                                 0 => self.tab = Tab::Search,
-                                new_tab if new_tab == new_tab_idx => self.tab = Tab::Settings,
-                                idx => {
-                                    let character = (idx - 1) / character::TABS;
+                                settings_tab if settings_tab == max_tab_idx => self.tab = Tab::Settings,
+                                mut tab => {
+                                    // search tab
+                                    tab -= 1;
+                                    let mut character = 0;
+                                    while tab >= tabs_by_character[character] {
+                                        tab -= tabs_by_character[character];
+                                        character += 1;
+                                    }
                                     self.tab = Tab::Character { index: character };
-                                    let tab = (idx - 1) % character::TABS;
-                                    self.characters.get_mut(character).unwrap().tab = tab;
+                                    self.characters.get_mut(character).unwrap().tab = if tab == 0 {
+                                        None
+                                    } else {
+                                        self.characters[character].character.spells.iter()
+                                            .enumerate()
+                                            .map(|(index, s)| (Level::from_u8(index as _).unwrap(), s))
+                                            .filter(|(_, s)| !s.is_empty())
+                                            .nth(tab - 1)
+                                            .unwrap()
+                                            .0
+                                            .tap(Some)
+                                    };
                                 }
                             }
                         }
@@ -809,7 +835,7 @@ impl Application for DndSpells {
                         if let Tab::Character { index } = self.tab {
                             if let Some(page) = self.characters.get_mut(index) {
                                 // all tab
-                                if page.tab == 0 {
+                                if page.tab.is_none() {
                                     if let Some(curr_view) = &mut page.view_spell {
                                         let spells = &page.character.spells;
                                         if let Some(pos) = spells[curr_view.level]
@@ -827,8 +853,8 @@ impl Application for DndSpells {
                                             };
                                             let new_view = spells[curr_view.level].get(idx)
                                                 .or_else(|| {
-                                                    let level_added = curr_view.level.saturating_add_signed(delta);
-                                                    spells.get(level_added)
+                                                    curr_view.level.add_checked(delta)
+                                                        .and_then(|level_added| spells.get_lvl(level_added))
                                                         .and_then(|other_level| match delta {
                                                             1 => other_level.first(),
                                                             -1 => other_level.last(),
@@ -1022,373 +1048,16 @@ impl Application for DndSpells {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Class {
-    Artificer,
-    Bard,
-    Cleric,
-    Druid,
-    Paladin,
-    Ranger,
-    Sorcerer,
-    Warlock,
-    Wizard,
-}
-
-impl Class {
-    pub const ALL: [Self; 9] = [
-        Self::Artificer,
-        Self::Bard,
-        Self::Cleric,
-        Self::Druid,
-        Self::Paladin,
-        Self::Ranger,
-        Self::Sorcerer,
-        Self::Warlock,
-        Self::Wizard,
-    ];
-}
-
-impl Display for Class {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Self::Artificer => "Artificer",
-            Self::Bard => "Bard",
-            Self::Cleric => "Cleric",
-            Self::Druid => "Druid",
-            Self::Paladin => "Paladin",
-            Self::Ranger => "Ranger",
-            Self::Sorcerer => "Sorcerer",
-            Self::Warlock => "Warlock",
-            Self::Wizard => "Wizard",
-        })
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, Ord, Eq, PartialOrd, PartialEq)]
-pub enum School {
-    Abjuration,
-    Conjuration,
-    Divination,
-    Enchantment,
-    Evocation,
-    Illusion,
-    Transmutation,
-    Necromancy,
-}
-
-impl School {
-    pub const ALL: [Self; 8] = [
-        Self::Abjuration,
-        Self::Conjuration,
-        Self::Divination,
-        Self::Enchantment,
-        Self::Evocation,
-        Self::Illusion,
-        Self::Transmutation,
-        Self::Necromancy,
-    ];
-}
-
-impl Display for School {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Self::Abjuration => "Abjuration",
-            Self::Conjuration => "Conjuration",
-            Self::Enchantment => "Enchantment",
-            Self::Evocation => "Evocation",
-            Self::Illusion => "Illusion",
-            Self::Transmutation => "Transmutation",
-            Self::Necromancy => "Necromancy",
-            Self::Divination => "Divination",
-        })
-    }
-}
-
 impl From<School> for String {
     fn from(school: School) -> Self {
         school.to_string()
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd)]
-pub enum CastingTime {
-    Special,
-    Action,
-    BonusAction,
-    Reaction(Option<StArc<str>>),
-    Minute(usize),
-    Hour(usize),
-}
-
-impl CastingTime {
-    pub const ALL: [Self; 6] = [
-        Self::Action,
-        Self::BonusAction,
-        Self::Reaction(None),
-        Self::Minute(1),
-        Self::Hour(1),
-        Self::Special,
-    ];
-
-    const REACTION_PHRASE: &'static str = ", which you take when ";
-
-    fn from_static(str: &'static str) -> Result<Self, String> {
-        let space_idx = str.find(' ');
-        let get_num = || {
-            let space_idx = space_idx.ok_or_else(|| format!("No number specified in casting time \"{}\"", str))?;
-            let num = &str[..space_idx];
-            num.parse()
-                .map_err(|_| format!("{} is not a positive integer", num))
-        };
-        let comma = str.find(',').unwrap_or(str.len());
-        let rest = &str[space_idx.map_or(0, |i| i + 1)..comma];
-        match rest {
-            "Special" => Ok(Self::Special),
-            "Action" => Ok(Self::Action),
-            "Bonus Action" => Ok(Self::BonusAction),
-            "Reaction" => {
-                if str[comma..].starts_with(Self::REACTION_PHRASE) {
-                    Ok(Self::Reaction(Some(str[comma + Self::REACTION_PHRASE.len()..].into())))
-                } else {
-                    Err(String::from("No reaction when phrase"))
-                }
-            }
-            "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
-            "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
-            _ => Err(format!("{} is not a casting time", rest))
-        }
-    }
-
-    pub fn equals_ignore_reaction(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Special, Self::Special) => true,
-            (Self::Action, Self::Action) => true,
-            (Self::BonusAction, Self::BonusAction) => true,
-            (Self::Reaction(_), Self::Reaction(_)) => true,
-            (&Self::Minute(m1), &Self::Minute(m2)) if m1 == m2 => true,
-            (&Self::Hour(h1), &Self::Hour(h2)) if h1 == h2 => true,
-            _ => false,
-        }
-    }
-}
-
-impl Display for CastingTime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Special => f.write_str("Special"),
-            Self::Action => f.write_str("1 Action"),
-            Self::BonusAction => f.write_str("1 Bonus Action"),
-            Self::Reaction(when) => if let Some(when) = when {
-                write!(f, "1 Reaction, which you take when {when}")
-            } else {
-                f.write_str("1 Reaction")
-            }
-            &Self::Minute(n) => write!(f, "{n} Minute{}", if n == 1 { "" } else { "s" }),
-            &Self::Hour(n) => write!(f, "{n} Hour{}", if n == 1 { "" } else { "s" }),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for CastingTime {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let str = <&'de str>::deserialize(d)?;
-        let space_idx = str.find(' ');
-        let get_num = || {
-            let space_idx = space_idx.ok_or_else(|| D::Error::custom(format!("No number specified in casting time \"{}\"", str)))?;
-            let num = &str[..space_idx];
-            num.parse()
-                .map_err(|_| D::Error::custom(format!("{} is not a positive integer", num)))
-        };
-        let comma = str.find(',').unwrap_or(str.len());
-        let rest = &str[space_idx.map_or(0, |i| i + 1)..comma];
-        match rest {
-            "Special" => Ok(Self::Special),
-            "Action" => Ok(Self::Action),
-            "Bonus Action" => Ok(Self::BonusAction),
-            "Reaction" => {
-                Ok(Self::Reaction(
-                    str[comma..].starts_with(Self::REACTION_PHRASE)
-                        .then(|| StArc::Arc(Arc::from(&str[comma + Self::REACTION_PHRASE.len()..])))
-                ))
-            }
-            "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
-            "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
-            _ => Err(D::Error::custom(format!("{} is not a casting time", rest)))
-        }
-    }
-}
-
-impl Serialize for CastingTime {
-    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Special => "Special".serialize(s),
-            Self::Action => "1 Action".serialize(s),
-            Self::BonusAction => "1 Bonus Action".serialize(s),
-            Self::Reaction(None) => "1 Reaction".serialize(s),
-            Self::Reaction(Some(when)) => format!("1 Reaction{}{}", Self::REACTION_PHRASE, when).serialize(s),
-            &Self::Minute(n) => if n == 1 {
-                "1 Minute".serialize(s)
-            } else {
-                format!("{} Minutes", n).serialize(s)
-            },
-            &Self::Hour(n) => if n == 1 {
-                "1 Hour".serialize(s)
-            } else {
-                format!("{} Hours", n).serialize(s)
-            },
-        }
-    }
-}
-
-#[derive(Eq, PartialEq, Clone, Hash, Debug, Ord, PartialOrd, Default)]
-pub struct Components {
-    v: bool,
-    s: bool,
-    m: Option<String>,
-}
-
-impl Display for Components {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut prev = false;
-        if self.v {
-            write!(f, "V")?;
-            prev = true;
-        }
-        if self.s {
-            if prev { write!(f, ", ")? }
-            write!(f, "S")?;
-            prev = true;
-        }
-        if let Some(material) = &self.m {
-            if prev { write!(f, ", ")? }
-            write!(f, "M ({material})")?;
-        }
-        Ok(())
-    }
-}
-
-impl<'de> Deserialize<'de> for Components {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let str = <&'de str>::deserialize(d)?.trim();
-
-        fn vsm(str: &str) -> (bool, bool, bool) {
-            let mut vsm = (false, false, false);
-            for char in str.chars() {
-                match char {
-                    'V' => vsm.0 = true,
-                    'S' => vsm.1 = true,
-                    'M' => vsm.2 = true,
-                    ' ' | ',' => {}
-                    _ => println!("Bad character {char} in {str}"),
-                }
-            }
-            vsm
-        }
-
-        let ((v, s, _), material) = if let (Some(start), Some(end)) = (str.find('('), str.rfind(')')) {
-            let vsm = vsm(&str[..start]);
-            assert_eq!(vsm.2, true);
-            (vsm, Some(&str[start + 1..end]))
-        } else {
-            let vsm = vsm(str);
-            assert_eq!(vsm.2, false);
-            (vsm, None)
-        };
-
-        let components = Self {
-            v,
-            s,
-            m: material.map(|str| str.to_string()),
-        };
-        Ok(components)
-    }
-}
-
-impl Serialize for Components {
-    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        format!("{self}").serialize(s)
-    }
-}
-
-#[derive(Eq, PartialEq, Clone, Copy, Hash, Debug, Ord, PartialOrd)]
-pub enum Source {
-    PlayersHandbook,
-    XanatharsGuideToEverything,
-    TashasCauldronOfEverything,
-    Custom,
-}
-
-impl Display for Source {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(Self::STRINGS[*self as usize])
-    }
-}
-
-impl Source {
-    const ALL: [Self; 4] = [
-        Self::PlayersHandbook,
-        Self::XanatharsGuideToEverything,
-        Self::TashasCauldronOfEverything,
-        Self::Custom,
-    ];
-
-    const STRINGS: [&'static str; 4] = [
-        "Player's Handbook",
-        "Xanathar's Guide to Everything",
-        "Tasha's Cauldron of Everything",
-        "Custom",
-    ];
-}
-
-impl<'de> Deserialize<'de> for Source {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let str = <&'de str>::deserialize(d)?;
-        match str {
-            "Player's Handbook" => Ok(Self::PlayersHandbook),
-            "Xanathar's Guide to Everything" => Ok(Self::XanatharsGuideToEverything),
-            "Tasha's Cauldron of Everything" => Ok(Self::TashasCauldronOfEverything),
-            "Custom" => Ok(Self::Custom),
-            _ => Err(D::Error::unknown_variant(str, &Self::STRINGS)),
-        }
-    }
-}
-
-impl Serialize for Source {
-    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        Self::STRINGS[*self as usize].serialize(s)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-#[serde(try_from = "DeserializeSpell")]
-pub struct StaticSpell {
-    name: &'static str,
-    #[serde(skip_serializing)]
-    name_lower: &'static str,
-    level: usize,
-    casting_time: CastingTime,
-    range: &'static str,
-    duration: &'static str,
-    components: Components,
-    school: School,
-    ritual: bool,
-    conc: bool,
-    description: &'static str,
-    #[serde(skip_serializing)]
-    desc_lower: &'static str,
-    higher_levels: Option<&'static str>,
-    #[serde(skip_serializing)]
-    higher_levels_lower: Option<&'static str>,
-    classes: &'static [Class],
-    source: Source,
-    page: u32,
-}
-
 #[derive(Deserialize)]
 struct DeserializeSpell {
     name: &'static str,
-    level: usize,
+    level: Level,
     casting_time: &'static str,
     range: &'static str,
     duration: &'static str,
@@ -1403,470 +1072,8 @@ struct DeserializeSpell {
     page: u32,
 }
 
-impl TryFrom<DeserializeSpell> for StaticSpell {
-    type Error = String;
-
-    fn try_from(value: DeserializeSpell) -> Result<Self, Self::Error> {
-        // we leak stuff since it will be around for the entire time the gui is open
-        fn static_str(string: String) -> &'static str {
-            Box::leak(string.into_boxed_str())
-        }
-        let name_lower = static_str(value.name.to_lowercase());
-        let desc_lower = static_str(value.description.to_lowercase());
-        let higher_levels_lower = value.higher_levels
-            .as_ref()
-            .map(|s| s.to_lowercase())
-            .map(static_str);
-        Ok(Self {
-            name: value.name,
-            name_lower,
-            level: value.level,
-            casting_time: CastingTime::from_static(value.casting_time)?,
-            range: value.range,
-            duration: value.duration,
-            components: value.components,
-            school: value.school,
-            ritual: value.ritual,
-            conc: value.conc,
-            description: static_str(value.description),
-            desc_lower,
-            higher_levels: value.higher_levels.map(static_str),
-            higher_levels_lower,
-            classes: value.classes.leak(),
-            source: value.source,
-            page: value.page,
-        })
-    }
-}
-
-// #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-// pub struct PickSpellLevel(pub usize);
-//
-// impl PLNone for PickSpellLevel {
-//     fn title() -> &'static str {
-//         "Pick a level"
-//     }
-// }
-//
-// impl Debug for PickSpellLevel {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         <usize as Debug>::fmt(&self.0, f)
-//     }
-// }
-//
-// impl Display for PickSpellLevel {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         <usize as Display>::fmt(&self.0, f)
-//     }
-// }
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CustomSpell {
-    name: Arc<str>,
-    name_lower: String,
-    level: usize,
-    casting_time: CastingTime,
-    range: String,
-    pub components: Option<Components>,
-    duration: String,
-    school: School,
-    #[serde(default)]
-    ritual: bool,
-    #[serde(default)]
-    conc: bool,
-    description: String,
-    desc_lower: String,
-    higher_levels: Option<String>,
-    higher_levels_lower: Option<String>,
-    classes: Vec<Class>,
-    page: Option<u32>,
-}
-
-impl PartialEq for CustomSpell {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-
-impl CustomSpell {
-    #[must_use]
-    pub fn new(name: String) -> Self {
-        let name_lower = name.to_lowercase();
-        Self {
-            name: Arc::from(name),
-            name_lower,
-            // name_state: Default::default(),
-            level: 0,
-            casting_time: CastingTime::Action,
-            range: String::new(),
-            duration: String::new(),
-            components: None,
-            school: School::Abjuration,
-            ritual: false,
-            conc: false,
-            description: String::new(),
-            desc_lower: String::new(),
-            higher_levels: None,
-            higher_levels_lower: None,
-            classes: Vec::new(),
-            page: None,
-        }
-    }
-
-    #[must_use]
-    pub fn id(&self) -> SpellId {
-        SpellId {
-            name: self.name.clone().into(),
-            level: self.level,
-        }
-    }
-
-    // TODO add a option to add source to custom spells, then merge this with the SAME METHOD in
-    //  Spell into StaticCustomSpell
-    pub fn view<'s, 'c: 's, B: SpellButtons>(
-        &'s self,
-        button: B,
-        data: B::Data,
-        collapse: bool,
-        style: Style,
-    ) -> Container<'c, Message> {
-        let text = |label| row()
-            .push(text(label).size(16).width(Length::FillPortion(18)));
-
-        let (buttons, title) = button.view(self.id(), data, style);
-        let title = row().push(title);
-
-        let buttons = row().push(buttons.width(Length::FillPortion(18)));
-
-        let mut column = column()
-            .align_items(Alignment::Center)
-            .push(title)
-            .push(buttons);
-        if !collapse {
-            let classes = self.classes.iter().list_grammatically();
-            #[allow(clippy::if_not_else)]
-                let about = format!(
-                // "A {}{}spell{}{}{}{}{}",
-                "A {}{}spell",
-                classes,
-                if !classes.is_empty() { " " } else { "" },
-                // if !classes.is_empty() && (!self.source.is_empty() || self.page.is_some()) { "," } else { "" },
-                // self.source,
-                // if !self.source.is_empty() || self.page.is_some() { " from " } else { "" },
-                // if !self.source.is_empty() { " " } else { "" },
-                // self.page.map(|p| p.to_string()).as_deref().unwrap_or("")
-            );
-
-            column = column
-                .push(horizontal_rule(8))
-                .push(text(self.school.to_string()))
-                .push_space(4)
-                .push(text(format!("Level: {}", self.level)))
-                .push(text(format!("Casting Time: {}", self.casting_time)))
-                .push(text(format!("Range: {}", self.range)))
-                .push(text(format!("Components: {}", self.components.as_ref().map_or_else(String::new, |c| c.to_string()))))
-                .push(text(format!("Duration: {}", self.duration)))
-                .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
-                .push(horizontal_rule(10))
-                .push(text(self.description.clone()))
-                .tap_if_some(self.higher_levels.as_ref(), |col, higher| col
-                    .push(horizontal_rule(8))
-                    .push(row().push(pure::text("At higher levels").size(20).width(Length::FillPortion(18)))
-                        .push_space(3)
-                        .push(text(higher.clone()))))
-                .tap_if(about != "A spell", |col| col
-                    .push(horizontal_rule(8))
-                    .push(text(about)))
-            ;
-        }
-        container(column)
-    }
-}
-
 pub trait SpellButtons {
     type Data;
 
     fn view<'c>(self, id: SpellId, data: Self::Data, style: Style) -> (Row<'c, Message>, Element<'c, Message>);
-}
-
-impl StaticSpell {
-    #[must_use]
-    pub fn id(&self) -> SpellId {
-        SpellId {
-            name: self.name.into(),
-            level: self.level,
-        }
-    }
-
-    fn view<'s, 'c: 's, B: SpellButtons>(
-        &'s self,
-        button: B,
-        data: B::Data,
-        collapse: bool,
-        style: Style,
-    ) -> Container<'c, Message> {
-        let text = |label: String| row()
-            .push(text(label).size(16).width(Length::FillPortion(18)));
-
-        let (buttons, title) = button.view(self.id(), data, style);
-        let title = row().push(title);
-
-        let buttons = row().push(buttons.width(Length::FillPortion(18)));
-
-        let mut column = column()
-            .align_items(Alignment::Center)
-            .push(title)
-            .push(buttons);
-        if !collapse {
-            let classes = self.classes.iter().list_grammatically();
-            let an_grammar = classes.chars().next()
-                .filter(|c| *c == 'A')
-                .map_or('\0', |_| 'n');
-            let about = text(format!("A{} {} spell, from {} page {}", an_grammar, classes, self.source, self.page));
-
-            column = column
-                .push(horizontal_rule(8))
-                .push(text(self.school.to_string()))
-                .push_space(4)
-                .push(text(format!("Level: {}", self.level)))
-                .push(text(format!("Casting time: {}", self.casting_time)))
-                .push(text(format!("Range: {}", self.range)))
-                .push(text(format!("Components: {}", self.components)))
-                .push(text(format!("Duration: {}", self.duration)))
-                .push(text(format!("Ritual: {}", if self.ritual { "Yes" } else { "No" })))
-                .push(horizontal_rule(10))
-                .push(text(self.description.to_string()))
-                .tap_if_some(self.higher_levels, |col, higher| col
-                    .push(horizontal_rule(8))
-                    .push(row().push(pure::text("At higher levels").size(20).width(Length::FillPortion(18))))
-                    .push_space(3)
-                    .push(text(higher.to_string())))
-                .push(horizontal_rule(8))
-                .push(about);
-        }
-
-        container(row()
-            .push_space(Length::FillPortion(1))
-            .push(column.width(Length::FillPortion(18)))
-            .push_space(Length::FillPortion(1))
-        )
-            .width(Length::Fill)
-            .center_x()
-    }
-}
-
-#[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Hash)]
-pub enum StArc<T: ?Sized + 'static> {
-    Static(&'static T),
-    Arc(Arc<T>),
-}
-
-impl<T: ?Sized> Deref for StArc<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Static(t) => t,
-            Self::Arc(t) => t,
-        }
-    }
-}
-
-impl<T: ?Sized> Clone for StArc<T> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Static(t) => Self::Static(*t),
-            Self::Arc(t) => Self::Arc(t.clone()),
-        }
-    }
-}
-
-impl<T: ?Sized> From<&'static T> for StArc<T> {
-    fn from(t: &'static T) -> Self {
-        Self::Static(t)
-    }
-}
-
-impl<T: ?Sized> From<Arc<T>> for StArc<T> {
-    fn from(t: Arc<T>) -> Self {
-        Self::Arc(t)
-    }
-}
-
-impl<'a, T: ?Sized> From<&'a Arc<T>> for StArc<T> {
-    fn from(t: &'a Arc<T>) -> Self {
-        Self::Arc(Arc::clone(t))
-    }
-}
-
-impl<'de, T: ?Sized> Deserialize<'de> for StArc<T>
-    where Arc<T>: Deserialize<'de> {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        Ok(Self::Arc(<Arc<T>>::deserialize(d)?))
-    }
-}
-
-impl<T: ?Sized + Serialize> Serialize for StArc<T> {
-    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Static(t) => t.serialize(s),
-            Self::Arc(t) => t.serialize(s),
-        }
-    }
-}
-
-impl<'a, T: ?Sized + PartialEq> PartialEq<&'a T> for StArc<T> {
-    fn eq(&self, other: &&'a T) -> bool {
-        **self == **other
-    }
-}
-
-// impl<'a, T: ?Sized + PartialEq> PartialEq<StArc<T>> for &'a T {
-//     fn eq(&self, other: &StArc<T>) -> bool {
-//         other == self
-//     }
-// }
-
-impl<T: ?Sized> Display for StArc<T> where T: Display {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            StArc::Static(t) => t.fmt(f),
-            StArc::Arc(t) => (&**t).fmt(f),
-        }
-    }
-}
-
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct SpellId {
-    name: StArc<str>,
-    level: usize,
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub enum Spell {
-    Static(&'static StaticSpell),
-    Custom(CustomSpell),
-}
-
-macro_rules! delegate {
-    ($self:ident, ref $delegate:tt $($paren:tt)?) => {
-        match $self {
-            Self::Static(spell) => spell.$delegate$($paren)?,
-            Self::Custom(spell) => &spell.$delegate$($paren)?,
-        }
-    };
-    ($self:ident, $delegate:tt $($paren:tt)?) => {
-        match $self {
-            Self::Static(spell) => spell.$delegate$($paren)?,
-            Self::Custom(spell) => spell.$delegate$($paren)?,
-        }
-    };
-}
-
-impl Spell {
-    #[must_use]
-    pub fn id(&self) -> SpellId {
-        delegate!(self, id())
-    }
-
-    // todo level should really be an enum
-    #[must_use]
-    pub fn level(&self) -> usize {
-        delegate!(self, level)
-    }
-
-    #[must_use]
-    pub fn classes(&self) -> &[Class] {
-        delegate!(self, ref classes)
-    }
-
-    #[must_use]
-    pub fn school(&self) -> School {
-        delegate!(self, school)
-    }
-
-    #[must_use]
-    pub fn ritual(&self) -> bool {
-        delegate!(self, ritual)
-    }
-
-    #[must_use]
-    pub fn concentration(&self) -> bool {
-        delegate!(self, conc)
-    }
-
-    #[must_use]
-    pub fn name(&self) -> StArc<str> {
-        match self {
-            Self::Static(spell) => spell.name.into(),
-            Self::Custom(spell) => (&spell.name).into(),
-        }
-    }
-
-    #[must_use]
-    pub fn name_lower(&self) -> &str {
-        delegate!(self, ref name_lower)
-    }
-
-    #[must_use]
-    pub fn desc_lower(&self) -> &str {
-        delegate!(self, ref desc_lower)
-    }
-
-    #[must_use]
-    pub fn higher_levels_lower(&self) -> Option<&str> {
-        match self {
-            Self::Static(spell) => spell.higher_levels_lower,
-            Self::Custom(spell) => spell.higher_levels_lower.as_deref(),
-        }
-    }
-
-    #[must_use]
-    pub fn casting_time(&self) -> &CastingTime {
-        match self {
-            Self::Static(spell) => &spell.casting_time,
-            Self::Custom(spell) => &spell.casting_time,
-        }
-    }
-
-    #[must_use]
-    pub fn source(&self) -> Source {
-        match self {
-            Self::Static(spell) => spell.source,
-            Self::Custom(_) => Source::Custom,
-        }
-    }
-
-    fn view<'s, 'c: 's, B: SpellButtons>(
-        &'s self,
-        button: B,
-        data: B::Data,
-        collapse: bool,
-        style: Style,
-    ) -> Container<'c, Message> {
-        match self {
-            Self::Static(spell) => spell.view(button, data, collapse, style),
-            Self::Custom(spell) => spell.view(button, data, collapse, style),
-        }
-    }
-}
-
-#[must_use]
-pub fn find_spell(spell_name: &str, custom: &[CustomSpell]) -> Option<Spell> {
-    // TODO remove this after its been enough time that everyone probably updated it
-    fn fix_name_changes(spell_name: &str, spell: &StaticSpell) -> bool {
-        match spell_name {
-            // Feb 21, 2022
-            "Enemies abound" => spell.name == "Enemies Abound",
-            _ => false
-        }
-    }
-
-    SPELLS.iter()
-        .find(|s| &*s.name == spell_name || fix_name_changes(spell_name, s))
-        .map(Spell::Static)
-        .or_else(|| custom.iter()
-            .find(|s| &*s.name == spell_name)
-            .cloned()
-            .map(Spell::Custom))
 }

@@ -1,5 +1,7 @@
 use iced::keyboard::{self, KeyCode, Modifiers};
 
+use crate::Level;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Move {
     Left,
@@ -16,7 +18,7 @@ pub enum Message {
     Move(Move, bool),
     Undo,
     Redo,
-    CharacterTab(usize),
+    CharacterTab(Option<Level>),
     AddSpell(usize),
     /// true -> forwards, false -> backwards
     CustomSpellNextField(bool),
@@ -65,6 +67,11 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     KeyCode::Right => Some(Message::Move(Move::Right, false)),
                     _ => None,
                 }
+                Modifiers::ALT => match key_code {
+                    KeyCode::Left => Some(Message::Move(Move::Left, false)),
+                    KeyCode::Right => Some(Message::Move(Move::Right, false)),
+                    _ => None,
+                }
                 CTRL_SHIFT => match key_code {
                     KeyCode::Tab => Some(Message::Move(Move::Left, true)),
                     KeyCode::F | KeyCode::S => Some(Message::Find(true)),
@@ -75,17 +82,17 @@ pub fn handle(event: keyboard::Event) -> Option<crate::Message> {
                     _ => None,
                 }
                 NONE => match key_code {
-                    KeyCode::Grave | KeyCode::Key0 => Some(Message::CharacterTab(1)),
-                    KeyCode::Key1 => Some(Message::CharacterTab(2)),
-                    KeyCode::Key2 => Some(Message::CharacterTab(3)),
-                    KeyCode::Key3 => Some(Message::CharacterTab(4)),
-                    KeyCode::Key4 => Some(Message::CharacterTab(5)),
-                    KeyCode::Key5 => Some(Message::CharacterTab(6)),
-                    KeyCode::Key6 => Some(Message::CharacterTab(7)),
-                    KeyCode::Key7 => Some(Message::CharacterTab(8)),
-                    KeyCode::Key8 => Some(Message::CharacterTab(9)),
-                    KeyCode::Key9 => Some(Message::CharacterTab(10)),
-                    KeyCode::A => Some(Message::CharacterTab(0)),
+                    KeyCode::Grave | KeyCode::A => Some(Message::CharacterTab(None)),
+                    KeyCode::Key0 => Some(Message::CharacterTab(Some(Level::Cantrip))),
+                    KeyCode::Key1 => Some(Message::CharacterTab(Some(Level::L1))),
+                    KeyCode::Key2 => Some(Message::CharacterTab(Some(Level::L2))),
+                    KeyCode::Key3 => Some(Message::CharacterTab(Some(Level::L3))),
+                    KeyCode::Key4 => Some(Message::CharacterTab(Some(Level::L4))),
+                    KeyCode::Key5 => Some(Message::CharacterTab(Some(Level::L5))),
+                    KeyCode::Key6 => Some(Message::CharacterTab(Some(Level::L6))),
+                    KeyCode::Key7 => Some(Message::CharacterTab(Some(Level::L7))),
+                    KeyCode::Key8 => Some(Message::CharacterTab(Some(Level::L8))),
+                    KeyCode::Key9 => Some(Message::CharacterTab(Some(Level::L9))),
                     KeyCode::Tab | KeyCode::Enter | KeyCode::NumpadEnter => Some(Message::CustomSpellNextField(true)),
                     KeyCode::Up => Some(Message::CharacterSpellUpDown(-1)),
                     KeyCode::Down => Some(Message::CharacterSpellUpDown(1)),

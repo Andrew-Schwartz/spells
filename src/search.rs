@@ -5,8 +5,10 @@ use iced::{Alignment, Length, pure::{*, widget::*}};
 use iced_aw::Icon;
 use itertools::Itertools;
 
-use crate::{CastingTime, character, Class, CustomSpell, School, Source, Spell, SpellButtons, SpellId, SPELLS};
+use crate::{character, SpellButtons, SpellId, SPELLS};
 use crate::character::CharacterPage;
+use crate::spells::data::{CastingTime, Class, School, Source};
+use crate::spells::spell::{CustomSpell, Spell};
 use crate::style::Style;
 use crate::utils::{IterExt, SpacingExt, Tap, text_icon};
 

@@ -2,14 +2,18 @@ use std::cmp::min;
 use std::iter;
 use std::sync::Arc;
 
-use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced::{Alignment, Color, Length};
 use iced::alignment::Vertical;
+use iced::pure::{button, column, container, Element, horizontal_rule, row, scrollable, text};
+use iced::pure::widget::{Container, Row};
 use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{CustomSpell, find_spell, search, Spell, SpellButtons, SpellId, StArc, Tap};
+use crate::{Level, search, SpellButtons, SpellId, Tap};
 use crate::search::{Mode, Searcher, SearchOptions};
+use crate::spells::spell::{CustomSpell, find_spell, Spell};
+use crate::spells::static_arc::StArc;
 use crate::style::Style;
 use crate::utils::{SpacingExt, text_icon, TooltipExt};
 
@@ -40,7 +44,7 @@ pub enum Message {
     ToggleCollapseAll,
     Prepare(SpellId),
     PrepareAll(bool),
-    SpellTab(usize),
+    SpellTab(Option<Level>),
     AddSpell(SpellId),
     RemoveSpell(SpellId),
     /// delta to move the spell
@@ -48,12 +52,10 @@ pub enum Message {
     Search(search::Message),
     // level, delta
     ChangeNumSlots(usize, i32),
-    SlotsCast(usize),
+    SlotsCast(usize, i32),
     SlotsReset,
     ViewSpell(SpellId),
 }
-
-pub const TABS: usize = 11;
 
 #[derive(Default)]
 pub struct Slots {
@@ -120,7 +122,7 @@ pub struct CharacterPage {
     pub view_spell: Option<SpellId>,
     should_collapse_all: bool,
     should_collapse_unprepared: bool,
-    pub tab: usize,
+    pub tab: Option<Level>,
     pub search: SearchOptions,
     pub search_results: [Vec<usize>; 10],
 }
@@ -144,7 +146,7 @@ impl From<Character> for CharacterPage {
             view_spell,
             should_collapse_all: false,
             should_collapse_unprepared: true,
-            tab: 0,
+            tab: None,
             search: Default::default(),
             search_results,
         }
@@ -152,6 +154,20 @@ impl From<Character> for CharacterPage {
 }
 
 impl CharacterPage {
+    pub fn tab_index(&self) -> usize {
+        match self.tab {
+            None => 0,
+            Some(level) => self.character.spells.iter()
+                .enumerate()
+                .map(|(level, spells)| (Level::from_u8(level as u8).unwrap(), spells))
+                .filter(|(_, spells)| !spells.is_empty())
+                .enumerate()
+                .find(|&(_, (l, _))| l == level)
+                .unwrap()
+                .0 + 1,
+        }
+    }
+
     pub fn add_spell(&mut self, spell: Spell) {
         let level = spell.level();
         let spell = spell.into();
@@ -184,7 +200,7 @@ impl CharacterPage {
         let n_results = self.search_results.iter()
             .flatten()
             .count();
-        if self.tab == 0 && n_results == 1 {
+        if self.tab == None && n_results == 1 {
             let id = self.search_results.iter()
                 .enumerate()
                 .filter_map(|(level, indices)| indices.first().map(|&idx| &self.character.spells[level][idx].0))
@@ -216,10 +232,7 @@ impl CharacterPage {
                 })
             }
             Message::PrepareAll(prepare) => {
-                match self.tab {
-                    0 => &mut self.character.spells[..],
-                    t => &mut self.character.spells[t - 1..t],
-                }.iter_mut()
+                self.character.spells.iter_mut()
                     .flatten()
                     .for_each(|(_, prepared)| *prepared = prepare);
                 true
@@ -249,7 +262,7 @@ impl CharacterPage {
                 let idx = spells.iter()
                     .position(|(spell, _)| spell.name() == &*id.name);
                 if let Some(idx) = idx {
-                    let all_tab = self.tab == 0;
+                    let all_tab = self.tab == None;
                     let new_idx = if move_spell.is_negative() {
                         idx.saturating_sub(move_spell.delta(num_cols, all_tab))
                     } else {
@@ -346,10 +359,10 @@ impl CharacterPage {
                 *used = (*used).clamp(0, *total);
                 true
             }
-            Message::SlotsCast(level) => {
+            Message::SlotsCast(level, delta) => {
                 let Slots { used, total, .. } = &mut self.character.slots[level - 1];
-                *used += 1;
-                *used = (*used).clamp(0, *total);
+                *used = used.saturating_add_signed(delta)
+                    .clamp(0, *total);
                 true
             }
             Message::SlotsReset => {
@@ -381,7 +394,6 @@ impl CharacterPage {
             search,
             search_results,
         } = self;
-        // todo rename tab?
         let selected_level = *tab;
 
         // row with details: delete, move tab, etc
@@ -437,21 +449,54 @@ impl CharacterPage {
         let mut tabs_row = row()
             .push_space(Length::Fill);
 
-        tabs_row = tabs_row.push(make_button("All".into(), 0));
-        tabs_row = tabs_row.push(make_button("Cantrip".to_string(), 1));
-        for level in (1..=9).filter(|&l| !spells[l].is_empty()) {
+        tabs_row = tabs_row.push(make_button(" All ".into(), None));
+        for level in (0..=9)
+            .map(Level::from_u8)
+            .map(Option::unwrap)
+            .filter(|&l| !spells[l].is_empty()) {
             // spaces to pad the tab width
-            tabs_row = tabs_row.push(make_button(format!(" {} ", level), level + 1));
+            tabs_row = tabs_row.push(make_button(format!(" {level} "), Some(level)));
         }
         let tabs_row = tabs_row.push_space(Length::Fill);
 
-        let page: Element<'_, crate::Message> = if selected_level == 0 {
-            // 'All' tab
+        let page: Element<'_, _> = if let Some(level) = selected_level {
+            let len = search_results[level].len();
+            let chunks = search_results[level].iter()
+                .map(|&idx| &spells[level][idx])
+                .enumerate()
+                .chunks(num_cols);
+            (&chunks).into_iter()
+                .fold(column().spacing(18), |spells_col, mut chunk| {
+                    let row = (0..num_cols).fold(row(), |row, _| {
+                        if let Some((idx, (spell, prepared))) = chunk.next() {
+                            let button = CharacterPageButtons {
+                                character: index,
+                                left: idx != 0,
+                                right: idx != len - 1,
+                                up: idx >= num_cols,
+                                down: len - idx - 1 > {
+                                    // this works but really... whyyyyyy is it a block
+                                    let a = len % num_cols;
+                                    let bottom_start_idx = if a == 0 { num_cols } else { a };
+                                    bottom_start_idx - 1
+                                },
+                            };
+                            let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
+                            row.push(spell.view(button, *prepared, collapse, style).width(Length::Fill))
+                        } else {
+                            row.push_space(Length::Fill)
+                        }
+                    });
+                    spells_col.push(row)
+                })
+                .tap(scrollable)
+                .into()
+        } else {
             let col = search_results.iter()
                 .enumerate()
-                .filter(|(_, indices)| !indices.is_empty())
                 // cantrip always have no slot
                 .zip(iter::once(&Slots::default()).chain(slots))
+                .filter(|((_, indices), _)| !indices.is_empty())
                 .map(|((level, indices), slots)| (
                     level,
                     slots,
@@ -459,12 +504,20 @@ impl CharacterPage {
                         .map(|&idx| &spells[level][idx])
                         .fold(
                             column(),
-                            |col, (spell, _)| col.push(row()
+                            |col, (spell, prepped)| col.push(row()
                                 .push(text(&*spell.name())
                                     .size(18)
-                                    .tap_if(
-                                        view_spell.as_ref().filter(|s| s.name == spell.name()).is_some(),
-                                        |text| text.color([0.85, 0.85, 1.0]))
+                                    .color({
+                                        let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
+                                        let selected_highlight = if selected { 0.8 } else { 1.0 };
+                                        let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
+                                        Color {
+                                            r: selected_highlight,
+                                            g: selected_highlight,
+                                            b: 1.0,
+                                            a: prepared_opacity,
+                                        }
+                                    })
                                     .tap(button)
                                     .style(style.background())
                                     .padding(0)
@@ -506,7 +559,15 @@ impl CharacterPage {
                                     .vertical_alignment(Vertical::Center)
                                     .size(15),
                             ).style(style.background())
-                                .on_press(message(Message::SlotsCast(level)));
+                                .padding([2, 3])
+                                .on_press(message(Message::SlotsCast(level, 1)));
+                            let uncast = button(
+                                text_icon(Icon::ArrowDown)
+                                    .size(15)
+                            ).style(style.background())
+                                .padding(0)
+                                .tap_if(*used != 0,
+                                        |btn| btn.on_press(message(Message::SlotsCast(level, -1))));
                             slots_row = slots_row
                                 .push(row().align_items(Alignment::Center)
                                     .push(text(level.to_string()).size(26))
@@ -514,6 +575,7 @@ impl CharacterPage {
                                     .push(slot_max_picker)
                                     .push_space(Length::Fill)
                                     .push(slots)
+                                    .push(uncast)
                                 )
                         }
                         col.push(horizontal_rule(0))
@@ -523,6 +585,7 @@ impl CharacterPage {
                             .push(spells_col)
                     },
                 );
+            // 'All' tab
 
             let view_spell = view_spell.as_ref()
                 .and_then(|id| self.character.spells[id.level]
@@ -541,44 +604,7 @@ impl CharacterPage {
             row()
                 .align_items(Alignment::Fill)
                 .push(container(scrollable(col)).width(Length::FillPortion(3)))
-                .push(container(scrollable(view_spell)).width(Length::FillPortion(4)))
-                .into()
-        } else {
-            let level = selected_level - 1;
-            let len = search_results[level].len();
-            let chunks = search_results[level].iter()
-                .map(|&idx| &spells[level][idx])
-                .enumerate()
-                .chunks(num_cols);
-            // let len = spells[level].len();
-            // let chunks = spells[level].iter()
-            //     .enumerate()
-            //     .chunks(num_cols);
-            (&chunks).into_iter()
-                .fold(column().spacing(18), |spells_col, mut chunk| {
-                    let row = (0..num_cols).fold(row(), |row, _| {
-                        if let Some((idx, (spell, prepared))) = chunk.next() {
-                            let button = CharacterPageButtons {
-                                character: index,
-                                left: idx != 0,
-                                right: idx != len - 1,
-                                up: idx >= num_cols,
-                                down: len - idx - 1 > {
-                                    // this works but really... whyyyyyy is it a block
-                                    let a = len % num_cols;
-                                    let bottom_start_idx = if a == 0 { num_cols } else { a };
-                                    bottom_start_idx - 1
-                                },
-                            };
-                            let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
-                            row.push(spell.view(button, *prepared, collapse, style).width(Length::Fill))
-                        } else {
-                            row.push_space(Length::Fill)
-                        }
-                    });
-                    spells_col.push(row)
-                })
-                .tap(scrollable)
+                .push(container(scrollable(view_spell)).width(Length::FillPortion(4)).padding([0, 0, 10, 0]))
                 .into()
         };
 
