@@ -5,10 +5,12 @@ authors = ["Andrew-Schwartz <andrewschwartz59@gmail.com>"]
 edition = "2021"
 
 [dependencies.iced]
-version = "0.4.2"
+# master for focusing ability
+git = "https://github.com/iced-rs/iced"
+#version = "0.4.2"
 default-features = false
 # for release
-features = ["glow", "pure"]
+features = ["glow"]
 # for debug
 #features = ["glow", "debug"]
 
@@ -16,7 +18,7 @@ features = ["glow", "pure"]
 git = "https://github.com/iced-rs/iced_aw"
 branch = "main"
 default-features = false
-features = ["tabs", "colors", "icons", "number_input", "pure"]
+features = ["tabs", "colors", "icons", "number_input"]
 
 [dependencies]
 iced_native = "0.5.1"
@@ -36,6 +38,7 @@ reqwest = { version = "0.11.8", features = ["rustls-tls"] }
 bytes = "1.1.0"
 tempfile = "3.2.0"
 tokio = { version = "1.15.0", features = ["time"] }
+thiserror = "1.0.32"
 
 #tokio = { version = "1.0.2", features = ["full"] }
 #futures = "0.3.12"

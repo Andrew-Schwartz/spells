@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-use iced::{Color, Length, pure::{self, *, widget::*}};
-use iced::tooltip::Position;
-use iced_aw::{Icon, ICON_FONT};
+use iced::{Color, Element, Length, widget::*, widget::tooltip::Position};
+use iced_aw::Icon;
+
+use crate::ICON_FONT;
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
@@ -133,7 +134,7 @@ impl<I: Iterator + Sized> IterExt for I {}
 
 pub trait TooltipExt<'a, Message>: Into<Element<'a, Message>> {
     fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a, Message> {
-        pure::tooltip(self, tooltip, position)
+        iced::widget::tooltip(self, tooltip, position)
     }
 
     fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a, Message> {

@@ -1,11 +1,11 @@
-use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced::{Alignment, Element, Length, widget::*};
 use itertools::{Either, Itertools};
 
 use crate::character::Character;
 use crate::Level;
 use crate::spells::data::{CastingTime, Class, Components, School};
 use crate::spells::spell::CustomSpell;
-use crate::style::Style;
+// use crate::style::Style;
 use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
 #[derive(Debug, Clone)]
@@ -114,7 +114,7 @@ impl SettingsPage {
         const NAME_PADDING: u16 = 3;
         const SPACING: u16 = 5;
 
-        let character_label = row()
+        let character_label = row(vec![])
             .push_space(Length::Fill)
             .push(text("Characters").size(30))
             .push_space(Length::Fill);
@@ -140,7 +140,7 @@ impl SettingsPage {
         ) as u32;
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
-            .fold(column(), |col, (index, closed)| {
+            .fold(column(vec![]), |col, (index, closed)| {
                 let style = style.alternating(index);
                 let name = button(
                     text(&*closed.character.name).size(19),
@@ -173,7 +173,7 @@ impl SettingsPage {
                             text("Submit").size(15),
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::Rename(index)));
-                        let row = row()
+                        let row = row(vec![])
                             .align_items(Alignment::Center)
                             .push(cancel_input)
                             .push_space(3)
@@ -186,7 +186,7 @@ impl SettingsPage {
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::DeleteCharacter(index)));
                 col.push(container(
-                    row()
+                    row(vec![])
                         .spacing(SPACING)
                         .push_space(NAME_PADDING)
                         .push(name)
@@ -198,9 +198,9 @@ impl SettingsPage {
                 ).style(style))
             });
 
-        let character_col = column()
+        let character_col = column(vec![])
             .spacing(4)
-            .push(row()
+            .push(row(vec![])
                 .align_items(Alignment::Center)
                 .push(character_name_input)
                 .push_space(4)
@@ -209,7 +209,7 @@ impl SettingsPage {
             .push(closed_character_buttons)
             ;
 
-        let spells_label = row()
+        let spells_label = row(vec![])
             .push_space(Length::Fill)
             .push(text("Spell Editor").size(30))
             .push_space(Length::Fill);
@@ -225,9 +225,9 @@ impl SettingsPage {
         ).style(style)
             .on_press(crate::Message::Settings(Message::SubmitSpell));
 
-        let spells_col = column()
+        let spells_col = column(vec![])
             .spacing(4)
-            .push(row()
+            .push(row(vec![])
                 .align_items(Alignment::Center)
                 .push(spell_name)
                 .push_space(4)
@@ -238,7 +238,7 @@ impl SettingsPage {
             SpellEditor::Searching { spells } => {
                 let col = spells.iter()
                     .enumerate()
-                    .fold(column().spacing(4), |spells_col, (index, spell)| {
+                    .fold(column(vec![]).spacing(4), |spells_col, (index, spell)| {
                         let style = style.alternating(index);
                         let name = button(
                             text(&*spell.name).size(19),
@@ -253,7 +253,7 @@ impl SettingsPage {
                         ).style(style)
                             .on_press(crate::Message::Settings(Message::DeleteSpell(index)));
                         spells_col.push(container(
-                            row()
+                            row(vec![])
                                 .spacing(SPACING)
                                 .push_space(NAME_PADDING)
                                 .push(name)
@@ -272,7 +272,7 @@ impl SettingsPage {
                 ) -> Row<'a, crate::Message> {
                     let label = label.into();
                     let labeled = !label.is_empty();
-                    let mut ret = row()
+                    let mut ret = row(vec![])
                         .push(text(label).size(16));
                     if labeled {
                         ret = ret.push_space(Length::Fill);
@@ -281,7 +281,7 @@ impl SettingsPage {
                     let ret = ret
                         .push(content)
                         .align_items(Alignment::Center);
-                    row()
+                    row(vec![])
                         .push_space(Length::Fill)
                         .push(
                             container(ret).width(Length::FillPortion(18))
@@ -297,10 +297,10 @@ impl SettingsPage {
                     "Close",
                 ).style(style)
                     .on_press(crate::Message::Settings(Message::CloseSpell));
-                let title = row()
+                let title = row(vec![])
                     .push_space(Length::Fill)
                     .push(title)
-                    .push(container(row()
+                    .push(container(row(vec![])
                         .push_space(Length::Fill)
                         .push(close_button)
                     ).width(Length::Fill))
@@ -370,7 +370,7 @@ impl SettingsPage {
                     m.is_some(),
                     edit_message(Edit::ComponentM),
                 ).style(style);
-                let components = row()
+                let components = row(vec![])
                     .push_space(Length::Fill)
                     .push(v)
                     .push_space(Length::Fill)
@@ -429,7 +429,7 @@ impl SettingsPage {
                 //     edit_message(Edit::Page),
                 // ).style(style);
 
-                let column = column()
+                let column = column(vec![])
                     .spacing(3)
                     .push(make_row("", title))
                     .push(horizontal_rule(8))
@@ -459,16 +459,16 @@ impl SettingsPage {
             }
         };
 
-        let row = row()
+        let row = row(vec![])
             .padding(PADDING)
-            .push(column()
+            .push(column(vec![])
                 .width(Length::Fill)
                 .push(character_label.height(Length::Fill))
                 .push_space(1)
                 .push(character_col.height(Length::FillPortion(18)))
             )
             .push(vertical_rule(RULE_SPACING))
-            .push(column()
+            .push(column(vec![])
                 .width(Length::Fill)
                 .push(spells_label.height(Length::Fill))
                 .push_space(1)

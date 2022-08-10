@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 use std::ops::Not;
 
-use iced::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text_input};
+use iced::widget::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text_input};
 use iced_aw::tabs;
 
 macro_rules! from {
@@ -214,7 +214,8 @@ impl From<AlternatingStyle> for Box<dyn text_input::StyleSheet> {
 }
 
 mod transparent {
-    use iced::{button, Color, container, text_input};
+    use iced::Color;
+    use iced::widget::{button, container, text_input};
 
     pub struct Transparent;
 
@@ -266,7 +267,8 @@ mod transparent {
 }
 
 mod light {
-    use iced::{button, Color};
+    use iced::Color;
+    use iced::widget::button;
 
     pub use super::transparent::Transparent;
 
@@ -311,8 +313,17 @@ mod light {
 
 #[allow(clippy::cast_precision_loss)]
 mod dark {
-    use iced::{Background, button, checkbox, Color, container, pick_list, progress_bar, scrollable, slider, text_input};
-    use iced::slider::{Handle, HandleShape};
+    use iced::{Background, Color};
+    use iced::widget::{
+        button,
+        checkbox,
+        container,
+        pick_list,
+        progress_bar,
+        scrollable,
+        slider::{self, Handle, HandleShape},
+        text_input,
+    };
     use iced_aw::tabs;
 
     pub use super::transparent::Transparent;

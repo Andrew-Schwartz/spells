@@ -33,35 +33,21 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use iced::{
-    Alignment,
-    alignment::Vertical,
-    Command,
-    Length,
-    mouse::ScrollDelta,
-    pure::{
-        Application,
-        button,
-        column,
-        container,
-        Element,
-        horizontal_rule,
-        progress_bar,
-        row,
-        slider,
-        text,
-    },
-    pure::widget::{
-        Button,
-        Container,
-        Row,
-    },
-    Settings,
+use iced::{Alignment, alignment::Vertical, Application, Command, Element, Length, mouse::ScrollDelta, Settings, Theme, widget::{
+    button,
+    Button,
+    column,
+    container,
+    Container,
+    progress_bar,
+    row,
+    Row,
+    slider,
+    text,
     tooltip::Position,
-    window::Icon,
-};
-use iced_aw::{ICON_FONT, TabLabel};
-use iced_native::{Event, Subscription, window};
+}, window::Icon};
+use iced_aw::TabLabel;
+use iced_native::{Event, Font, Subscription, window};
 use itertools::{Either, Itertools};
 use once_cell::sync::Lazy;
 use self_update::cargo_crate_version;
@@ -76,7 +62,7 @@ use crate::hotmouse::{ButtonPress, Pt};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::spells::data::GetLevel;
 use crate::spells::spell::{find_spell, SpellId};
-use crate::style::{SettingsBarStyle, Style};
+// use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
 use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
 
@@ -96,6 +82,7 @@ mod utils;
 mod update;
 mod slots_widget;
 mod spells;
+mod error;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -137,6 +124,11 @@ fn icon() -> Icon {
 }
 
 const WIDTH: u32 = 1100;
+
+pub const ICON_FONT: iced::Font = match iced_aw::ICON_FONT {
+    Font::External { name, bytes } => iced::Font::External { name, bytes },
+    Font::Default => unreachable!(),
+};
 
 // const CONSOLAS: Font = Font::External {
 //     name: "consolas",
@@ -180,11 +172,11 @@ pub enum UpdateState {
 
 impl UpdateState {
     #[must_use]
-    pub fn view<'s, 'c: 's>(&'s self, style: SettingsBarStyle) -> Container<'c, Message> {
+    pub fn view<'s, 'c: 's>(&'s self /*style: SettingsBarStyle*/) -> Container<'c, Message> {
         const VER: &str = cargo_crate_version!();
         match self {
             &Self::Downloading(pct) => {
-                container(row()
+                container(row(vec![])
                     .align_items(Alignment::Center)
                     .push(text("Downloading").size(10))
                     .push_space(5)
@@ -209,7 +201,7 @@ impl UpdateState {
 pub struct DndSpells {
     update_state: UpdateState,
     update_url: String,
-    style: Style,
+    // style: Style,
     tab: Tab,
     width: u32,
     height: u32,
@@ -400,8 +392,9 @@ impl DndSpells {
 }
 
 impl Application for DndSpells {
-    type Executor = iced_futures::backend::default::Executor;
+    type Executor = iced_futures::backend::null::Executor;
     type Message = Message;
+    type Theme = Theme;
     type Flags = ();
 
     fn new((): Self::Flags) -> (Self, Command<Message>) {
@@ -438,9 +431,12 @@ impl Application for DndSpells {
             Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
                 self.update_state = UpdateState::Errored(e.to_string());
             },
-            Message::ToggleTheme => self.style = match self.style {
-                Style::Light => Style::Dark,
-                Style::Dark => Style::Light,
+            Message::ToggleTheme => {
+                todo!();
+                // self.style = match self.style {
+                //     Style::Light => Style::Dark,
+                //     Style::Dark => Style::Light,
+                // }
             },
             Message::SetColScale(mult) => {
                 println!("mult = {:?}", mult);
@@ -963,33 +959,8 @@ impl Application for DndSpells {
         Command::none()
     }
 
-    fn subscription(&self) -> Subscription<Self::Message> {
-        let listeners = iced_native::subscription::events_with(|event, _status| {
-            match event {
-                Event::Keyboard(e) => hotkey::handle(e),
-                Event::Window(e) => match e {
-                    window::Event::Resized { width, height } => Some(Message::Resize(width, height)),
-                    _ => None,
-                },
-                Event::Mouse(e) => hotmouse::handle(e),
-                Event::Touch(_) => None,
-            }
-        });
-        match &self.update_state {
-            UpdateState::Ready | UpdateState::Downloading(_) => {
-                let download = Subscription::from_recipe(update::Download { url: self.update_url.clone() })
-                    .map(|p| Message::Update(update::Message::Progress(p)));
-                Subscription::batch([
-                    listeners,
-                    download,
-                ])
-            }
-            _ => listeners
-        }
-    }
-
     fn view(&self) -> Element<'_, Self::Message> {
-        let style = self.style;
+        let style = self.style();
         let num_cols = self.num_cols;
         let num_characters = self.characters.len();
 
@@ -997,7 +968,7 @@ impl Application for DndSpells {
             .saturating_sub(26)  // height of tab bar
             .saturating_sub(20); // height of bottom bar
 
-        let tabs = iced_aw::pure::Tabs::new(self.tab.index(num_characters), Message::SelectTab)
+        let tabs = iced_aw::Tabs::new(self.tab.index(num_characters), Message::SelectTab)
             .push(TabLabel::Text("Search".into()), self.search_page.view(style).max_height(height));
         let tabs = self.characters.iter()
             .enumerate()
@@ -1010,12 +981,12 @@ impl Application for DndSpells {
         ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width, style).max_height(height))
             .tab_bar_style(style)
             .icon_size(10)
-            .icon_font(ICON_FONT)
+            .icon_font(iced_aw::ICON_FONT)
             // .on_close(Message::CloseTab)
             ;
 
         #[allow(clippy::float_cmp)]
-        let col_slider_reset: Button<'_, Message> = button(
+            let col_slider_reset: Button<'_, Message> = button(
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
@@ -1046,7 +1017,7 @@ impl Application for DndSpells {
             .tooltip_at(&format!("Switch to {} theme", !style), Position::Top)
             .size(10);
 
-        let bottom_bar = container(row()
+        let bottom_bar = container(row(vec![])
             .spacing(2)
             .push_space(4)
             .push(self.update_state.view(style.settings_bar()))
@@ -1064,7 +1035,7 @@ impl Application for DndSpells {
             .height(Length::Fill)
             .width(Length::FillPortion(18));
 
-        let content = column()
+        let content = column(vec![])
             .push(main_content)
             .push(bottom_bar);
 
@@ -1075,6 +1046,31 @@ impl Application for DndSpells {
             .align_y(Vertical::Top)
             .style(style)
             .into()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        let listeners = iced_native::subscription::events_with(|event, _status| {
+            match event {
+                Event::Keyboard(e) => hotkey::handle(e),
+                Event::Window(e) => match e {
+                    window::Event::Resized { width, height } => Some(Message::Resize(width, height)),
+                    _ => None,
+                },
+                Event::Mouse(e) => hotmouse::handle(e),
+                Event::Touch(_) => None,
+            }
+        });
+        match &self.update_state {
+            UpdateState::Ready | UpdateState::Downloading(_) => {
+                let download = Subscription::from_recipe(update::Download { url: self.update_url.clone() })
+                    .map(|p| Message::Update(update::Message::Progress(p)));
+                Subscription::batch([
+                    listeners,
+                    download,
+                ])
+            }
+            _ => listeners
+        }
     }
 }
 

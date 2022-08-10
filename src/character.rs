@@ -2,10 +2,9 @@ use std::cmp::min;
 use std::iter;
 use std::sync::Arc;
 
-use iced::{Alignment, Color, Length};
+use iced::{Alignment, Color, Element, Length};
 use iced::alignment::Vertical;
-use iced::pure::{button, column, container, Element, horizontal_rule, row, scrollable, text};
-use iced::pure::widget::{Container, Row};
+use iced::widget::{button, column, container, Container, horizontal_rule, row, Row, scrollable, text};
 use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -14,7 +13,7 @@ use crate::{Level, search, SpellButtons, SpellId, Tap};
 use crate::search::{Mode, Searcher, SearchOptions};
 use crate::spells::spell::{CustomSpell, find_spell, Spell};
 use crate::spells::static_arc::StArc;
-use crate::style::Style;
+// use crate::style::Style;
 use crate::utils::{SpacingExt, text_icon, TooltipExt};
 
 #[derive(Debug, Copy, Clone)]
@@ -397,7 +396,7 @@ impl CharacterPage {
 
         // row with details: delete, move tab, etc
         let name_text = text(name.to_string()).size(30);
-        let buttons_row = row()
+        let buttons_row = row(vec![])
             .spacing(6)
             .push_space(Length::Fill)
             .push(button(text_icon(Icon::ArrowClockwise))
@@ -445,7 +444,7 @@ impl CharacterPage {
             }
             button
         };
-        let mut tabs_row = row()
+        let mut tabs_row = row(vec![])
             .push_space(Length::Fill);
 
         tabs_row = tabs_row.push(make_button(" All ".into(), None));
@@ -465,8 +464,8 @@ impl CharacterPage {
                 .enumerate()
                 .chunks(num_cols);
             (&chunks).into_iter()
-                .fold(column().spacing(18), |spells_col, mut chunk| {
-                    let row = (0..num_cols).fold(row(), |row, _| {
+                .fold(column(vec![]).spacing(18), |spells_col, mut chunk| {
+                    let row = (0..num_cols).fold(row(vec![]), |row, _| {
                         if let Some((idx, (spell, prepared))) = chunk.next() {
                             let button = CharacterPageButtons {
                                 character: index,
@@ -502,37 +501,38 @@ impl CharacterPage {
                     indices.iter()
                         .map(|&idx| &spells[level][idx])
                         .fold(
-                            column(),
-                            |col, (spell, prepped)| col.push(row()
+                            column(vec![]),
+                            |col, (spell, prepped)| col.push(row(vec![])
                                 .push(text(&*spell.name())
                                     .size(18)
-                                    .color({
-                                        let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
-                                        let selected_highlight = if selected { 0.8 } else { 1.0 };
-                                        let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
-                                        Color {
-                                            r: selected_highlight,
-                                            g: selected_highlight,
-                                            b: 1.0,
-                                            a: prepared_opacity,
-                                        }
-                                    })
+                                    // todo
+                                    // .color({
+                                    //     let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
+                                    //     let selected_highlight = if selected { 0.8 } else { 1.0 };
+                                    //     let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
+                                    //     Color {
+                                    //         r: selected_highlight,
+                                    //         g: selected_highlight,
+                                    //         b: 1.0,
+                                    //         a: prepared_opacity,
+                                    //     }
+                                    // })
                                     .tap(button)
-                                    .style(style.background())
+                                    // .style(style.background())
                                     .padding(0)
                                     .on_press(message(Message::ViewSpell(spell.id())))
                                 )
                             ),
                         )))
                 .fold(
-                    column().padding(20),
+                    column(vec![]).padding(20),
                     move |col, (level, Slots { total, used }, spells_col)| {
-                        let mut slots_row = row().padding(2).align_items(Alignment::Center);
+                        let mut slots_row = row(vec![]).padding(2).align_items(Alignment::Center);
                         if level == 0 {
                             slots_row = slots_row
                                 .push(text("Cantrips").size(26));
                         } else {
-                            let slot_max_picker = column().align_items(Alignment::Center)
+                            let slot_max_picker = column(vec![]).align_items(Alignment::Center)
                                 .push(button(
                                     text(Icon::ArrowUp)
                                         .font(ICON_FONT)
@@ -568,7 +568,7 @@ impl CharacterPage {
                                 .tap_if(*used != 0,
                                         |btn| btn.on_press(message(Message::SlotsCast(level, -1))));
                             slots_row = slots_row
-                                .push(row().align_items(Alignment::Center)
+                                .push(row(vec![]).align_items(Alignment::Center)
                                     .push(text(level.to_string()).size(26))
                                     .push_space(10)
                                     .push(slot_max_picker)
@@ -600,14 +600,14 @@ impl CharacterPage {
                                  down: true,
                              }, true, false, style));
 
-            row()
+            row(vec![])
                 .align_items(Alignment::Fill)
                 .push(container(scrollable(col)).width(Length::FillPortion(3)))
                 .push(container(scrollable(view_spell)).width(Length::FillPortion(4)).padding([0, 0, 10, 0]))
                 .into()
         };
 
-        let search_col = column()
+        let search_col = column(vec![])
             .align_items(Alignment::Center)
             .push(search.view(
                 None,
@@ -618,7 +618,7 @@ impl CharacterPage {
                 style,
             ));
 
-        container(column()
+        container(column(vec![])
             .align_items(Alignment::Center)
             .spacing(6)
             .push_space(10)
@@ -654,7 +654,7 @@ impl SpellButtons for CharacterPageButtons {
             (self.down, "Move down", Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
             (self.right, "Move right", Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
         ].into_iter()
-            .fold(row().spacing(2), |row, (enable, tooltip, icon, msg)|
+            .fold(row(vec![]).spacing(2), |row, (enable, tooltip, icon, msg)|
                 if enable {
                     row.push(button(text(icon).size(12).font(ICON_FONT))
                         .style(style)

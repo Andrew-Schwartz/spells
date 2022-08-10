@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Display};
 use std::sync::Arc;
 
-use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced::{Alignment, Element, Length, widget::*};
 use iced_aw::Icon;
 use itertools::Itertools;
 
@@ -9,7 +9,7 @@ use crate::{character, SpellButtons, SpellId, SPELLS};
 use crate::character::CharacterPage;
 use crate::spells::data::{CastingTime, Class, School, Source};
 use crate::spells::spell::{CustomSpell, Spell};
-use crate::style::Style;
+// use crate::style::Style;
 use crate::utils::{IterExt, SpacingExt, Tap, text_icon};
 
 #[derive(Clone, Debug)]
@@ -94,7 +94,7 @@ pub trait Searcher {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
+        // style: Style,
     ) -> Row<'c, crate::Message>;
 }
 
@@ -519,13 +519,13 @@ impl SearchOptions {
         ].into_iter()
             .flatten()
             .fold(
-                row().align_items(Alignment::Center),
+                row(vec![]).align_items(Alignment::Center),
                 |row, searcher| searcher.add_to_row(row, character, style),
             );
 
         container(
-            column()
-                .push(row()
+            column(vec![])
+                .push(row(vec![])
                     .align_items(Alignment::Center)
                     .push_space(Length::Fill)
                     .push(reset_modes)
@@ -538,7 +538,7 @@ impl SearchOptions {
                         .push(btn))
                     .push_space(Length::Fill)
                 )
-                .push(row()
+                .push(row(vec![])
                     .push_space(Length::Fill)
                     .push(advanced_search.width(Length::FillPortion(18)))
                     // .push(advanced_search.width(Length::FillPortion(18)))
@@ -697,7 +697,7 @@ impl SearchPage {
         // scroll bar of spells
         let collapse_all = self.collapse;
         let scroll = self.spells.iter()
-            .fold(column().align_items(Alignment::Fill), |col, spell| {
+            .fold(column(vec![]).align_items(Alignment::Fill), |col, spell| {
                 let collapse = match spell.collapse {
                     Some(collapse) => collapse,
                     None => collapse_all,
@@ -707,7 +707,7 @@ impl SearchPage {
             })
             .tap(scrollable);
 
-        let column = column()
+        let column = column(vec![])
             .align_items(Alignment::Fill)
             .spacing(6)
             .push_space(10)
@@ -731,7 +731,7 @@ impl SpellButtons for SearchPageButtons<'_> {
     type Data = ();
 
     fn view<'c>(self, id: SpellId, (): Self::Data, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
-        let mut buttons = row();
+        let mut buttons = row(vec![]);
         if !self.0.is_empty() {
             buttons = buttons.push("Add to:")
                 .push_space(15);
