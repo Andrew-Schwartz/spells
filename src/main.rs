@@ -96,6 +96,7 @@ mod utils;
 mod update;
 mod slots_widget;
 mod spells;
+mod error;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -305,7 +306,7 @@ impl DndSpells {
             .collect();
     }
 
-    fn read_characters<C: From<Character>>(file: &Path, custom: &[CustomSpell]) -> anyhow::Result<Vec<C>> {
+    fn read_characters<C: From<Character>>(file: &Path, custom: &[CustomSpell]) -> error::Result<Vec<C>> {
         match File::open(file) {
             Ok(file) => {
                 let reader = BufReader::new(file);
@@ -326,7 +327,7 @@ impl DndSpells {
         }
     }
 
-    fn read_spells(file: &Path) -> anyhow::Result<Vec<CustomSpell>> {
+    fn read_spells(file: &Path) -> error::Result<Vec<CustomSpell>> {
         match File::open(file) {
             Ok(file) => {
                 let reader = BufReader::new(file);
@@ -345,7 +346,7 @@ impl DndSpells {
         }
     }
 
-    fn open() -> anyhow::Result<Self> {
+    fn open() -> error::Result<Self> {
         let custom_spells = Self::read_spells(&SPELL_FILE)?;
         let characters = Self::read_characters(&CHARACTER_FILE, &custom_spells)?;
         let closed_characters = Self::read_characters(&CLOSED_CHARACTER_FILE, &custom_spells)?;
@@ -374,7 +375,7 @@ impl DndSpells {
         Ok(window)
     }
 
-    fn save(&mut self) -> anyhow::Result<()> {
+    fn save(&mut self) -> error::Result<()> {
         self.save_state();
         let mut file = File::create(&*CHARACTER_FILE)?;
         for c in &self.characters {

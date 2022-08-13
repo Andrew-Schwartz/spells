@@ -5,13 +5,13 @@ use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::anyhow;
 use iced_native::subscription::Recipe;
 use reqwest::header::{self, HeaderValue};
 use self_update::{cargo_crate_version, Move};
 use semver::Version;
 
-use crate::{DndSpells, UpdateState};
+use crate::{DndSpells, error, Tap, UpdateState};
+use crate::error::UpdateError;
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -121,7 +121,7 @@ impl<H: Hasher, E> Recipe<H, E> for Download {
     }
 }
 
-pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
+pub fn handle(app: &mut DndSpells, message: Message) -> error::Result<(), UpdateError> {
     match message {
         Message::CheckForUpdate => {
             // ignore any errors here
@@ -130,13 +130,18 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
             let latest_release = self_update::backends::github::ReleaseList::configure()
                 .repo_owner("Andrew-Schwartz")
                 .repo_name("spells")
-                .build()?
+                .build()
+                .expect("repo owner and name are both set")
                 .fetch()?
                 .into_iter()
                 .find(|release| release.has_target_asset(self_update::get_target()));
 
             app.update_state = if let Some(latest_release) = latest_release {
-                if Version::parse(&latest_release.version)? > Version::parse(cargo_crate_version!())? {
+                let latest_version = Version::parse(&latest_release.version)
+                    .expect("I always use semver correctly");
+                let this_version = Version::parse(cargo_crate_version!())
+                    .expect("I always use semver correctly");
+                if latest_version > this_version {
                     if let Some(asset) = latest_release.asset_for(self_update::get_target()) {
                         app.update_url = asset.download_url;
                         UpdateState::Ready
@@ -169,7 +174,7 @@ pub fn handle(app: &mut DndSpells, message: Message) -> anyhow::Result<()> {
 }
 
 /// taken from `self_update`, but modified so that it uses the downloaded file
-fn update_extended(bytes: &[u8]) -> anyhow::Result<()> {
+fn update_extended(bytes: &[u8]) -> error::Result<(), UpdateError> {
     let current_exe = std::env::current_exe()?;
 
     let current_exe_string = current_exe.file_name().unwrap()
@@ -179,8 +184,8 @@ fn update_extended(bytes: &[u8]) -> anyhow::Result<()> {
 
     let tmp_dir_parent = current_exe
         .parent()
-        .map(PathBuf::from)
-        .ok_or_else(|| anyhow::Error::msg("Failed to determine parent dir"))?;
+        .expect("the current executable is always in a folder")
+        .tap(PathBuf::from);
     let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
 
     if cfg!(windows) {
@@ -228,7 +233,7 @@ fn update_extended(bytes: &[u8]) -> anyhow::Result<()> {
 }
 
 
-pub fn delete_backup_temp_directories() -> anyhow::Result<()> {
+pub fn delete_backup_temp_directories() -> error::Result<(), UpdateError> {
     // Windows executables can not be removed while they are running, which prevents clean up
     // of the temporary directory by the `tempfile` crate after we move the running executable
     // into it during an update. We clean up any previously created temporary directories here.
@@ -243,8 +248,8 @@ pub fn delete_backup_temp_directories() -> anyhow::Result<()> {
 
         let tmp_dir_parent = current_exe
             .parent()
-            .map(PathBuf::from)
-            .ok_or_else(|| anyhow::Error::msg("Failed to determine parent dir"))?;
+            .expect("the current executable is always in a folder")
+            .tap(PathBuf::from);
         let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
 
         for entry in fs::read_dir(&tmp_dir_parent)? {
@@ -263,10 +268,10 @@ fn cleanup_backup_temp_directories(
     entry: io::Result<DirEntry>,
     tmp_dir_prefix: &str,
     expected_tmp_filename: &str,
-) -> anyhow::Result<()> {
+) -> error::Result<(), UpdateError> {
     let entry = entry?;
     let tmp_dir_name = entry.file_name().into_string()
-        .map_err(|os_string| anyhow!("Could not get handle file name `{:?}`", os_string))?;
+        .map_err(|os_string| UpdateError::BadFileName(os_string))?;
 
     // For safety, check that the temporary directory contains only the expected backup
     // binary file before removing. If subdirectories or other files exist then the user
