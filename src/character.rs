@@ -2,14 +2,14 @@ use std::cmp::min;
 use std::iter;
 use std::sync::Arc;
 
-use iced::{Alignment, Color, Element, Length};
+use iced::{Alignment, Color, Length};
 use iced::alignment::Vertical;
 use iced::widget::{button, column, container, Container, horizontal_rule, row, Row, scrollable, text};
 use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{Level, search, SpellButtons, SpellId, Tap};
+use crate::{Element, Level, Location, search, SpellButtons, SpellId, Tap};
 use crate::search::{Mode, Searcher, SearchOptions};
 use crate::spells::spell::{CustomSpell, find_spell, Spell};
 use crate::spells::static_arc::StArc;
@@ -376,7 +376,7 @@ impl CharacterPage {
         }
     }
 
-    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize, style: Style) -> Container<'c, crate::Message> {
+    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize) -> Container<'c, crate::Message> {
         let message = move |message: Message| crate::Message::Character(index, message);
 
         let Self {
@@ -400,45 +400,36 @@ impl CharacterPage {
             .spacing(6)
             .push_space(Length::Fill)
             .push(button(text_icon(Icon::ArrowClockwise))
-                .style(style)
                 .on_press(message(Message::SlotsReset))
                 .tooltip("Long Rest"))
             .push(button(
                 text_icon(if *should_collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse }))
-                .style(style)
                 .on_press(message(Message::ToggleCollapseAll))
                 .tooltip(if *should_collapse_all { "Expand all spells" } else { "Collapse all spells" }))
             .push(button(
                 text_icon(if *should_collapse_unprepared { Icon::ChevronExpand } else { Icon::ChevronContract }))
-                .style(style)
                 .on_press(message(Message::ToggleCollapse))
                 .tooltip(if *should_collapse_unprepared { "Expand unprepared spells" } else { "Collapse unprepared spells" }))
             .push(button(text_icon(Icon::Check))
-                .style(style)
                 .on_press(message(Message::PrepareAll(true)))
                 .tooltip("Prepare All"))
             .push(button(text_icon(Icon::X))
-                .style(style)
                 .on_press(message(Message::PrepareAll(false)))
                 .tooltip("Unprepare All"))
             .push(button(text_icon(Icon::ArrowLeft))
-                .style(style)
                 .on_press(crate::Message::MoveCharacter(index, -1))
                 .tooltip("Move character left"))
             .push(button(text(Icon::ArrowRight))
-                .style(style)
                 .on_press(crate::Message::MoveCharacter(index, 1))
                 .tooltip("Move character right"))
             .push(button(text(Icon::Archive))
-                .style(style)
                 .on_press(crate::Message::CloseCharacter(index))
                 .tooltip("Close character"))
             .push_space(Length::Fill);
 
         // spell tabs
         let make_button = |name, level| {
-            let mut button = button(text(name))
-                .style(style.tab_button());
+            let mut button = button(text(name));
             if level != selected_level {
                 button = button.on_press(message(Message::SpellTab(level)));
             }
@@ -480,7 +471,7 @@ impl CharacterPage {
                                 },
                             };
                             let collapse = *should_collapse_all || (*should_collapse_unprepared && !*prepared);
-                            row.push(spell.view(button, *prepared, collapse, style).width(Length::Fill))
+                            row.push(spell.view(button, *prepared, collapse).width(Length::Fill))
                         } else {
                             row.push_space(Length::Fill)
                         }
@@ -537,14 +528,14 @@ impl CharacterPage {
                                     text(Icon::ArrowUp)
                                         .font(ICON_FONT)
                                         .size(10),
-                                ).style(style.background())
+                                )
                                     .padding(0)
                                     .on_press(message(Message::ChangeNumSlots(level, 1))))
                                 .push(button(
                                     text(Icon::ArrowDown)
                                         .font(ICON_FONT)
                                         .size(10),
-                                ).style(style.background())
+                                )
                                     .padding(0)
                                     .on_press(message(Message::ChangeNumSlots(level, -1))));
                             let slots_text = format!(
@@ -557,13 +548,13 @@ impl CharacterPage {
                                     .font(ICON_FONT)
                                     .vertical_alignment(Vertical::Center)
                                     .size(15),
-                            ).style(style.background())
+                            )
                                 .padding([2, 3])
                                 .on_press(message(Message::SlotsCast(level, 1)));
                             let uncast = button(
                                 text_icon(Icon::ArrowDown)
                                     .size(15)
-                            ).style(style.background())
+                            )
                                 .padding(0)
                                 .tap_if(*used != 0,
                                         |btn| btn.on_press(message(Message::SlotsCast(level, -1))));
@@ -598,7 +589,7 @@ impl CharacterPage {
                                  // todo false if can't move up/down
                                  up: true,
                                  down: true,
-                             }, true, false, style));
+                             }, true, false));
 
             row(vec![])
                 .align_items(Alignment::Fill)
@@ -615,7 +606,6 @@ impl CharacterPage {
                 move |m| message(Message::Search(search::Message::PickMode(m))),
                 message(Message::Search(search::Message::ResetModes)),
                 Some(index),
-                style,
             ));
 
         container(column(vec![])
@@ -644,12 +634,12 @@ impl SpellButtons for CharacterPageButtons {
     /// if this spell is prepared right now
     type Data = bool;
 
-    fn view<'c>(self, id: SpellId, is_prepared: bool, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
+    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c, Message>, Element<'c>) {
         let character = self.character;
         let buttons = [
             (self.left, "Move left", Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
             (self.up, "Move up", Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
-            (true, if is_prepared { "Unprepare" } else { "Prepare" }, if is_prepared { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
+            (true, if data { "Unprepare" } else { "Prepare" }, if data { Icon::Check2 } else { Icon::X }, Message::Prepare(id.clone())),
             (true, "Remove", Icon::Trash, Message::RemoveSpell(id.clone())),
             (self.down, "Move down", Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),
             (self.right, "Move right", Icon::ArrowRight, Message::MoveSpell(id.clone(), MoveSpell::Right)),
@@ -657,7 +647,6 @@ impl SpellButtons for CharacterPageButtons {
             .fold(row(vec![]).spacing(2), |row, (enable, tooltip, icon, msg)|
                 if enable {
                     row.push(button(text(icon).size(12).font(ICON_FONT))
-                        .style(style)
                         .on_press(crate::Message::Character(character, msg))
                         .tooltip(tooltip))
                 } else {
@@ -667,7 +656,8 @@ impl SpellButtons for CharacterPageButtons {
             text(&*id.name).size(36),
         ).width(Length::FillPortion(23))
             .on_press(crate::Message::Character(self.character, Message::Prepare(id)))
-            .style(style.background())
+            // todo remove highlight
+            .style(Location::Default)
             .into();
         (buttons, name)
     }

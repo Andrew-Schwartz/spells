@@ -1,8 +1,8 @@
 use iced::{Alignment, Element, Length, widget::*};
 use itertools::{Either, Itertools};
 
+use crate::{Level, Location};
 use crate::character::Character;
-use crate::Level;
 use crate::spells::data::{CastingTime, Class, Components, School};
 use crate::spells::spell::CustomSpell;
 // use crate::style::Style;
@@ -107,7 +107,6 @@ impl SettingsPage {
         &'s self,
         closed_characters: &[ClosedCharacter],
         width: u32,
-        style: Style,
     ) -> Container<'c, crate::Message> {
         const PADDING: u16 = 12;
         const RULE_SPACING: u16 = 24;
@@ -123,11 +122,11 @@ impl SettingsPage {
             "Character Name",
             &self.name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
-        ).style(style)
+        )
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));
         let create_character_button = button(
             text("Create").size(16),
-        ).style(style)
+        )
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
             let text_width = (width as f32 / 2.0
@@ -141,7 +140,7 @@ impl SettingsPage {
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
             .fold(column(vec![]), |col, (index, closed)| {
-                let style = style.alternating(index);
+                let style = Location::Alternating { idx: index };
                 let name = button(
                     text(&*closed.character.name).size(19),
                 ).style(style.no_highlight())
@@ -218,11 +217,11 @@ impl SettingsPage {
             "Spell Name",
             &self.spell_name,
             |n| crate::Message::Settings(Message::SpellName(n)),
-        ).style(style)
+        )
             .on_submit(crate::Message::Settings(Message::SubmitSpell));
         let create_spell_button = button(
             text("Create").size(16),
-        ).style(style)
+        )
             .on_press(crate::Message::Settings(Message::SubmitSpell));
 
         let spells_col = column(vec![])
@@ -239,7 +238,7 @@ impl SettingsPage {
                 let col = spells.iter()
                     .enumerate()
                     .fold(column(vec![]).spacing(4), |spells_col, (index, spell)| {
-                        let style = style.alternating(index);
+                        let style = Location::Alternating { idx: index };
                         let name = button(
                             text(&*spell.name).size(19),
                         ).style(style.no_highlight())
@@ -295,7 +294,7 @@ impl SettingsPage {
                 let title = text(&*spell.name).size(36);
                 let close_button = button(
                     "Close",
-                ).style(style)
+                )
                     .on_press(crate::Message::Settings(Message::CloseSpell));
                 let title = row(vec![])
                     .push_space(Length::Fill)
@@ -310,13 +309,13 @@ impl SettingsPage {
                     &School::ALL[..],
                     Some(spell.school),
                     edit_message(Edit::School),
-                ).style(style);
+                );
 
                 let level = pick_list(
                     &Level::ALL[..],
                     Some(spell.level),
                     edit_message(Edit::Level),
-                ).style(style).text_size(14);
+                ).text_size(14);
 
                 const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
                 let casting_time = pick_list(
@@ -326,7 +325,7 @@ impl SettingsPage {
                         other => other.clone(),
                     }),
                     edit_message(Edit::CastingTime),
-                ).style(style);
+                );
 
                 let casting_time_extra = match &spell.casting_time {
                     CastingTime::Special | CastingTime::Action | CastingTime::BonusAction => None,
@@ -336,7 +335,7 @@ impl SettingsPage {
                             "",
                             when.as_deref().unwrap_or(""),
                             edit_message(Edit::CastingTimeWhen),
-                        ).style(style),
+                        ),
                     )),
                     &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(make_row(
                         if matches!(&spell.casting_time, CastingTime::Minute(_)) { "Minutes:" } else { "Hours:" },
@@ -344,7 +343,7 @@ impl SettingsPage {
                             "",
                             &n.to_string(),
                             edit_message(Edit::CastingTimeN),
-                        ).style(style),
+                        ),
                     )),
                 };
 
@@ -352,24 +351,24 @@ impl SettingsPage {
                     "",
                     spell.range.as_deref().unwrap_or(""),
                     edit_message(Edit::Range),
-                ).style(style);
+                );
 
                 let Components { v, s, m } = spell.components.clone().unwrap_or_default();
                 let v = checkbox(
                     "V",
                     v,
                     edit_message(Edit::ComponentV),
-                ).style(style);
+                );
                 let s = checkbox(
                     "S",
                     s,
                     edit_message(Edit::ComponentS),
-                ).style(style);
+                );
                 let mat = checkbox(
                     "M",
                     m.is_some(),
                     edit_message(Edit::ComponentM),
-                ).style(style);
+                );
                 let components = row(vec![])
                     .push_space(Length::Fill)
                     .push(v)
@@ -381,31 +380,31 @@ impl SettingsPage {
                     "material",
                     &mat,
                     edit_message(Edit::ComponentMaterial),
-                ).style(style));
+                ));
 
                 let duration = text_input(
                     "",
                     spell.duration.as_deref().unwrap_or(""),
                     edit_message(Edit::Duration),
-                ).style(style);
+                );
 
                 let ritual = checkbox(
                     "",
                     spell.ritual,
                     edit_message(Edit::Ritual),
-                ).style(style);
+                );
 
                 let conc = checkbox(
                     "",
                     spell.conc,
                     edit_message(Edit::Concentration),
-                ).style(style);
+                );
 
                 let description = text_input(
                     "Describe the spell's effects...",
                     &spell.description,
                     edit_message(Edit::Description),
-                ).style(style)
+                )
                     // .on_submit(crate::Message::Settings(Message::EditSpell(Edit::DescEnter)))
                     ;
 
@@ -413,13 +412,13 @@ impl SettingsPage {
                     "Higher level effects...",
                     spell.higher_levels.as_deref().unwrap_or(""),
                     edit_message(Edit::HigherLevels),
-                ).style(style);
+                );
 
                 let classes = pick_list(
                     &Class::ALL[..],
                     None,
                     edit_message(Edit::Class),
-                ).style(style)
+                )
                     .placeholder("Class");
 
                 // let page = TextInput::new(

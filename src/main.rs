@@ -33,19 +33,29 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use iced::{Alignment, alignment::Vertical, Application, Command, Element, Length, mouse::ScrollDelta, Settings, Theme, widget::{
-    button,
-    Button,
-    column,
-    container,
-    Container,
-    progress_bar,
-    row,
-    Row,
-    slider,
-    text,
-    tooltip::Position,
-}, window::Icon};
+use iced::{
+    Alignment,
+    alignment::Vertical,
+    Application,
+    Command,
+    Length,
+    mouse::ScrollDelta,
+    Settings,
+    widget::{
+        button,
+        Button,
+        column,
+        container,
+        Container,
+        progress_bar,
+        row,
+        Row,
+        slider,
+        text,
+        tooltip::Position,
+    },
+    window::Icon,
+};
 use iced_aw::TabLabel;
 use iced_native::{Event, Font, Subscription, window};
 use itertools::{Either, Itertools};
@@ -62,6 +72,7 @@ use crate::hotmouse::{ButtonPress, Pt};
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::spells::data::GetLevel;
 use crate::spells::spell::{find_spell, SpellId};
+use crate::style::{Location, Theme};
 // use crate::style::{SettingsBarStyle, Style};
 use crate::tabs::Tab;
 use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
@@ -69,6 +80,8 @@ use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
 use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use self::spells::spell::{CustomSpell, StaticSpell};
 use self::spells::static_arc::StArc;
+
+pub type Element<'a> = iced::Element<'a, Message, iced::Renderer<Theme>>;
 
 mod fetch;
 mod style;
@@ -172,7 +185,7 @@ pub enum UpdateState {
 
 impl UpdateState {
     #[must_use]
-    pub fn view<'s, 'c: 's>(&'s self /*style: SettingsBarStyle*/) -> Container<'c, Message> {
+    pub fn view<'s, 'c: 's>(&'s self) -> Container<'c, Message, iced::Renderer<Theme>> {
         const VER: &str = cargo_crate_version!();
         match self {
             &Self::Downloading(pct) => {
@@ -181,7 +194,7 @@ impl UpdateState {
                     .push(text("Downloading").size(10))
                     .push_space(5)
                     .push(progress_bar(0.0..=100.0, pct)
-                        .style(style)
+                        .style(Location::SettingsBar)
                         .height(Length::Units(12)) // bottom bar is 20 pts
                         .width(Length::Units(100)))
                 )
@@ -194,7 +207,7 @@ impl UpdateState {
                 Self::Errored(e) => text(format!("Error downloading new version: {}. Running v{}", e, VER)),
                 Self::Downloading(_) => unreachable!(),
             }.size(10).tap(container)
-        }.style(style)
+        }.style(Location::SettingsBar)
     }
 }
 
@@ -346,7 +359,7 @@ impl DndSpells {
             update_state: UpdateState::Checking,
             // update_status: format!("Running {}", cargo_crate_version!()),
             update_url: "".to_string(),
-            style: Style::default(),
+            // style: Style::default(),
             tab: Tab::Search,
             width,
             height,
@@ -392,7 +405,8 @@ impl DndSpells {
 }
 
 impl Application for DndSpells {
-    type Executor = iced_futures::backend::null::Executor;
+    type Executor = iced_futures::backend::default::Executor;
+    // type Executor = iced_futures::backend::null::Executor;
     type Message = Message;
     type Theme = Theme;
     type Flags = ();
@@ -959,7 +973,7 @@ impl Application for DndSpells {
         Command::none()
     }
 
-    fn view(&self) -> Element<'_, Self::Message> {
+    fn view(&self) -> Element<'_> {
         let style = self.style();
         let num_cols = self.num_cols;
         let num_characters = self.characters.len();
@@ -978,7 +992,7 @@ impl Application for DndSpells {
             )).fold(
             tabs,
             |tabs, (label, tab)| tabs.push(label, tab),
-        ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width, style).max_height(height))
+        ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width).max_height(height))
             .tab_bar_style(style)
             .icon_size(10)
             .icon_font(iced_aw::ICON_FONT)
@@ -990,7 +1004,7 @@ impl Application for DndSpells {
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
-        ).style(style.settings_bar())
+        ).style(Location::SettingsBar)
             .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
 
         // todo monospace font and pad with spaces
@@ -1012,15 +1026,15 @@ impl Application for DndSpells {
             text(iced_aw::Icon::BrightnessHigh)
                 .font(ICON_FONT)
                 .size(12),
-        ).style(style.settings_bar())
+        ).style(Location::SettingsBar)
             .on_press(Message::ToggleTheme)
-            .tooltip_at(&format!("Switch to {} theme", !style), Position::Top)
+            .tooltip_at(&format!("Switch to {} theme", !self.theme), Position::Top)
             .size(10);
 
         let bottom_bar = container(row(vec![])
             .spacing(2)
             .push_space(4)
-            .push(self.update_state.view(style.settings_bar()))
+            .push(self.update_state.view(Location::SettingsBar))
             .push_space(Length::Fill)
             .push(col_slider_reset)
             .push(col_slider)
@@ -1028,7 +1042,7 @@ impl Application for DndSpells {
             .push(toggle_style)
             .height(Length::Units(20))
             .align_items(Alignment::Center)
-        ).style(style.settings_bar())
+        ).style(Location::SettingsBar)
             .align_y(Vertical::Center);
 
         let main_content = container(tabs)
@@ -1049,7 +1063,7 @@ impl Application for DndSpells {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        let listeners = iced_native::subscription::events_with(|event, _status| {
+        let listeners = iced::subscription::events_with(|event, _status| {
             match event {
                 Event::Keyboard(e) => hotkey::handle(e),
                 Event::Window(e) => match e {
@@ -1101,5 +1115,5 @@ struct DeserializeSpell {
 pub trait SpellButtons {
     type Data;
 
-    fn view<'c>(self, id: SpellId, data: Self::Data, style: Style) -> (Row<'c, Message>, Element<'c, Message>);
+    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c, Message>, Element<'c>);
 }

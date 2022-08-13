@@ -28,6 +28,9 @@ pub trait ColorExt {
     fn a(self, a: f32) -> Self;
 
     fn clearer(self, multiplier: f32) -> Self;
+
+    // temp, while on master branch
+    fn core(self) -> iced_core::Color;
 }
 
 impl ColorExt for Color {
@@ -54,6 +57,11 @@ impl ColorExt for Color {
     fn clearer(self, multiplier: f32) -> Self {
         let a = self.a * multiplier;
         self.a(a.clamp(0.0, 1.0))
+    }
+
+    fn core(self) -> iced_core::Color {
+        let Self { r, g, b, a } = self;
+        iced_core::Color { r, g, b, a }
     }
 }
 

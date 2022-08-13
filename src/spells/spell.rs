@@ -249,8 +249,8 @@ impl Spell {
 
     pub fn range(&self) -> Option<&str> {
         match self {
-            Self::Static(spell) => Some(spell.duration),
-            Self::Custom(spell) => spell.duration.as_deref(),
+            Self::Static(spell) => Some(spell.range),
+            Self::Custom(spell) => spell.range.as_deref(),
         }
     }
 
@@ -291,12 +291,11 @@ impl Spell {
         button: B,
         data: B::Data,
         collapse: bool,
-        style: Style,
     ) -> Container<'c, Message> {
         let text = |label: String| row(vec![])
             .push(text(label).size(16).width(Length::FillPortion(18)));
 
-        let (buttons, title) = button.view(self.id(), data, style);
+        let (buttons, title) = button.view(self.id(), data);
         let title = row(vec![]).push(title);
 
         let buttons = row(vec![]).push(buttons.width(Length::FillPortion(18)));

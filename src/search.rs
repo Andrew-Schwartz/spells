@@ -5,11 +5,10 @@ use iced::{Alignment, Element, Length, widget::*};
 use iced_aw::Icon;
 use itertools::Itertools;
 
-use crate::{character, SpellButtons, SpellId, SPELLS};
+use crate::{character, Location, SpellButtons, SpellId, SPELLS};
 use crate::character::CharacterPage;
 use crate::spells::data::{CastingTime, Class, School, Source};
 use crate::spells::spell::{CustomSpell, Spell};
-// use crate::style::Style;
 use crate::utils::{IterExt, SpacingExt, Tap, text_icon};
 
 #[derive(Clone, Debug)]
@@ -102,7 +101,6 @@ fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
     vec: &'s [T],
     on_press: F,
     character: Option<usize>,
-    style: Style,
     row: Row<'c, crate::Message>,
 ) -> Row<'c, crate::Message> {
     let len = vec.len();
@@ -118,7 +116,8 @@ fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
                     None => crate::Message::Search(message),
                 }
             })
-                .style(style.background())
+                // todo turn off highlight
+                .style(Location::Default)
                 .padding(0)
         })
         .fold(row.push_space(3), Row::push)
@@ -157,7 +156,6 @@ impl Searcher for LevelSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].into_iter()
             .filter(|&lvl| self.levels.iter().none(|&l| l == lvl))
@@ -167,10 +165,10 @@ impl Searcher for LevelSearch {
             levels,
             None,
             on_selected(character, Message::PickLevel),
-        ).style(style)
+        )
             .text_size(14)
             .placeholder("Level");
-        add_buttons(&self.levels, Message::PickLevel, character, style, row.push(pick_list))
+        add_buttons(&self.levels, Message::PickLevel, character, row.push(pick_list))
     }
 }
 
@@ -193,7 +191,6 @@ impl Searcher for ClassSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let classes = Class::ALL.into_iter()
             .filter(|&class| self.classes.iter().none(|&c| c == class))
@@ -203,10 +200,10 @@ impl Searcher for ClassSearch {
             classes,
             None,
             on_selected(character, Message::PickClass),
-        ).style(style)
+        )
             .placeholder("Class")
             .text_size(14);
-        add_buttons(&self.classes, Message::PickClass, character, style, row.push(pick_list))
+        add_buttons(&self.classes, Message::PickClass, character, row.push(pick_list))
     }
 }
 
@@ -230,7 +227,6 @@ impl Searcher for CastingTimeSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let durations = [
             CastingTime::Action,
@@ -251,10 +247,10 @@ impl Searcher for CastingTimeSearch {
             durations,
             None,
             on_selected(character, Message::PickCastingTime),
-        ).style(style)
+        )
             .placeholder("Casting Time")
             .text_size(14);
-        add_buttons(&self.times, Message::PickCastingTime, character, style, row.push(pick_list))
+        add_buttons(&self.times, Message::PickCastingTime, character, row.push(pick_list))
     }
 }
 
@@ -276,7 +272,6 @@ impl Searcher for SchoolSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let schools = School::ALL.into_iter()
             .filter(|&school| self.schools.iter().none(|&s| s == school))
@@ -286,10 +281,10 @@ impl Searcher for SchoolSearch {
             schools,
             None,
             on_selected(character, Message::PickSchool),
-        ).style(style)
+        )
             .placeholder("School")
             .text_size(14);
-        add_buttons(&self.schools, Message::PickSchool, character, style, row.push(pick_list))
+        add_buttons(&self.schools, Message::PickSchool, character, row.push(pick_list))
     }
 }
 
@@ -311,13 +306,12 @@ impl Searcher for RitualSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let checkbox = checkbox(
             "Ritual",
             self.ritual,
             on_selected(character, Message::ToggleRitual),
-        ).style(style);
+        );
         row.push(checkbox).push_space(5)
     }
 }
@@ -340,13 +334,12 @@ impl Searcher for ConcentrationSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let checkbox = checkbox(
             "Concentration",
             self.concentration,
             on_selected(character, Message::ToggleConcentration),
-        ).style(style);
+        );
         row.push(checkbox).push_space(5)
     }
 }
@@ -376,14 +369,13 @@ impl Searcher for TextSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let text = "Spell Text:";
         let input = text_input(
             "int|wis",
             &self.text,
             on_selected(character, Message::SearchText),
-        ).style(style);
+        );
         row.push(text).push_space(4).push(input)
     }
 }
@@ -406,7 +398,6 @@ impl Searcher for SourceSearch {
         &'s self,
         row: Row<'c, crate::Message>,
         character: Option<usize>,
-        style: Style,
     ) -> Row<'c, crate::Message> {
         let sources = Source::ALL.into_iter()
             .filter(|&source| self.sources.iter().none(|&s| s == source))
@@ -416,10 +407,10 @@ impl Searcher for SourceSearch {
             sources,
             None,
             on_selected(character, Message::PickSource),
-        ).style(style)
+        )
             .placeholder("Source Book")
             .text_size(14);
-        add_buttons(&self.sources, Message::PickSource, character, style, row.push(pick_list))
+        add_buttons(&self.sources, Message::PickSource, character, row.push(pick_list))
     }
 }
 
@@ -481,7 +472,6 @@ impl SearchOptions {
         mode_message: M,
         reset_message: crate::Message,
         character: Option<usize>,
-        style: Style,
     ) -> Container<'c, crate::Message>
         where
             S: Fn(String) -> crate::Message + 'static,
@@ -491,20 +481,17 @@ impl SearchOptions {
             "search for a spell",
             self.search.as_str(),
             search_message,
-        ).style(style)
-            .width(Length::FillPortion(4));
+        ).width(Length::FillPortion(4));
         let mode = pick_list(
             Mode::ALL.as_ref(),
             None,
             mode_message,
-        ).style(style)
-            .placeholder("Advanced Search")
+        ).placeholder("Advanced Search")
             .width(Length::Units(114))
             .text_size(15);
         let reset_modes = button(
             text("Reset").size(14),
-        ).style(style)
-            .on_press(reset_message);
+        ).on_press(reset_message);
 
         // additional search stuff
         let advanced_search = [
@@ -520,7 +507,7 @@ impl SearchOptions {
             .flatten()
             .fold(
                 row(vec![]).align_items(Alignment::Center),
-                |row, searcher| searcher.add_to_row(row, character, style),
+                |row, searcher| searcher.add_to_row(row, character),
             );
 
         container(
@@ -682,7 +669,7 @@ impl SearchPage {
         }
     }
 
-    pub fn view<'s, 'c: 's>(&'s self, style: Style) -> Container<'c, crate::Message> {
+    pub fn view<'s, 'c: 's>(&'s self) -> Container<'c, crate::Message> {
         // todo focus
         // if !matches!(&self.search.text_search, Some(ts) if ts.state.is_focused()) {
         //     self.search.state.focus();
@@ -691,8 +678,7 @@ impl SearchPage {
         let collapse_button = button(
             text_icon(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                 .size(15),
-        ).style(style)
-            .on_press(crate::Message::Search(Message::CollapseAll));
+        ).on_press(crate::Message::Search(Message::CollapseAll));
 
         // scroll bar of spells
         let collapse_all = self.collapse;
@@ -702,7 +688,7 @@ impl SearchPage {
                     Some(collapse) => collapse,
                     None => collapse_all,
                 };
-                col.push(spell.spell.view(SearchPageButtons(&spell.buttons), (), collapse, style))
+                col.push(spell.spell.view(SearchPageButtons(&spell.buttons), (), collapse))
                     .push_space(40)
             })
             .tap(scrollable);
@@ -717,7 +703,6 @@ impl SearchPage {
                 |m| crate::Message::Search(Message::PickMode(m)),
                 crate::Message::Search(Message::ResetModes),
                 None,
-                style,
             ))
             .push(scroll);
 
@@ -730,7 +715,7 @@ struct SearchPageButtons<'a>(&'a [(Arc<str>, bool)]);
 impl SpellButtons for SearchPageButtons<'_> {
     type Data = ();
 
-    fn view<'c>(self, id: SpellId, (): Self::Data, style: Style) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
+    fn view<'c>(self, id: SpellId, (): Self::Data) -> (Row<'c, crate::Message>, Element<'c, crate::Message>) {
         let mut buttons = row(vec![]);
         if !self.0.is_empty() {
             buttons = buttons.push("Add to:")
@@ -740,8 +725,7 @@ impl SpellButtons for SearchPageButtons<'_> {
             .enumerate()
             .fold(buttons, |row, (character, (name, active))|
                 row.push({
-                    let mut button = button(text(name.as_ref()).size(12))
-                        .style(style);
+                    let mut button = button(text(name.as_ref()).size(12));
                     if *active {
                         button = button.on_press(crate::Message::Character(character, character::Message::AddSpell(id.clone())));
                     }
@@ -752,7 +736,8 @@ impl SpellButtons for SearchPageButtons<'_> {
             text(&*id.name).size(36),
         ).width(Length::FillPortion(18))
             .on_press(crate::Message::Search(Message::Collapse(id)))
-            .style(style.background())
+            // todo no highlight
+            .style(Location::Default)
             .into();
         (buttons, name)
     }
