@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.3.6
-          release_name: v1.3.6 Rename characters
+          tag_name: v1.4.0
+          release_name: D&D Spells v1.4.0 New character page layout, including keeping track of used spell slots
           draft: true
           prerelease: false
       - name: Get Names

@@ -57,7 +57,7 @@ pub enum Message {
     ViewSpell(SpellId),
 }
 
-#[derive(Default)]
+#[derive(Default, Eq, PartialEq, Copy, Clone, Debug, Hash)]
 pub struct Slots {
     total: u32,
     used: u32,
