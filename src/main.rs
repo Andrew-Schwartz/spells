@@ -46,10 +46,8 @@ use iced::{
         Button,
         column,
         container,
-        Container,
         progress_bar,
         row,
-        Row,
         slider,
         text,
         tooltip::Position,
@@ -64,6 +62,7 @@ use self_update::cargo_crate_version;
 use serde::Deserialize;
 
 use search::SearchPage;
+pub use style::types::*;
 use utils::ListGrammaticallyExt;
 
 use crate::character::{Character, CharacterPage, SerializeCharacter};
@@ -74,26 +73,23 @@ use crate::spells::data::GetLevel;
 use crate::spells::spell::{find_spell, SpellId};
 use crate::style::{Location, Theme};
 // use crate::style::{SettingsBarStyle, Style};
-use crate::tabs::Tab;
+use crate::tab::Tab;
 use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
 
 use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use self::spells::spell::{CustomSpell, StaticSpell};
 use self::spells::static_arc::StArc;
 
-pub type Element<'a> = iced::Element<'a, Message, iced::Renderer<Theme>>;
-
 mod fetch;
 mod style;
 mod search;
-mod tabs;
+mod tab;
 mod settings;
 mod character;
 mod hotkey;
 mod hotmouse;
 mod utils;
 mod update;
-mod slots_widget;
 mod spells;
 mod error;
 
@@ -138,8 +134,8 @@ fn icon() -> Icon {
 
 const WIDTH: u32 = 1100;
 
-pub const ICON_FONT: iced::Font = match iced_aw::ICON_FONT {
-    Font::External { name, bytes } => iced::Font::External { name, bytes },
+pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
+    Font::External { name, bytes } => Font::External { name, bytes },
     Font::Default => unreachable!(),
 };
 
@@ -185,7 +181,7 @@ pub enum UpdateState {
 
 impl UpdateState {
     #[must_use]
-    pub fn view<'s, 'c: 's>(&'s self) -> Container<'c, Message, iced::Renderer<Theme>> {
+    pub fn view<'s, 'c: 's>(&'s self) -> Container<'c> {
         const VER: &str = cargo_crate_version!();
         match self {
             &Self::Downloading(pct) => {
@@ -983,12 +979,12 @@ impl Application for DndSpells {
             .saturating_sub(20); // height of bottom bar
 
         let tabs = iced_aw::Tabs::new(self.tab.index(num_characters), Message::SelectTab)
-            .push(TabLabel::Text("Search".into()), self.search_page.view(style).max_height(height));
+            .push(TabLabel::Text("Search".into()), self.search_page.view().max_height(height));
         let tabs = self.characters.iter()
             .enumerate()
             .map(|(index, page)| (
                 TabLabel::Text(page.character.name.to_string()),
-                page.view(index, num_cols, style).max_height(height)
+                page.view(index, num_cols).max_height(height)
             )).fold(
             tabs,
             |tabs, (label, tab)| tabs.push(label, tab),
@@ -1000,7 +996,7 @@ impl Application for DndSpells {
             ;
 
         #[allow(clippy::float_cmp)]
-            let col_slider_reset: Button<'_, Message> = button(
+            let col_slider_reset = button(
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
@@ -1028,13 +1024,13 @@ impl Application for DndSpells {
                 .size(12),
         ).style(Location::SettingsBar)
             .on_press(Message::ToggleTheme)
-            .tooltip_at(&format!("Switch to {} theme", !self.theme), Position::Top)
+            .tooltip_at(&format!("Switch to {} theme", !self.theme()), Position::Top)
             .size(10);
 
         let bottom_bar = container(row(vec![])
             .spacing(2)
             .push_space(4)
-            .push(self.update_state.view(Location::SettingsBar))
+            .push(self.update_state.view())
             .push_space(Length::Fill)
             .push(col_slider_reset)
             .push(col_slider)
@@ -1072,6 +1068,7 @@ impl Application for DndSpells {
                 },
                 Event::Mouse(e) => hotmouse::handle(e),
                 Event::Touch(_) => None,
+                Event::PlatformSpecific(_) => None,
             }
         });
         match &self.update_state {
@@ -1115,5 +1112,5 @@ struct DeserializeSpell {
 pub trait SpellButtons {
     type Data;
 
-    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c, Message>, Element<'c>);
+    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c>, Element<'c>);
 }

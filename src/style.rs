@@ -2,14 +2,31 @@ use std::fmt::{self, Display};
 use std::ops::Not;
 
 use iced::{application, Color};
-use iced::widget::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text_input};
+use iced::widget::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text, text_input};
 use iced::widget::scrollable::{Scrollbar, Scroller};
-use iced_aw::{tabs, Tabs};
-use iced_native::renderer::Style;
-use iced_style::menu;
+use iced_aw::tabs;
+use iced_style::{menu, rule};
+use iced_style::rule::FillMode;
 use iced_style::slider::{Handle, HandleShape};
 
-use crate::utils::{ColorExt, Tap};
+use crate::utils::ColorExt;
+
+pub mod types {
+    use crate::Message;
+
+    use super::Theme;
+
+    type Renderer = iced::Renderer<Theme>;
+
+    pub type Element<'a> = iced::Element<'a, Message, Renderer>;
+    pub type Container<'a> = iced::widget::Container<'a, Message, Renderer>;
+    pub type Text = iced::widget::Text<Renderer>;
+    pub type Row<'a> = iced::widget::Row<'a, Message, Renderer>;
+    pub type Column<'a> = iced::widget::Column<'a, Message, Renderer>;
+    pub type Button<'a> = iced::widget::Button<'a, Message, Renderer>;
+    pub type Tooltip<'a> = iced::widget::Tooltip<'a, Message, Renderer>;
+    pub type Scrollable<'a> = iced::widget::Scrollable<'a, Message, Renderer>;
+}
 
 macro_rules! from {
     (
@@ -226,7 +243,7 @@ impl Theme {
 
 // todo clean this up - background vs surface, accent vs active?
 #[derive(Copy, Clone)]
-struct Palette {
+pub struct Palette {
     text: Color,
     background: Color,
     brighter_than_background: Color,
@@ -283,6 +300,30 @@ impl container::StyleSheet for Theme {
             background: palette.background.into(),
             border_color: Color::TRANSPARENT,
             ..Default::default()
+        }
+    }
+}
+
+impl text::StyleSheet for Theme {
+    type Style = Location;
+
+    fn appearance(&self, style: Self::Style) -> text::Appearance {
+        text::Appearance {
+            color: Some(self.palette(style).text),
+        }
+    }
+}
+
+impl rule::StyleSheet for Theme {
+    type Style = Location;
+
+    fn style(&self, style: Self::Style) -> rule::Appearance {
+        let palette = self.palette(style);
+        rule::Appearance {
+            color: palette.text,
+            width: 1,
+            radius: 0.0,
+            fill_mode: FillMode::Full,
         }
     }
 }
@@ -546,9 +587,11 @@ impl progress_bar::StyleSheet for Theme {
 }
 
 impl tabs::StyleSheet for Theme {
-    fn active(&self, is_active: bool) -> tabs::Style {
+    type Style = Location;
+
+    fn active(&self, _style: Self::Style, is_active: bool) -> tabs::Appearance {
         let palette = self.palette(Location::Default);
-        tabs::Style {
+        tabs::Appearance {
             background: None,
             border_color: None,
             border_width: 0.0,
@@ -559,14 +602,14 @@ impl tabs::StyleSheet for Theme {
             }.into(),
             tab_label_border_color: Default::default(),
             tab_label_border_width: 0.0,
-            icon_color: palette.text.core(),
-            text_color: palette.text.core(),
+            icon_color: palette.text,
+            text_color: palette.text,
         }
     }
 
-    fn hovered(&self, is_active: bool) -> tabs::Style {
+    fn hovered(&self, _style: Self::Style, is_active: bool) -> tabs::Appearance {
         let palette = self.palette(Location::Default);
-        tabs::Style {
+        tabs::Appearance {
             background: None,
             border_color: None,
             border_width: 0.0,
@@ -702,7 +745,7 @@ mod dark {
     }
 
     mod color {
-        use iced::Color;
+        // use iced::Color;
 
         /*pub mod tab_bar {
                     use iced::Color;

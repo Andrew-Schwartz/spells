@@ -2,14 +2,14 @@ use std::cmp::min;
 use std::iter;
 use std::sync::Arc;
 
-use iced::{Alignment, Color, Length};
+use iced::{Alignment, Length};
 use iced::alignment::Vertical;
-use iced::widget::{button, column, container, Container, horizontal_rule, row, Row, scrollable, text};
+use iced::widget::{button, column, container, horizontal_rule, row, scrollable, text};
 use iced_aw::{Icon, ICON_FONT};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{Element, Level, Location, search, SpellButtons, SpellId, Tap};
+use crate::{Container, Element, Level, Location, Row, search, SpellButtons, SpellId, Tap};
 use crate::search::{Mode, Searcher, SearchOptions};
 use crate::spells::spell::{CustomSpell, find_spell, Spell};
 use crate::spells::static_arc::StArc;
@@ -376,7 +376,7 @@ impl CharacterPage {
         }
     }
 
-    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize) -> Container<'c, crate::Message> {
+    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize) -> Container<'c> {
         let message = move |message: Message| crate::Message::Character(index, message);
 
         let Self {
@@ -448,7 +448,7 @@ impl CharacterPage {
         }
         let tabs_row = tabs_row.push_space(Length::Fill);
 
-        let page: Element<'_, _> = if let Some(level) = selected_level {
+        let page: Element<'_> = if let Some(level) = selected_level {
             let len = search_results[level].len();
             let chunks = search_results[level].iter()
                 .map(|&idx| &spells[level][idx])
@@ -634,7 +634,7 @@ impl SpellButtons for CharacterPageButtons {
     /// if this spell is prepared right now
     type Data = bool;
 
-    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c, Message>, Element<'c>) {
+    fn view<'c>(self, id: SpellId, data: Self::Data) -> (Row<'c>, Element<'c>) {
         let character = self.character;
         let buttons = [
             (self.left, "Move left", Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),

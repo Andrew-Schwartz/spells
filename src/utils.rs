@@ -1,21 +1,23 @@
 use std::fmt::Display;
 
-use iced::{Color, Element, Length, widget::*, widget::tooltip::Position};
+use iced::{Color, Length, widget::{horizontal_space, tooltip::Position, vertical_space}};
+use iced::widget::{Column, Row};
 use iced_aw::Icon;
+use iced_native::widget::text;
 
-use crate::ICON_FONT;
+use crate::{Element, ICON_FONT, Text, Tooltip};
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
 }
 
-impl<'a, Message: 'a> SpacingExt for Column<'a, Message> {
+impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Column<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
         self.push(vertical_space(length.into()))
     }
 }
 
-impl<'a, Message: 'a> SpacingExt for Row<'a, Message> {
+impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Row<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
         self.push(horizontal_space(length.into()))
     }
@@ -28,9 +30,6 @@ pub trait ColorExt {
     fn a(self, a: f32) -> Self;
 
     fn clearer(self, multiplier: f32) -> Self;
-
-    // temp, while on master branch
-    fn core(self) -> iced_core::Color;
 }
 
 impl ColorExt for Color {
@@ -57,11 +56,6 @@ impl ColorExt for Color {
     fn clearer(self, multiplier: f32) -> Self {
         let a = self.a * multiplier;
         self.a(a.clamp(0.0, 1.0))
-    }
-
-    fn core(self) -> iced_core::Color {
-        let Self { r, g, b, a } = self;
-        iced_core::Color { r, g, b, a }
     }
 }
 
@@ -140,17 +134,17 @@ pub trait IterExt: Iterator + Sized {
 
 impl<I: Iterator + Sized> IterExt for I {}
 
-pub trait TooltipExt<'a, Message>: Into<Element<'a, Message>> {
-    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a, Message> {
+pub trait TooltipExt<'a>: Into<Element<'a>> {
+    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a> {
         iced::widget::tooltip(self, tooltip, position)
     }
 
-    fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a, Message> {
+    fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a> {
         self.tooltip_at(tooltip, Position::FollowCursor)
     }
 }
 
-impl<'a, M, E: Into<Element<'a, M>>> TooltipExt<'a, M> for E {}
+impl<'a, E: Into<Element<'a>>> TooltipExt<'a> for E {}
 
 pub fn text_icon(icon: Icon) -> Text {
     text(icon).font(ICON_FONT)

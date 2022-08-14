@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use iced::{Alignment, Length, widget};
-use iced::widget::{column, container, Container, horizontal_rule, row, text};
+use iced::widget::{column, container, horizontal_rule, row, text};
 use serde::{Deserialize, Serialize};
 
-use crate::{DeserializeSpell, ListGrammaticallyExt, Message, SpacingExt, SpellButtons, SPELLS, Tap};
+use crate::{Container, DeserializeSpell, ListGrammaticallyExt, SpacingExt, SpellButtons, SPELLS, Tap};
 use crate::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use crate::spells::static_arc::StArc;
 
@@ -291,7 +291,7 @@ impl Spell {
         button: B,
         data: B::Data,
         collapse: bool,
-    ) -> Container<'c, Message> {
+    ) -> Container<'c> {
         let text = |label: String| row(vec![])
             .push(text(label).size(16).width(Length::FillPortion(18)));
 

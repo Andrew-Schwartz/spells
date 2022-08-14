@@ -1,7 +1,8 @@
-use iced::{Alignment, Element, Length, widget::*};
+use iced::{Alignment, Length};
+use iced_native::widget::{button, checkbox, column, container, horizontal_rule, pick_list, row, scrollable, text, text_input, vertical_rule};
 use itertools::{Either, Itertools};
 
-use crate::{Level, Location};
+use crate::{Column, Container, Element, Level, Location, Row};
 use crate::character::Character;
 use crate::spells::data::{CastingTime, Class, Components, School};
 use crate::spells::spell::CustomSpell;
@@ -107,7 +108,7 @@ impl SettingsPage {
         &'s self,
         closed_characters: &[ClosedCharacter],
         width: u32,
-    ) -> Container<'c, crate::Message> {
+    ) -> Container<'c> {
         const PADDING: u16 = 12;
         const RULE_SPACING: u16 = 24;
         const NAME_PADDING: u16 = 3;
@@ -139,39 +140,41 @@ impl SettingsPage {
         ) as u32;
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
-            .fold(column(vec![]), |col, (index, closed)| {
-                let style = Location::Alternating { idx: index };
+            .fold(column(vec![]), |col, (idx, closed)| {
+                let style = Location::Alternating { idx, highlight: false };
                 let name = button(
                     text(&*closed.character.name).size(19),
-                ).style(style.no_highlight())
-                    .on_press(crate::Message::Settings(Message::Open(index)));
+                )
+                    // todo used to be no_hihglight, how to treat?
+                    .style(Location::Alternating { idx, highlight: false })
+                    .on_press(crate::Message::Settings(Message::Open(idx)));
                 let name = container(name)
                     .max_width(text_width)
                     .style(style);
                 let open = button(
                     text("Open").size(15),
                 ).style(style)
-                    .on_press(crate::Message::Settings(Message::Open(index)));
+                    .on_press(crate::Message::Settings(Message::Open(idx)));
                 let rename = match &closed.rename {
                     Either::Left(()) => {
                         let button = button(
                             text("Rename").size(15),
                         ).style(style)
-                            .on_press(crate::Message::Settings(Message::Rename(index)));
+                            .on_press(crate::Message::Settings(Message::Rename(idx)));
                         container(button).style(style)
                     }
                     Either::Right(name) => {
                         let cancel_input = text_input(
                             "Submit now to cancel",
                             name,
-                            move |s| crate::Message::Settings(Message::RenameString(index, s)),
+                            move |s| crate::Message::Settings(Message::RenameString(idx, s)),
                         ).style(style)
                             .width(Length::Units(140))
-                            .on_submit(crate::Message::Settings(Message::Rename(index)));
+                            .on_submit(crate::Message::Settings(Message::Rename(idx)));
                         let button = button(
                             text("Submit").size(15),
                         ).style(style)
-                            .on_press(crate::Message::Settings(Message::Rename(index)));
+                            .on_press(crate::Message::Settings(Message::Rename(idx)));
                         let row = row(vec![])
                             .align_items(Alignment::Center)
                             .push(cancel_input)
@@ -183,7 +186,7 @@ impl SettingsPage {
                 let delete = button(
                     text("Delete").size(15),
                 ).style(style)
-                    .on_press(crate::Message::Settings(Message::DeleteCharacter(index)));
+                    .on_press(crate::Message::Settings(Message::DeleteCharacter(idx)));
                 col.push(container(
                     row(vec![])
                         .spacing(SPACING)
@@ -237,20 +240,22 @@ impl SettingsPage {
             SpellEditor::Searching { spells } => {
                 let col = spells.iter()
                     .enumerate()
-                    .fold(column(vec![]).spacing(4), |spells_col, (index, spell)| {
-                        let style = Location::Alternating { idx: index };
+                    .fold(column(vec![]).spacing(4), |spells_col, (idx, spell)| {
+                        let style = Location::Alternating { idx, highlight: false };
                         let name = button(
                             text(&*spell.name).size(19),
-                        ).style(style.no_highlight())
-                            .on_press(crate::Message::Settings(Message::OpenSpell(index)));
+                        )
+                            // todo used to be no_hihglight, how to treat?
+                            .style(Location::Alternating { idx, highlight: false })
+                            .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let edit = button(
                             text("Edit").size(15),
                         ).style(style)
-                            .on_press(crate::Message::Settings(Message::OpenSpell(index)));
+                            .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let delete = button(
                             text("Delete").size(15),
                         ).style(style)
-                            .on_press(crate::Message::Settings(Message::DeleteSpell(index)));
+                            .on_press(crate::Message::Settings(Message::DeleteSpell(idx)));
                         spells_col.push(container(
                             row(vec![])
                                 .spacing(SPACING)
@@ -265,10 +270,10 @@ impl SettingsPage {
                 spells_col.push(scrollable(col))
             }
             SpellEditor::Editing { spell } => {
-                fn make_row<'a, T: Into<Element<'a, crate::Message>>, L: Into<String>>(
+                fn make_row<'a, T: Into<Element<'a>>, L: Into<String>>(
                     label: L,
                     content: T,
-                ) -> Row<'a, crate::Message> {
+                ) -> Row<'a> {
                     let label = label.into();
                     let labeled = !label.is_empty();
                     let mut ret = row(vec![])
