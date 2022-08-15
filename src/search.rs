@@ -739,7 +739,7 @@ impl SpellButtons for SearchPageButtons<'_> {
         ).width(Length::FillPortion(18))
             .on_press(crate::Message::Search(Message::Collapse(id)))
             // todo no highlight
-            .style(Location::Default)
+            .style(Location::Transparent)
             .into();
         (buttons, name)
     }

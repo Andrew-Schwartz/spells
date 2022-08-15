@@ -28,105 +28,6 @@ pub mod types {
     pub type Scrollable<'a> = iced::widget::Scrollable<'a, Message, Renderer>;
 }
 
-macro_rules! from {
-    (
-        @priv $style:ident => $module:ident: dark = $dark:ident
-    ) => {
-        from! { @priv-final $style => $module: light = Default::default(), dark = dark::$dark.into() }
-    };
-    (
-        @priv $style:ident => $module:ident: light = $light:ident, dark = $dark:ident
-    ) => {
-        from! { @priv-final $style => $module: light = Default::default(), dark = dark::$dark.into() }
-    };
-    (
-        @priv $style:ident => $module:ident: dark = $dark:ident,light = $light:ident
-    ) => {
-        from! { @priv-final $style => $module: light = Default::default(), dark = dark::$dark.into() }
-    };
-    (
-        @priv-final $style:ident => $module:ident: light = $light:expr, dark = $dark:expr
-    ) => {
-        impl From<$style> for Box<dyn $module::StyleSheet> {
-            fn from(style: $style) -> Self {
-                match style {
-                    $style::Light => $light,
-                    $style::Dark => $dark,
-                }
-            }
-        }
-    };
-    (
-        $style:ident =>
-        $($module:ident: $($light_dark_token:tt = $light_dark:ident),*);* $(;)?
-    ) => {
-        impl $style {
-            pub fn transparent(self) -> TransparentStyle { TransparentStyle::Light }
-        }
-
-        $(
-            from! { @priv $style => $module: $($light_dark_token = $light_dark),* }
-        )*
-    };
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TransparentStyle {
-    Light,
-    Dark,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum SettingsBarStyle {
-    Light,
-    Dark,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TabButtonStyle {
-    Light,
-    Dark,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct AlternatingStyle {
-    style: Theme,
-    alt: bool,
-    highlight: bool,
-}
-
-impl Theme {
-    pub fn settings_bar(self) -> SettingsBarStyle {
-        match self {
-            Self::Light => SettingsBarStyle::Light,
-            Self::Dark => SettingsBarStyle::Dark,
-        }
-    }
-
-    pub fn tab_button(self) -> TabButtonStyle {
-        match self {
-            Self::Light => TabButtonStyle::Light,
-            Self::Dark => TabButtonStyle::Dark,
-        }
-    }
-
-    pub fn alternating(self, n: usize) -> AlternatingStyle {
-        AlternatingStyle {
-            style: self,
-            alt: n % 2 == 0,
-            highlight: true,
-        }
-    }
-
-    pub fn background(self) -> AlternatingStyle {
-        AlternatingStyle {
-            style: self,
-            alt: true,
-            highlight: false,
-        }
-    }
-}
-
 impl Not for Theme {
     type Output = Self;
 
@@ -146,84 +47,6 @@ impl Display for Theme {
         })
     }
 }
-
-impl AlternatingStyle {
-    pub fn no_highlight(self) -> Self {
-        Self { highlight: false, ..self }
-    }
-}
-
-// from! { Theme =>
-//     container: dark = Container;
-//     text_input: dark = TextInput;
-//     scrollable: dark = Scrollable;
-//     button: light = Button, dark = Button;
-//     pick_list: dark = PickList;
-//     checkbox: dark = Checkbox;
-//     slider: dark = Slider;
-//     tabs: dark = Tabs;
-// }
-//
-// from! { TransparentStyle =>
-//     container: light = Transparent, dark = Transparent;
-//     button: light = Transparent, dark = Transparent;
-//     text_input: light = Transparent, dark = Transparent;
-// }
-//
-// from! { SettingsBarStyle =>
-//     button: light = Button, dark = SettingsBarStyle;
-//     container: dark = SettingsBarStyle;
-//     progress_bar: dark = SettingsBarStyle;
-// }
-//
-// from! { TabButtonStyle =>
-//     button: light = Button, dark = TabButton;
-// }
-
-// impl AlternatingStyle {
-//     #[allow(clippy::unused_self)]
-//     pub fn transparent(self) -> TransparentStyle { TransparentStyle::Light }
-// }
-//
-// // todo epic macro for this too :)
-// impl From<AlternatingStyle> for Box<dyn container::StyleSheet> {
-//     fn from(AlternatingStyle { style, alt, .. }: AlternatingStyle) -> Self {
-//         match style {
-//             Theme::Light => Default::default(),
-//             Theme::Dark => if alt {
-//                 dark::alt::Container::<0>.into()
-//             } else {
-//                 dark::alt::Container::<1>.into()
-//             }
-//         }
-//     }
-// }
-//
-// impl From<AlternatingStyle> for Box<dyn button::StyleSheet> {
-//     fn from(AlternatingStyle { style, alt, highlight }: AlternatingStyle) -> Self {
-//         match style {
-//             Theme::Light => Default::default(),
-//             Theme::Dark => if alt {
-//                 dark::alt::Button::<0>(highlight).into()
-//             } else {
-//                 dark::alt::Button::<1>(highlight).into()
-//             }
-//         }
-//     }
-// }
-//
-// impl From<AlternatingStyle> for Box<dyn text_input::StyleSheet> {
-//     fn from(AlternatingStyle { style, alt, highlight }: AlternatingStyle) -> Self {
-//         match style {
-//             Theme::Light => Default::default(),
-//             Theme::Dark => if alt {
-//                 dark::alt::TextInput::<0>(highlight).into()
-//             } else {
-//                 dark::alt::TextInput::<1>(highlight).into()
-//             }
-//         }
-//     }
-// }
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Theme {
@@ -246,9 +69,7 @@ impl Theme {
 pub struct Palette {
     text: Color,
     background: Color,
-    brighter_than_background: Color,
     surface: Color,
-    brighter_than_surface: Color,
     accent: Color,
     active: Color,
     hovered: Color,
@@ -259,9 +80,7 @@ impl Palette {
     const TRANSPARENT: Self = Palette {
         text: Color::TRANSPARENT,
         background: Color::TRANSPARENT,
-        brighter_than_background: Color::TRANSPARENT,
         surface: Color::TRANSPARENT,
-        brighter_than_surface: Color::TRANSPARENT,
         accent: Color::TRANSPARENT,
         active: Color::TRANSPARENT,
         hovered: Color::TRANSPARENT,
@@ -276,6 +95,14 @@ pub enum Location {
     Transparent,
     SettingsBar,
     Alternating { idx: usize, highlight: bool },
+}
+
+impl text::StyleSheet for Theme {
+    type Style = Option<Color>;
+
+    fn appearance(&self, color: Self::Style) -> text::Appearance {
+        text::Appearance { color }
+    }
 }
 
 impl application::StyleSheet for Theme {
@@ -304,23 +131,13 @@ impl container::StyleSheet for Theme {
     }
 }
 
-impl text::StyleSheet for Theme {
-    type Style = Location;
-
-    fn appearance(&self, style: Self::Style) -> text::Appearance {
-        text::Appearance {
-            color: Some(self.palette(style).text),
-        }
-    }
-}
-
 impl rule::StyleSheet for Theme {
     type Style = Location;
 
     fn style(&self, style: Self::Style) -> rule::Appearance {
         let palette = self.palette(style);
         rule::Appearance {
-            color: palette.text,
+            color: palette.text.a(0.3),
             width: 1,
             radius: 0.0,
             fill_mode: FillMode::Full,
@@ -427,13 +244,13 @@ impl scrollable::StyleSheet for Theme {
     fn active(&self, style: Self::Style) -> Scrollbar {
         let palette = self.palette(style);
         Scrollbar {
-            background: palette.surface.into(),
-            border_radius: 2.0,
+            background: None,
+            border_radius: 8.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
             scroller: Scroller {
-                color: palette.active,
-                border_radius: 2.0,
+                color: palette.surface.darken(0.6),
+                border_radius: 8.0,
                 border_width: 0.0,
                 border_color: Color::TRANSPARENT,
             },
@@ -444,21 +261,9 @@ impl scrollable::StyleSheet for Theme {
         let palette = self.palette(style);
         let active = self.active(style);
         Scrollbar {
+            background: palette.surface.darken(0.4).into(),
             scroller: Scroller {
-                color: palette.hovered,
-                ..active.scroller
-            },
-            ..active
-        }
-    }
-
-    fn dragging(&self, style: Self::Style) -> Scrollbar {
-        // let palette = self.palette(style);
-        let active = self.hovered(style);
-        Scrollbar {
-            scroller: Scroller {
-                // todo
-                color: Color::from_rgb(0.85, 0.85, 0.85),
+                color: palette.surface.darken(0.7),
                 ..active.scroller
             },
             ..active
@@ -598,7 +403,7 @@ impl tabs::StyleSheet for Theme {
             tab_label_background: if is_active {
                 palette.background
             } else {
-                palette.active
+                palette.surface
             }.into(),
             tab_label_border_color: Default::default(),
             tab_label_border_width: 0.0,
@@ -614,9 +419,9 @@ impl tabs::StyleSheet for Theme {
             border_color: None,
             border_width: 0.0,
             tab_label_background: if is_active {
-                palette.brighter_than_background
+                palette.background.lighten(0.065)
             } else {
-                palette.brighter_than_surface
+                palette.surface.lighten(0.065)
             }.into(),
             tab_label_border_color: Default::default(),
             tab_label_border_width: 0.0,
@@ -662,20 +467,10 @@ mod dark {
             0x39 as f32 / 255.0,
             0x3F as f32 / 255.0,
         ),
-        brighter_than_background: Color::from_rgb(
-            0x3A as f32 / 255.0,
-            0x3C as f32 / 255.0,
-            0x43 as f32 / 255.0,
-        ),
         surface: Color::from_rgb(
             0x40 as f32 / 255.0,
             0x44 as f32 / 255.0,
             0x4B as f32 / 255.0,
-        ),
-        brighter_than_surface: Color::from_rgb(
-            0x46 as f32 / 255.0,
-            0x4A as f32 / 255.0,
-            0x51 as f32 / 255.0,
         ),
         accent: Color::from_rgb(
             0x6F as f32 / 255.0,
@@ -706,11 +501,6 @@ mod dark {
             0x2F as f32 / 255.0,
             0x37 as f32 / 255.0,
         ),
-        brighter_than_background: Color::from_rgb(
-            0x34 as f32 / 255.0,
-            0x35 as f32 / 255.0,
-            0x3A as f32 / 255.0,
-        ),
         accent: Color::from_rgb(
             0x3E as f32 / 255.0,
             0x3F as f32 / 255.0,
@@ -737,9 +527,11 @@ mod dark {
             0x39 as f32 / 255.0,
         )];
 
+        let background = BACKGROUNDS[idx % 2];
         Palette {
-            background: BACKGROUNDS[idx % 2],
-            hovered: HOVERED[idx % 2],
+            active: background,
+            background,
+            hovered: if highlight { HOVERED[idx % 2] } else { background },
             ..DEFAULT
         }
     }
@@ -789,24 +581,6 @@ mod dark {
         //     )];
         // }
     }
-
-    pub struct Container;
-
-    pub struct TextInput;
-
-    pub struct Scrollable;
-
-    pub struct Button;
-
-    pub struct PickList;
-
-    pub struct Checkbox;
-
-    pub struct Slider;
-
-    pub struct Tabs;
-
-    pub struct SettingsBarStyle;
 
     // impl button::StyleSheet for SettingsBarStyle {
     //     fn active(&self) -> button::Style {

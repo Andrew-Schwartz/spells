@@ -4,6 +4,7 @@ use iced::{Color, Length, widget::{horizontal_space, tooltip::Position, vertical
 use iced::widget::{Column, Row};
 use iced_aw::Icon;
 use iced_native::widget::text;
+use palette::{FromColor, Hsl, Srgb};
 
 use crate::{Element, ICON_FONT, Text, Tooltip};
 
@@ -23,13 +24,22 @@ impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Row<'a, Me
     }
 }
 
+fn to_hsl(color: Color) -> Hsl {
+    Hsl::from_color(Srgb::from(color))
+}
+
+fn from_hsl(hsl: Hsl) -> Color {
+    Srgb::from_color(hsl).into()
+}
+
 pub trait ColorExt {
     fn r(self, r: f32) -> Self;
     fn g(self, g: f32) -> Self;
     fn b(self, b: f32) -> Self;
     fn a(self, a: f32) -> Self;
 
-    fn clearer(self, multiplier: f32) -> Self;
+    fn darken(self, amount: f32) -> Self;
+    fn lighten(self, amount: f32) -> Self;
 }
 
 impl ColorExt for Color {
@@ -53,9 +63,24 @@ impl ColorExt for Color {
         self
     }
 
-    fn clearer(self, multiplier: f32) -> Self {
-        let a = self.a * multiplier;
-        self.a(a.clamp(0.0, 1.0))
+    /// amount from 0 to 1
+    fn darken(self, amount: f32) -> Self {
+        let amount = amount.clamp(0.0, 1.0);
+        let mut hsl = to_hsl(self);
+
+        hsl.lightness -= hsl.lightness * amount;
+
+        from_hsl(hsl)
+    }
+
+    /// amount from 0 to 1
+    fn lighten(self, amount: f32) -> Self {
+        let amount = amount.clamp(0.0, 1.0);
+        let mut hsl = to_hsl(self);
+
+        hsl.lightness += hsl.lightness * amount;
+
+        from_hsl(hsl)
     }
 }
 

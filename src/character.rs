@@ -6,6 +6,7 @@ use iced::{Alignment, Length};
 use iced::alignment::Vertical;
 use iced::widget::{button, column, container, horizontal_rule, row, scrollable, text};
 use iced_aw::{Icon, ICON_FONT};
+use iced_core::Color;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -429,7 +430,8 @@ impl CharacterPage {
 
         // spell tabs
         let make_button = |name, level| {
-            let mut button = button(text(name));
+            let mut button = button(text(name))
+                .style(Location::Transparent);
             if level != selected_level {
                 button = button.on_press(message(Message::SpellTab(level)));
             }
@@ -496,20 +498,19 @@ impl CharacterPage {
                             |col, (spell, prepped)| col.push(row(vec![])
                                 .push(text(&*spell.name())
                                     .size(18)
-                                    // todo
-                                    // .color({
-                                    //     let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
-                                    //     let selected_highlight = if selected { 0.8 } else { 1.0 };
-                                    //     let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
-                                    //     Color {
-                                    //         r: selected_highlight,
-                                    //         g: selected_highlight,
-                                    //         b: 1.0,
-                                    //         a: prepared_opacity,
-                                    //     }
-                                    // })
+                                    .style({
+                                        let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
+                                        let selected_highlight = if selected { 0.8 } else { 1.0 };
+                                        let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
+                                        Color {
+                                            r: selected_highlight,
+                                            g: selected_highlight,
+                                            b: 1.0,
+                                            a: prepared_opacity,
+                                        }
+                                    })
                                     .tap(button)
-                                    // .style(style.background())
+                                    .style(Location::Transparent)
                                     .padding(0)
                                     .on_press(message(Message::ViewSpell(spell.id())))
                                 )
@@ -529,6 +530,7 @@ impl CharacterPage {
                                         .font(ICON_FONT)
                                         .size(10),
                                 )
+                                    .style(Location::Transparent)
                                     .padding(0)
                                     .on_press(message(Message::ChangeNumSlots(level, 1))))
                                 .push(button(
@@ -536,6 +538,7 @@ impl CharacterPage {
                                         .font(ICON_FONT)
                                         .size(10),
                                 )
+                                    .style(Location::Transparent)
                                     .padding(0)
                                     .on_press(message(Message::ChangeNumSlots(level, -1))));
                             let slots_text = format!(
@@ -549,12 +552,14 @@ impl CharacterPage {
                                     .vertical_alignment(Vertical::Center)
                                     .size(15),
                             )
+                                .style(Location::Transparent)
                                 .padding([2, 3])
                                 .on_press(message(Message::SlotsCast(level, 1)));
                             let uncast = button(
                                 text_icon(Icon::ArrowDown)
                                     .size(15)
                             )
+                                .style(Location::Transparent)
                                 .padding(0)
                                 .tap_if(*used != 0,
                                         |btn| btn.on_press(message(Message::SlotsCast(level, -1))));
@@ -656,8 +661,7 @@ impl SpellButtons for CharacterPageButtons {
             text(&*id.name).size(36),
         ).width(Length::FillPortion(23))
             .on_press(crate::Message::Character(self.character, Message::Prepare(id)))
-            // todo remove highlight
-            .style(Location::Default)
+            .style(Location::Transparent)
             .into();
         (buttons, name)
     }

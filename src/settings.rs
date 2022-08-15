@@ -141,51 +141,51 @@ impl SettingsPage {
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
             .fold(column(vec![]), |col, (idx, closed)| {
-                let style = Location::Alternating { idx, highlight: false };
+                let highlight = Location::Alternating { idx, highlight: true };
+                let no_highlight = Location::Alternating { idx, highlight: false };
                 let name = button(
                     text(&*closed.character.name).size(19),
                 )
-                    // todo used to be no_hihglight, how to treat?
-                    .style(Location::Alternating { idx, highlight: false })
+                    .style(no_highlight)
                     .on_press(crate::Message::Settings(Message::Open(idx)));
                 let name = container(name)
                     .max_width(text_width)
-                    .style(style);
+                    .style(highlight);
                 let open = button(
                     text("Open").size(15),
-                ).style(style)
+                ).style(highlight)
                     .on_press(crate::Message::Settings(Message::Open(idx)));
                 let rename = match &closed.rename {
                     Either::Left(()) => {
                         let button = button(
                             text("Rename").size(15),
-                        ).style(style)
+                        ).style(highlight)
                             .on_press(crate::Message::Settings(Message::Rename(idx)));
-                        container(button).style(style)
+                        container(button).style(highlight)
                     }
                     Either::Right(name) => {
                         let cancel_input = text_input(
                             "Submit now to cancel",
                             name,
                             move |s| crate::Message::Settings(Message::RenameString(idx, s)),
-                        ).style(style)
+                        ).style(highlight)
                             .width(Length::Units(140))
                             .on_submit(crate::Message::Settings(Message::Rename(idx)));
                         let button = button(
                             text("Submit").size(15),
-                        ).style(style)
+                        ).style(highlight)
                             .on_press(crate::Message::Settings(Message::Rename(idx)));
                         let row = row(vec![])
                             .align_items(Alignment::Center)
                             .push(cancel_input)
                             .push_space(3)
                             .push(button);
-                        container(row).style(style)
+                        container(row).style(highlight)
                     }
                 };
                 let delete = button(
                     text("Delete").size(15),
-                ).style(style)
+                ).style(highlight)
                     .on_press(crate::Message::Settings(Message::DeleteCharacter(idx)));
                 col.push(container(
                     row(vec![])
@@ -197,7 +197,7 @@ impl SettingsPage {
                         .push(rename)
                         .push(delete)
                         .align_items(Alignment::Center)
-                ).style(style))
+                ).style(highlight))
             });
 
         let character_col = column(vec![])
@@ -241,20 +241,21 @@ impl SettingsPage {
                 let col = spells.iter()
                     .enumerate()
                     .fold(column(vec![]).spacing(4), |spells_col, (idx, spell)| {
-                        let style = Location::Alternating { idx, highlight: false };
+                        let highlight = Location::Alternating { idx, highlight: true };
+                        let no_highlight = Location::Alternating { idx, highlight: false };
                         let name = button(
                             text(&*spell.name).size(19),
                         )
                             // todo used to be no_hihglight, how to treat?
-                            .style(Location::Alternating { idx, highlight: false })
+                            .style(no_highlight)
                             .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let edit = button(
                             text("Edit").size(15),
-                        ).style(style)
+                        ).style(highlight)
                             .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let delete = button(
                             text("Delete").size(15),
-                        ).style(style)
+                        ).style(highlight)
                             .on_press(crate::Message::Settings(Message::DeleteSpell(idx)));
                         spells_col.push(container(
                             row(vec![])
@@ -265,7 +266,7 @@ impl SettingsPage {
                                 .push(edit)
                                 .push(delete)
                                 .align_items(Alignment::Center)
-                        ).style(style))
+                        ).style(highlight))
                     });
                 spells_col.push(scrollable(col))
             }

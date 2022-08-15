@@ -43,7 +43,6 @@ use iced::{
     Settings,
     widget::{
         button,
-        Button,
         column,
         container,
         progress_bar,
@@ -1000,7 +999,7 @@ impl Application for DndSpells {
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
-        ).style(Location::SettingsBar)
+        ).style(Location::Transparent)
             .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
 
         // todo monospace font and pad with spaces
@@ -1022,7 +1021,7 @@ impl Application for DndSpells {
             text(iced_aw::Icon::BrightnessHigh)
                 .font(ICON_FONT)
                 .size(12),
-        ).style(Location::SettingsBar)
+        ).style(Location::Transparent)
             .on_press(Message::ToggleTheme)
             .tooltip_at(&format!("Switch to {} theme", !self.theme()), Position::Top)
             .size(10);

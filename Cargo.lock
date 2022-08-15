@@ -2597,6 +2597,7 @@ dependencies = [
  "itertools",
  "levenshtein",
  "once_cell",
+ "palette",
  "reqwest",
  "self_update",
  "semver",
