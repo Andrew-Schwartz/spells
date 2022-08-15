@@ -43,7 +43,6 @@ reqwest = { version = "0.11.8", features = ["rustls-tls"] }
 bytes = "1.1.0"
 tempfile = "3.2.0"
 tokio = { version = "1.15.0", features = ["time"] }
-thiserror = "1.0.32"
 
 #tokio = { version = "1.0.2", features = ["full"] }
 #futures = "0.3.12"
