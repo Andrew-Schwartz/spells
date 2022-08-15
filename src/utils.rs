@@ -1,23 +1,35 @@
 use std::fmt::Display;
 
-use iced::{Color, Length, pure::{self, *, widget::*}};
-use iced::tooltip::Position;
-use iced_aw::{Icon, ICON_FONT};
+use iced::{Color, Length, widget::{horizontal_space, tooltip::Position, vertical_space}};
+use iced::widget::{Column, Row};
+use iced_aw::Icon;
+use iced_native::widget::text;
+use palette::{FromColor, Hsl, Srgb};
+
+use crate::{Element, ICON_FONT, Text, Tooltip};
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
 }
 
-impl<'a, Message: 'a> SpacingExt for Column<'a, Message> {
+impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Column<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
         self.push(vertical_space(length.into()))
     }
 }
 
-impl<'a, Message: 'a> SpacingExt for Row<'a, Message> {
+impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Row<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
         self.push(horizontal_space(length.into()))
     }
+}
+
+fn to_hsl(color: Color) -> Hsl {
+    Hsl::from_color(Srgb::from(color))
+}
+
+fn from_hsl(hsl: Hsl) -> Color {
+    Srgb::from_color(hsl).into()
 }
 
 pub trait ColorExt {
@@ -26,7 +38,8 @@ pub trait ColorExt {
     fn b(self, b: f32) -> Self;
     fn a(self, a: f32) -> Self;
 
-    fn clearer(self, multiplier: f32) -> Self;
+    fn darken(self, amount: f32) -> Self;
+    fn lighten(self, amount: f32) -> Self;
 }
 
 impl ColorExt for Color {
@@ -50,9 +63,24 @@ impl ColorExt for Color {
         self
     }
 
-    fn clearer(self, multiplier: f32) -> Self {
-        let a = self.a * multiplier;
-        self.a(a.clamp(0.0, 1.0))
+    /// amount from 0 to 1
+    fn darken(self, amount: f32) -> Self {
+        let amount = amount.clamp(0.0, 1.0);
+        let mut hsl = to_hsl(self);
+
+        hsl.lightness -= hsl.lightness * amount;
+
+        from_hsl(hsl)
+    }
+
+    /// amount from 0 to 1
+    fn lighten(self, amount: f32) -> Self {
+        let amount = amount.clamp(0.0, 1.0);
+        let mut hsl = to_hsl(self);
+
+        hsl.lightness += hsl.lightness * amount;
+
+        from_hsl(hsl)
     }
 }
 
@@ -131,17 +159,17 @@ pub trait IterExt: Iterator + Sized {
 
 impl<I: Iterator + Sized> IterExt for I {}
 
-pub trait TooltipExt<'a, Message>: Into<Element<'a, Message>> {
-    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a, Message> {
-        pure::tooltip(self, tooltip, position)
+pub trait TooltipExt<'a>: Into<Element<'a>> {
+    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a> {
+        iced::widget::tooltip(self, tooltip, position)
     }
 
-    fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a, Message> {
+    fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a> {
         self.tooltip_at(tooltip, Position::FollowCursor)
     }
 }
 
-impl<'a, M, E: Into<Element<'a, M>>> TooltipExt<'a, M> for E {}
+impl<'a, E: Into<Element<'a>>> TooltipExt<'a> for E {}
 
 pub fn text_icon(icon: Icon) -> Text {
     text(icon).font(ICON_FONT)

@@ -1,11 +1,12 @@
-use iced::{Alignment, Length, pure::{*, widget::*}};
+use iced::{Alignment, Length};
+use iced_native::widget::{button, checkbox, column, container, horizontal_rule, pick_list, row, scrollable, text, text_input, vertical_rule};
 use itertools::{Either, Itertools};
 
+use crate::{Column, Container, Element, Level, Location, Row};
 use crate::character::Character;
-use crate::Level;
 use crate::spells::data::{CastingTime, Class, Components, School};
 use crate::spells::spell::CustomSpell;
-use crate::style::Style;
+// use crate::style::Style;
 use crate::utils::{ListGrammaticallyExt, SpacingExt, Tap};
 
 #[derive(Debug, Clone)]
@@ -107,14 +108,13 @@ impl SettingsPage {
         &'s self,
         closed_characters: &[ClosedCharacter],
         width: u32,
-        style: Style,
-    ) -> Container<'c, crate::Message> {
+    ) -> Container<'c> {
         const PADDING: u16 = 12;
         const RULE_SPACING: u16 = 24;
         const NAME_PADDING: u16 = 3;
         const SPACING: u16 = 5;
 
-        let character_label = row()
+        let character_label = row(vec![])
             .push_space(Length::Fill)
             .push(text("Characters").size(30))
             .push_space(Length::Fill);
@@ -123,11 +123,11 @@ impl SettingsPage {
             "Character Name",
             &self.name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
-        ).style(style)
+        )
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));
         let create_character_button = button(
             text("Create").size(16),
-        ).style(style)
+        )
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
             let text_width = (width as f32 / 2.0
@@ -140,53 +140,55 @@ impl SettingsPage {
         ) as u32;
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
-            .fold(column(), |col, (index, closed)| {
-                let style = style.alternating(index);
+            .fold(column(vec![]), |col, (idx, closed)| {
+                let highlight = Location::Alternating { idx, highlight: true };
+                let no_highlight = Location::Alternating { idx, highlight: false };
                 let name = button(
                     text(&*closed.character.name).size(19),
-                ).style(style.no_highlight())
-                    .on_press(crate::Message::Settings(Message::Open(index)));
+                )
+                    .style(no_highlight)
+                    .on_press(crate::Message::Settings(Message::Open(idx)));
                 let name = container(name)
                     .max_width(text_width)
-                    .style(style);
+                    .style(highlight);
                 let open = button(
                     text("Open").size(15),
-                ).style(style)
-                    .on_press(crate::Message::Settings(Message::Open(index)));
+                ).style(highlight)
+                    .on_press(crate::Message::Settings(Message::Open(idx)));
                 let rename = match &closed.rename {
                     Either::Left(()) => {
                         let button = button(
                             text("Rename").size(15),
-                        ).style(style)
-                            .on_press(crate::Message::Settings(Message::Rename(index)));
-                        container(button).style(style)
+                        ).style(highlight)
+                            .on_press(crate::Message::Settings(Message::Rename(idx)));
+                        container(button).style(highlight)
                     }
                     Either::Right(name) => {
                         let cancel_input = text_input(
                             "Submit now to cancel",
                             name,
-                            move |s| crate::Message::Settings(Message::RenameString(index, s)),
-                        ).style(style)
+                            move |s| crate::Message::Settings(Message::RenameString(idx, s)),
+                        ).style(highlight)
                             .width(Length::Units(140))
-                            .on_submit(crate::Message::Settings(Message::Rename(index)));
+                            .on_submit(crate::Message::Settings(Message::Rename(idx)));
                         let button = button(
                             text("Submit").size(15),
-                        ).style(style)
-                            .on_press(crate::Message::Settings(Message::Rename(index)));
-                        let row = row()
+                        ).style(highlight)
+                            .on_press(crate::Message::Settings(Message::Rename(idx)));
+                        let row = row(vec![])
                             .align_items(Alignment::Center)
                             .push(cancel_input)
                             .push_space(3)
                             .push(button);
-                        container(row).style(style)
+                        container(row).style(highlight)
                     }
                 };
                 let delete = button(
                     text("Delete").size(15),
-                ).style(style)
-                    .on_press(crate::Message::Settings(Message::DeleteCharacter(index)));
+                ).style(highlight)
+                    .on_press(crate::Message::Settings(Message::DeleteCharacter(idx)));
                 col.push(container(
-                    row()
+                    row(vec![])
                         .spacing(SPACING)
                         .push_space(NAME_PADDING)
                         .push(name)
@@ -195,12 +197,12 @@ impl SettingsPage {
                         .push(rename)
                         .push(delete)
                         .align_items(Alignment::Center)
-                ).style(style))
+                ).style(highlight))
             });
 
-        let character_col = column()
+        let character_col = column(vec![])
             .spacing(4)
-            .push(row()
+            .push(row(vec![])
                 .align_items(Alignment::Center)
                 .push(character_name_input)
                 .push_space(4)
@@ -209,7 +211,7 @@ impl SettingsPage {
             .push(closed_character_buttons)
             ;
 
-        let spells_label = row()
+        let spells_label = row(vec![])
             .push_space(Length::Fill)
             .push(text("Spell Editor").size(30))
             .push_space(Length::Fill);
@@ -218,16 +220,16 @@ impl SettingsPage {
             "Spell Name",
             &self.spell_name,
             |n| crate::Message::Settings(Message::SpellName(n)),
-        ).style(style)
+        )
             .on_submit(crate::Message::Settings(Message::SubmitSpell));
         let create_spell_button = button(
             text("Create").size(16),
-        ).style(style)
+        )
             .on_press(crate::Message::Settings(Message::SubmitSpell));
 
-        let spells_col = column()
+        let spells_col = column(vec![])
             .spacing(4)
-            .push(row()
+            .push(row(vec![])
                 .align_items(Alignment::Center)
                 .push(spell_name)
                 .push_space(4)
@@ -238,22 +240,25 @@ impl SettingsPage {
             SpellEditor::Searching { spells } => {
                 let col = spells.iter()
                     .enumerate()
-                    .fold(column().spacing(4), |spells_col, (index, spell)| {
-                        let style = style.alternating(index);
+                    .fold(column(vec![]).spacing(4), |spells_col, (idx, spell)| {
+                        let highlight = Location::Alternating { idx, highlight: true };
+                        let no_highlight = Location::Alternating { idx, highlight: false };
                         let name = button(
                             text(&*spell.name).size(19),
-                        ).style(style.no_highlight())
-                            .on_press(crate::Message::Settings(Message::OpenSpell(index)));
+                        )
+                            // todo used to be no_hihglight, how to treat?
+                            .style(no_highlight)
+                            .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let edit = button(
                             text("Edit").size(15),
-                        ).style(style)
-                            .on_press(crate::Message::Settings(Message::OpenSpell(index)));
+                        ).style(highlight)
+                            .on_press(crate::Message::Settings(Message::OpenSpell(idx)));
                         let delete = button(
                             text("Delete").size(15),
-                        ).style(style)
-                            .on_press(crate::Message::Settings(Message::DeleteSpell(index)));
+                        ).style(highlight)
+                            .on_press(crate::Message::Settings(Message::DeleteSpell(idx)));
                         spells_col.push(container(
-                            row()
+                            row(vec![])
                                 .spacing(SPACING)
                                 .push_space(NAME_PADDING)
                                 .push(name)
@@ -261,18 +266,18 @@ impl SettingsPage {
                                 .push(edit)
                                 .push(delete)
                                 .align_items(Alignment::Center)
-                        ).style(style))
+                        ).style(highlight))
                     });
                 spells_col.push(scrollable(col))
             }
             SpellEditor::Editing { spell } => {
-                fn make_row<'a, T: Into<Element<'a, crate::Message>>, L: Into<String>>(
+                fn make_row<'a, T: Into<Element<'a>>, L: Into<String>>(
                     label: L,
                     content: T,
-                ) -> Row<'a, crate::Message> {
+                ) -> Row<'a> {
                     let label = label.into();
                     let labeled = !label.is_empty();
-                    let mut ret = row()
+                    let mut ret = row(vec![])
                         .push(text(label).size(16));
                     if labeled {
                         ret = ret.push_space(Length::Fill);
@@ -281,7 +286,7 @@ impl SettingsPage {
                     let ret = ret
                         .push(content)
                         .align_items(Alignment::Center);
-                    row()
+                    row(vec![])
                         .push_space(Length::Fill)
                         .push(
                             container(ret).width(Length::FillPortion(18))
@@ -295,12 +300,12 @@ impl SettingsPage {
                 let title = text(&*spell.name).size(36);
                 let close_button = button(
                     "Close",
-                ).style(style)
+                )
                     .on_press(crate::Message::Settings(Message::CloseSpell));
-                let title = row()
+                let title = row(vec![])
                     .push_space(Length::Fill)
                     .push(title)
-                    .push(container(row()
+                    .push(container(row(vec![])
                         .push_space(Length::Fill)
                         .push(close_button)
                     ).width(Length::Fill))
@@ -310,13 +315,13 @@ impl SettingsPage {
                     &School::ALL[..],
                     Some(spell.school),
                     edit_message(Edit::School),
-                ).style(style);
+                );
 
                 let level = pick_list(
                     &Level::ALL[..],
                     Some(spell.level),
                     edit_message(Edit::Level),
-                ).style(style).text_size(14);
+                ).text_size(14);
 
                 const CASTING_TIMES: &'static [CastingTime] = &CastingTime::ALL;
                 let casting_time = pick_list(
@@ -326,7 +331,7 @@ impl SettingsPage {
                         other => other.clone(),
                     }),
                     edit_message(Edit::CastingTime),
-                ).style(style);
+                );
 
                 let casting_time_extra = match &spell.casting_time {
                     CastingTime::Special | CastingTime::Action | CastingTime::BonusAction => None,
@@ -336,7 +341,7 @@ impl SettingsPage {
                             "",
                             when.as_deref().unwrap_or(""),
                             edit_message(Edit::CastingTimeWhen),
-                        ).style(style),
+                        ),
                     )),
                     &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(make_row(
                         if matches!(&spell.casting_time, CastingTime::Minute(_)) { "Minutes:" } else { "Hours:" },
@@ -344,7 +349,7 @@ impl SettingsPage {
                             "",
                             &n.to_string(),
                             edit_message(Edit::CastingTimeN),
-                        ).style(style),
+                        ),
                     )),
                 };
 
@@ -352,25 +357,25 @@ impl SettingsPage {
                     "",
                     spell.range.as_deref().unwrap_or(""),
                     edit_message(Edit::Range),
-                ).style(style);
+                );
 
                 let Components { v, s, m } = spell.components.clone().unwrap_or_default();
                 let v = checkbox(
                     "V",
                     v,
                     edit_message(Edit::ComponentV),
-                ).style(style);
+                );
                 let s = checkbox(
                     "S",
                     s,
                     edit_message(Edit::ComponentS),
-                ).style(style);
+                );
                 let mat = checkbox(
                     "M",
                     m.is_some(),
                     edit_message(Edit::ComponentM),
-                ).style(style);
-                let components = row()
+                );
+                let components = row(vec![])
                     .push_space(Length::Fill)
                     .push(v)
                     .push_space(Length::Fill)
@@ -381,31 +386,31 @@ impl SettingsPage {
                     "material",
                     &mat,
                     edit_message(Edit::ComponentMaterial),
-                ).style(style));
+                ));
 
                 let duration = text_input(
                     "",
                     spell.duration.as_deref().unwrap_or(""),
                     edit_message(Edit::Duration),
-                ).style(style);
+                );
 
                 let ritual = checkbox(
                     "",
                     spell.ritual,
                     edit_message(Edit::Ritual),
-                ).style(style);
+                );
 
                 let conc = checkbox(
                     "",
                     spell.conc,
                     edit_message(Edit::Concentration),
-                ).style(style);
+                );
 
                 let description = text_input(
                     "Describe the spell's effects...",
                     &spell.description,
                     edit_message(Edit::Description),
-                ).style(style)
+                )
                     // .on_submit(crate::Message::Settings(Message::EditSpell(Edit::DescEnter)))
                     ;
 
@@ -413,13 +418,13 @@ impl SettingsPage {
                     "Higher level effects...",
                     spell.higher_levels.as_deref().unwrap_or(""),
                     edit_message(Edit::HigherLevels),
-                ).style(style);
+                );
 
                 let classes = pick_list(
                     &Class::ALL[..],
                     None,
                     edit_message(Edit::Class),
-                ).style(style)
+                )
                     .placeholder("Class");
 
                 // let page = TextInput::new(
@@ -429,7 +434,7 @@ impl SettingsPage {
                 //     edit_message(Edit::Page),
                 // ).style(style);
 
-                let column = column()
+                let column = column(vec![])
                     .spacing(3)
                     .push(make_row("", title))
                     .push(horizontal_rule(8))
@@ -459,16 +464,16 @@ impl SettingsPage {
             }
         };
 
-        let row = row()
+        let row = row(vec![])
             .padding(PADDING)
-            .push(column()
+            .push(column(vec![])
                 .width(Length::Fill)
                 .push(character_label.height(Length::Fill))
                 .push_space(1)
                 .push(character_col.height(Length::FillPortion(18)))
             )
             .push(vertical_rule(RULE_SPACING))
-            .push(column()
+            .push(column(vec![])
                 .width(Length::Fill)
                 .push(spells_label.height(Length::Fill))
                 .push_space(1)

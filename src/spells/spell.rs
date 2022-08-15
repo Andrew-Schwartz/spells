@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use iced::pure;
-use iced::pure::widget::Container;
+use iced::{Alignment, Length, widget};
+use iced::widget::{column, container, horizontal_rule, row, text};
 use serde::{Deserialize, Serialize};
 
-use crate::{Alignment, column, container, DeserializeSpell, horizontal_rule, Length, ListGrammaticallyExt, Message, row, SpacingExt, SpellButtons, SPELLS, Style, Tap, text};
+use crate::{Container, DeserializeSpell, ListGrammaticallyExt, SpacingExt, SpellButtons, SPELLS, Tap};
 use crate::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use crate::spells::static_arc::StArc;
 
@@ -249,8 +249,8 @@ impl Spell {
 
     pub fn range(&self) -> Option<&str> {
         match self {
-            Self::Static(spell) => Some(spell.duration),
-            Self::Custom(spell) => spell.duration.as_deref(),
+            Self::Static(spell) => Some(spell.range),
+            Self::Custom(spell) => spell.range.as_deref(),
         }
     }
 
@@ -291,17 +291,16 @@ impl Spell {
         button: B,
         data: B::Data,
         collapse: bool,
-        style: Style,
-    ) -> Container<'c, Message> {
-        let text = |label: String| row()
+    ) -> Container<'c> {
+        let text = |label: String| row(vec![])
             .push(text(label).size(16).width(Length::FillPortion(18)));
 
-        let (buttons, title) = button.view(self.id(), data, style);
-        let title = row().push(title);
+        let (buttons, title) = button.view(self.id(), data);
+        let title = row(vec![]).push(title);
 
-        let buttons = row().push(buttons.width(Length::FillPortion(18)));
+        let buttons = row(vec![]).push(buttons.width(Length::FillPortion(18)));
 
-        let mut column = column()
+        let mut column = column(vec![])
             .align_items(Alignment::Center)
             .push(title)
             .push(buttons);
@@ -330,8 +329,8 @@ impl Spell {
                     col.push(text(format!("Duration: {}", duration))))
                 .push(text(format!("Ritual: {}", if self.ritual() { "Yes" } else { "No" })))
                 .push(horizontal_rule(10))
-                .push(row()
-                    .push(pure::text(self.description())
+                .push(row(vec![])
+                    .push(widget::text(self.description())
                         .size(16)
                         // todo maybe change font to be monospace? have to find a better font
                         // .font(CONSOLAS)
@@ -339,7 +338,7 @@ impl Spell {
                     ))
                 .tap_if_some(self.higher_levels(), |col, higher| col
                     .push(horizontal_rule(8))
-                    .push(row().push(crate::text("At higher levels").size(20).width(Length::FillPortion(18))))
+                    .push(row(vec![]).push(crate::text("At higher levels").size(20).width(Length::FillPortion(18))))
                     .push_space(3)
                     .push(text(higher.to_string())))
                 .push(horizontal_rule(8))
@@ -347,7 +346,7 @@ impl Spell {
         }
 
         container(
-            row()
+            row(vec![])
                 .push_space(Length::FillPortion(1))
                 .push(column.width(Length::FillPortion(18)))
                 .push_space(Length::FillPortion(1)))
