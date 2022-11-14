@@ -1,5 +1,5 @@
 use iced::{Alignment, Length};
-use iced_native::widget::{button, checkbox, column, container, horizontal_rule, pick_list, row, scrollable, text, text_input, vertical_rule};
+use iced_native::widget::{button, checkbox, container, horizontal_rule, pick_list, scrollable, text, text_input, vertical_rule};
 use itertools::{Either, Itertools};
 
 use crate::{Column, Container, Element, Level, Location, Row};
@@ -63,16 +63,20 @@ impl From<Character> for ClosedCharacter {
 }
 
 pub struct SettingsPage {
-    pub name: String,
+    pub character_name: String,
+    pub character_name_id: text_input::Id,
     pub spell_name: String,
+    pub spell_name_id: text_input::Id,
     pub spell_editor: SpellEditor,
 }
 
 impl SettingsPage {
     pub fn new(custom_spells: &[CustomSpell]) -> Self {
         Self {
-            name: Default::default(),
+            character_name: Default::default(),
+            character_name_id: text_input::Id::unique(),
             spell_name: Default::default(),
+            spell_name_id: text_input::Id::unique(),
             spell_editor: SpellEditor::searching("", custom_spells),
         }
     }
@@ -114,16 +118,18 @@ impl SettingsPage {
         const NAME_PADDING: u16 = 3;
         const SPACING: u16 = 5;
 
-        let character_label = row(vec![])
-            .push_space(Length::Fill)
-            .push(text("Characters").size(30))
-            .push_space(Length::Fill);
+        let character_label = row![
+            Length::Fill,
+            text("Characters").size(30),
+            Length::Fill,
+        ];
 
         let character_name_input = text_input(
             "Character Name",
-            &self.name,
+            &self.character_name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
         )
+            .id(self.character_name_id.clone())
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));
         let create_character_button = button(
             text("Create").size(16),
@@ -140,7 +146,7 @@ impl SettingsPage {
         ) as u32;
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
-            .fold(column(vec![]), |col, (idx, closed)| {
+            .fold(col!(), |col, (idx, closed)| {
                 let highlight = Location::Alternating { idx, highlight: true };
                 let no_highlight = Location::Alternating { idx, highlight: false };
                 let name = button(
@@ -175,11 +181,11 @@ impl SettingsPage {
                             text("Submit").size(15),
                         ).style(highlight)
                             .on_press(crate::Message::Settings(Message::Rename(idx)));
-                        let row = row(vec![])
-                            .align_items(Alignment::Center)
-                            .push(cancel_input)
-                            .push_space(3)
-                            .push(button);
+                        let row = row![
+                            cancel_input,
+                            3,
+                            button
+                        ].align_items(Alignment::Center);
                         container(row).style(highlight)
                     }
                 };
@@ -188,59 +194,58 @@ impl SettingsPage {
                 ).style(highlight)
                     .on_press(crate::Message::Settings(Message::DeleteCharacter(idx)));
                 col.push(container(
-                    row(vec![])
-                        .spacing(SPACING)
-                        .push_space(NAME_PADDING)
-                        .push(name)
-                        .push_space(Length::Fill)
-                        .push(open)
-                        .push(rename)
-                        .push(delete)
+                    row![
+                        NAME_PADDING,
+                        name,
+                        Length::Fill,
+                        open,
+                        rename,
+                        delete
+                    ].spacing(SPACING)
                         .align_items(Alignment::Center)
                 ).style(highlight))
             });
 
-        let character_col = column(vec![])
-            .spacing(4)
-            .push(row(vec![])
-                .align_items(Alignment::Center)
-                .push(character_name_input)
-                .push_space(4)
-                .push(create_character_button))
-            .push_space(14)
-            .push(closed_character_buttons)
-            ;
+        let character_col = col![
+            row![
+                character_name_input,
+                4,
+                create_character_button,
+            ].align_items(Alignment::Center),
+            14,
+            closed_character_buttons,
+        ].spacing(4);
 
-        let spells_label = row(vec![])
-            .push_space(Length::Fill)
-            .push(text("Spell Editor").size(30))
-            .push_space(Length::Fill);
+        let spells_label = row![
+            Length::Fill,
+            text("Spell Editor").size(30),
+            Length::Fill,
+        ];
 
         let spell_name = text_input(
             "Spell Name",
             &self.spell_name,
             |n| crate::Message::Settings(Message::SpellName(n)),
-        )
-            .on_submit(crate::Message::Settings(Message::SubmitSpell));
+        ).on_submit(crate::Message::Settings(Message::SubmitSpell));
+
         let create_spell_button = button(
             text("Create").size(16),
-        )
-            .on_press(crate::Message::Settings(Message::SubmitSpell));
+        ).on_press(crate::Message::Settings(Message::SubmitSpell));
 
-        let spells_col = column(vec![])
-            .spacing(4)
-            .push(row(vec![])
-                .align_items(Alignment::Center)
-                .push(spell_name)
-                .push_space(4)
-                .push(create_spell_button))
-            .push_space(10);
+        let spells_col = col![
+            row![
+                spell_name,
+                4,
+                create_spell_button,
+            ].align_items(Alignment::Center),
+            10,
+        ].spacing(4);
 
         let spells_col = match &self.spell_editor {
             SpellEditor::Searching { spells } => {
                 let col = spells.iter()
                     .enumerate()
-                    .fold(column(vec![]).spacing(4), |spells_col, (idx, spell)| {
+                    .fold(col!().spacing(4), |spells_col, (idx, spell)| {
                         let highlight = Location::Alternating { idx, highlight: true };
                         let no_highlight = Location::Alternating { idx, highlight: false };
                         let name = button(
@@ -258,13 +263,13 @@ impl SettingsPage {
                         ).style(highlight)
                             .on_press(crate::Message::Settings(Message::DeleteSpell(idx)));
                         spells_col.push(container(
-                            row(vec![])
-                                .spacing(SPACING)
-                                .push_space(NAME_PADDING)
-                                .push(name)
-                                .push_space(Length::Fill)
-                                .push(edit)
-                                .push(delete)
+                            row![
+                                NAME_PADDING,
+                                name,
+                                Length::Fill,
+                                edit,
+                                delete,
+                            ].spacing(SPACING)
                                 .align_items(Alignment::Center)
                         ).style(highlight))
                     });
@@ -277,8 +282,7 @@ impl SettingsPage {
                 ) -> Row<'a> {
                     let label = label.into();
                     let labeled = !label.is_empty();
-                    let mut ret = row(vec![])
-                        .push(text(label).size(16));
+                    let mut ret = row!(text(label).size(16));
                     if labeled {
                         ret = ret.push_space(Length::Fill);
                         // row = row.push_space(Length::Units(16))
@@ -286,12 +290,11 @@ impl SettingsPage {
                     let ret = ret
                         .push(content)
                         .align_items(Alignment::Center);
-                    row(vec![])
-                        .push_space(Length::Fill)
-                        .push(
-                            container(ret).width(Length::FillPortion(18))
-                        )
-                        .push_space(Length::Fill)
+                    row![
+                        Length::Fill,
+                        container(ret).width(Length::FillPortion(18)),
+                        Length::Fill
+                    ]
                 }
                 fn edit_message<T: 'static>(edit_ctor: fn(T) -> Edit) -> impl Fn(T) -> crate::Message {
                     move |t: T| crate::Message::Settings(Message::EditSpell(edit_ctor(t)))
@@ -300,16 +303,16 @@ impl SettingsPage {
                 let title = text(&*spell.name).size(36);
                 let close_button = button(
                     "Close",
-                )
-                    .on_press(crate::Message::Settings(Message::CloseSpell));
-                let title = row(vec![])
-                    .push_space(Length::Fill)
-                    .push(title)
-                    .push(container(row(vec![])
-                        .push_space(Length::Fill)
-                        .push(close_button)
-                    ).width(Length::Fill))
-                    .align_items(Alignment::Center);
+                ).on_press(crate::Message::Settings(Message::CloseSpell));
+
+                let title = row![
+                    Length::Fill,
+                    title,
+                    container(row![
+                        Length::Fill,
+                        close_button,
+                    ]).width(Length::Fill)
+                ].align_items(Alignment::Center);
 
                 let school = pick_list(
                     &School::ALL[..],
@@ -375,13 +378,14 @@ impl SettingsPage {
                     m.is_some(),
                     edit_message(Edit::ComponentM),
                 );
-                let components = row(vec![])
-                    .push_space(Length::Fill)
-                    .push(v)
-                    .push_space(Length::Fill)
-                    .push(s)
-                    .push_space(Length::Fill)
-                    .push(mat);
+                let components = row![
+                    Length::Fill,
+                    v,
+                    Length::Fill,
+                    s,
+                    Length::Fill,
+                    mat
+                ];
                 let material_component = m.map(|mat| text_input(
                     "material",
                     &mat,
@@ -434,7 +438,8 @@ impl SettingsPage {
                 //     edit_message(Edit::Page),
                 // ).style(style);
 
-                let column = column(vec![])
+
+                let column = col!()
                     .spacing(3)
                     .push(make_row("", title))
                     .push(horizontal_rule(8))
@@ -464,21 +469,19 @@ impl SettingsPage {
             }
         };
 
-        let row = row(vec![])
-            .padding(PADDING)
-            .push(column(vec![])
-                .width(Length::Fill)
-                .push(character_label.height(Length::Fill))
-                .push_space(1)
-                .push(character_col.height(Length::FillPortion(18)))
-            )
-            .push(vertical_rule(RULE_SPACING))
-            .push(column(vec![])
-                .width(Length::Fill)
-                .push(spells_label.height(Length::Fill))
-                .push_space(1)
-                .push(spells_col.height(Length::FillPortion(18)))
-            );
+        let row = row![
+            col![
+                character_label.height(Length::Fill),
+                1,
+                scrollable(character_col).height(Length::FillPortion(18))
+            ].width(Length::Fill),
+            vertical_rule(RULE_SPACING),
+            col![
+                spells_label.height(Length::Fill),
+                1,
+                scrollable(spells_col).height(Length::FillPortion(18))
+            ].width(Length::Fill),
+        ].padding(PADDING);
 
         container(row.height(Length::Shrink))
     }

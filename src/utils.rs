@@ -1,12 +1,115 @@
 use std::fmt::Display;
 
-use iced::{Color, Length, widget::{horizontal_space, tooltip::Position, vertical_space}};
+use iced::{Color, Length, widget::tooltip::Position};
 use iced::widget::{Column, Row};
 use iced_aw::Icon;
-use iced_native::widget::text;
+use iced_native::widget::{horizontal_space, Space, text, vertical_space};
 use palette::{FromColor, Hsl, Srgb};
 
 use crate::{Element, ICON_FONT, Text, Tooltip};
+
+// versions that get the spacing easier
+macro_rules! col {
+    () => {
+        iced::widget::Column::new()
+    };
+    ($($x:expr), + $(,)?) => {
+        iced::widget::Column::with_children(vec![$($crate::utils::DirectionalElement::<$crate::utils::ColDir>::into_element($x)),+])
+    }
+}
+
+macro_rules! row {
+    () => {
+        iced::widget::Row::new()
+    };
+    ($($x:expr),+ $(,)?) => {
+        iced::widget::Row::with_children(vec![$($crate::utils::DirectionalElement::<$crate::utils::RowDir>::into_element($x)),+])
+    }
+}
+
+trait Dir {
+    fn space(length: Length) -> Space;
+}
+
+pub enum ColDir {}
+
+impl Dir for ColDir {
+    fn space(length: Length) -> Space {
+        vertical_space(length)
+    }
+}
+
+pub enum RowDir {}
+
+impl Dir for RowDir {
+    fn space(length: Length) -> Space {
+        horizontal_space(length)
+    }
+}
+
+pub trait DirectionalElement<'a, Dir> {
+    fn into_element(self) -> Element<'a>;
+}
+
+macro_rules! impl_directional_element {
+    ($(
+        $ty:path/*, $(<$lt:lifetime>)?*/
+    );+ $(;)?) => {
+        $(
+            impl<'a, Dir> DirectionalElement<'a, Dir> for $ty {
+                fn into_element(self) -> $crate::Element<'a> {
+                    $crate::Element::from(self)
+                }
+            }
+        )+
+    };
+}
+
+impl_directional_element! {
+    crate::Element<'a>;
+    crate::TextInput<'a>;
+    crate::Container<'a>;
+    crate::Text<'a>;
+    crate::Button<'a>;
+    crate::Row<'a>;
+    crate::Column<'a>;
+    crate::Tooltip<'a>;
+    crate::Scrollable<'a>;
+    crate::CheckBox<'a>;
+    crate::Rule;
+    crate::ProgressBar;
+    iced::widget::Space;
+}
+
+impl<'a, T, Dir> DirectionalElement<'a, Dir> for crate::Slider<'a, T>
+    where T: Copy + num_traits::cast::FromPrimitive + 'a,
+          f64: From<T>,
+{
+    fn into_element(self) -> crate::Element<'a> {
+        crate::Element::from(self)
+    }
+}
+
+impl<'a, T, Dir> DirectionalElement<'a, Dir> for crate::PickList<'a, T>
+    where T: Clone + Eq + Display + 'static,
+          [T]: ToOwned<Owned=Vec<T>>,
+{
+    fn into_element(self) -> crate::Element<'a> {
+        crate::Element::from(self)
+    }
+}
+
+impl<'a, D: Dir> DirectionalElement<'a, D> for Length {
+    fn into_element(self) -> Element<'a> {
+        <Space as DirectionalElement<'a, D>>::into_element(D::space(self))
+    }
+}
+
+impl<'a, D: Dir> DirectionalElement<'a, D> for u16 {
+    fn into_element(self) -> Element<'a> {
+        <Space as DirectionalElement<'a, D>>::into_element(D::space(self.into()))
+    }
+}
 
 pub trait SpacingExt {
     fn push_space<L: Into<Length>>(self, length: L) -> Self;
@@ -14,13 +117,13 @@ pub trait SpacingExt {
 
 impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Column<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
-        self.push(vertical_space(length.into()))
+        self.push(iced::widget::vertical_space(length.into()))
     }
 }
 
 impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Row<'a, Message, Renderer> {
     fn push_space<L: Into<Length>>(self, length: L) -> Self {
-        self.push(horizontal_space(length.into()))
+        self.push(iced::widget::horizontal_space(length.into()))
     }
 }
 
@@ -171,6 +274,6 @@ pub trait TooltipExt<'a>: Into<Element<'a>> {
 
 impl<'a, E: Into<Element<'a>>> TooltipExt<'a> for E {}
 
-pub fn text_icon(icon: Icon) -> Text {
+pub fn text_icon(icon: Icon) -> Text<'static> {
     text(icon).font(ICON_FONT)
 }

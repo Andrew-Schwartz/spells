@@ -4,6 +4,7 @@ use std::ops::Not;
 use iced::{application, Color};
 use iced::widget::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text, text_input};
 use iced::widget::scrollable::{Scrollbar, Scroller};
+use iced_aw::style::tab_bar;
 use iced_aw::tabs;
 use iced_style::{menu, rule};
 use iced_style::rule::FillMode;
@@ -20,12 +21,18 @@ pub mod types {
 
     pub type Element<'a> = iced::Element<'a, Message, Renderer>;
     pub type Container<'a> = iced::widget::Container<'a, Message, Renderer>;
-    pub type Text = iced::widget::Text<Renderer>;
+    pub type Text<'a> = iced::widget::Text<'a, Renderer>;
     pub type Row<'a> = iced::widget::Row<'a, Message, Renderer>;
     pub type Column<'a> = iced::widget::Column<'a, Message, Renderer>;
     pub type Button<'a> = iced::widget::Button<'a, Message, Renderer>;
     pub type Tooltip<'a> = iced::widget::Tooltip<'a, Message, Renderer>;
     pub type Scrollable<'a> = iced::widget::Scrollable<'a, Message, Renderer>;
+    pub type TextInput<'a> = iced::widget::TextInput<'a, Message, Renderer>;
+    pub type CheckBox<'a> = iced::widget::Checkbox<'a, Message, Renderer>;
+    pub type PickList<'a, T> = iced::widget::PickList<'a, T, Message, Renderer>;
+    pub type Slider<'a, T> = iced::widget::Slider<'a, T, Message, Renderer>;
+    pub type Rule = iced::widget::Rule<Renderer>;
+    pub type ProgressBar = iced::widget::ProgressBar<Renderer>;
 }
 
 impl Not for Theme {
@@ -56,7 +63,7 @@ pub enum Theme {
 }
 
 impl Theme {
-    fn palette(self, style: Location) -> Palette {
+    fn palette(self, style: &Location) -> Palette {
         match self {
             Self::Dark => dark::palette(style),
             Self::Light => todo!(),
@@ -108,7 +115,7 @@ impl text::StyleSheet for Theme {
 impl application::StyleSheet for Theme {
     type Style = Location;
 
-    fn appearance(&self, style: Self::Style) -> application::Appearance {
+    fn appearance(&self, style: &Self::Style) -> application::Appearance {
         let palette = self.palette(style);
         application::Appearance {
             background_color: palette.background,
@@ -120,7 +127,7 @@ impl application::StyleSheet for Theme {
 impl container::StyleSheet for Theme {
     type Style = Location;
 
-    fn appearance(&self, style: Self::Style) -> container::Appearance {
+    fn appearance(&self, style: &Self::Style) -> container::Appearance {
         let palette = self.palette(style);
         container::Appearance {
             text_color: palette.text.into(),
@@ -134,7 +141,7 @@ impl container::StyleSheet for Theme {
 impl rule::StyleSheet for Theme {
     type Style = Location;
 
-    fn style(&self, style: Self::Style) -> rule::Appearance {
+    fn appearance(&self, style: &Self::Style) -> rule::Appearance {
         let palette = self.palette(style);
         rule::Appearance {
             color: palette.text.a(0.3),
@@ -148,7 +155,7 @@ impl rule::StyleSheet for Theme {
 impl button::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: Self::Style) -> button::Appearance {
+    fn active(&self, style: &Self::Style) -> button::Appearance {
         let palette = self.palette(style);
         button::Appearance {
             background: palette.active.into(),
@@ -160,7 +167,7 @@ impl button::StyleSheet for Theme {
     }
 
     // todo this is the
-    fn hovered(&self, style: Self::Style) -> button::Appearance {
+    fn hovered(&self, style: &Self::Style) -> button::Appearance {
         let palette = self.palette(style);
         button::Appearance {
             background: palette.hovered.into(),
@@ -168,12 +175,12 @@ impl button::StyleSheet for Theme {
         }
     }
 
-    fn pressed(&self, style: Self::Style) -> button::Appearance {
+    fn pressed(&self, style: &Self::Style) -> button::Appearance {
         let palette = self.palette(style);
         button::Appearance {
             border_width: 1.0,
             // todo
-            border_color: if style == Location::Transparent {
+            border_color: if *style == Location::Transparent {
                 Color::TRANSPARENT
             } else {
                 palette.text
@@ -182,7 +189,7 @@ impl button::StyleSheet for Theme {
         }
     }
 
-    fn disabled(&self, style: Self::Style) -> button::Appearance {
+    fn disabled(&self, style: &Self::Style) -> button::Appearance {
         let palette = self.palette(style);
         button::Appearance {
             background: palette.disabled.into(),
@@ -194,7 +201,7 @@ impl button::StyleSheet for Theme {
 impl text_input::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: Self::Style) -> text_input::Appearance {
+    fn active(&self, style: &Self::Style) -> text_input::Appearance {
         let palette = self.palette(style);
         text_input::Appearance {
             background: palette.surface.into(),
@@ -204,7 +211,7 @@ impl text_input::StyleSheet for Theme {
         }
     }
 
-    fn focused(&self, style: Self::Style) -> text_input::Appearance {
+    fn focused(&self, style: &Self::Style) -> text_input::Appearance {
         let palette = self.palette(style);
         text_input::Appearance {
             border_width: 1.0,
@@ -213,7 +220,7 @@ impl text_input::StyleSheet for Theme {
         }
     }
 
-    fn placeholder_color(&self, style: Self::Style) -> Color {
+    fn placeholder_color(&self, style: &Self::Style) -> Color {
         match style {
             // todo is this always good
             Location::Transparent => Color::TRANSPARENT,
@@ -221,15 +228,15 @@ impl text_input::StyleSheet for Theme {
         }
     }
 
-    fn value_color(&self, style: Self::Style) -> Color {
+    fn value_color(&self, style: &Self::Style) -> Color {
         self.palette(style).text
     }
 
-    fn selection_color(&self, style: Self::Style) -> Color {
+    fn selection_color(&self, style: &Self::Style) -> Color {
         self.palette(style).active
     }
 
-    fn hovered(&self, style: Self::Style) -> text_input::Appearance {
+    fn hovered(&self, style: &Self::Style) -> text_input::Appearance {
         text_input::Appearance {
             border_width: 1.0,
             border_color: self.palette(style).accent.a(0.3),
@@ -241,7 +248,7 @@ impl text_input::StyleSheet for Theme {
 impl scrollable::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: Self::Style) -> Scrollbar {
+    fn active(&self, style: &Self::Style) -> Scrollbar {
         let palette = self.palette(style);
         Scrollbar {
             background: None,
@@ -257,7 +264,7 @@ impl scrollable::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, style: Self::Style) -> Scrollbar {
+    fn hovered(&self, style: &Self::Style) -> Scrollbar {
         let palette = self.palette(style);
         let active = self.active(style);
         Scrollbar {
@@ -274,7 +281,7 @@ impl scrollable::StyleSheet for Theme {
 impl menu::StyleSheet for Theme {
     type Style = Location;
 
-    fn appearance(&self, style: Self::Style) -> menu::Appearance {
+    fn appearance(&self, style: &Self::Style) -> menu::Appearance {
         let palette = self.palette(style);
         menu::Appearance {
             text_color: palette.text,
@@ -292,7 +299,7 @@ impl menu::StyleSheet for Theme {
 impl pick_list::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: <Self as pick_list::StyleSheet>::Style) -> pick_list::Appearance {
+    fn active(&self, style: &Self::Style) -> pick_list::Appearance {
         let palette = self.palette(style);
         pick_list::Appearance {
             text_color: palette.text,
@@ -305,7 +312,7 @@ impl pick_list::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, style: <Self as pick_list::StyleSheet>::Style) -> pick_list::Appearance {
+    fn hovered(&self, style: &Self::Style) -> pick_list::Appearance {
         pick_list::Appearance {
             background: self.palette(style).hovered.into(),
             ..self.active(style)
@@ -316,7 +323,7 @@ impl pick_list::StyleSheet for Theme {
 impl checkbox::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: Self::Style, is_checked: bool) -> checkbox::Appearance {
+    fn active(&self, style: &Self::Style, is_checked: bool) -> checkbox::Appearance {
         let palette = self.palette(style);
         checkbox::Appearance {
             background: if is_checked {
@@ -333,7 +340,7 @@ impl checkbox::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, style: Self::Style, is_checked: bool) -> checkbox::Appearance {
+    fn hovered(&self, style: &Self::Style, is_checked: bool) -> checkbox::Appearance {
         let palette = self.palette(style);
         let active = self.active(style, is_checked);
         checkbox::Appearance {
@@ -349,7 +356,7 @@ impl checkbox::StyleSheet for Theme {
 impl slider::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, style: Self::Style) -> slider::Appearance {
+    fn active(&self, style: &Self::Style) -> slider::Appearance {
         let palette = self.palette(style);
         slider::Appearance {
             // todo this has to be transparent for TRANSPARENT
@@ -364,13 +371,13 @@ impl slider::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, style: Self::Style) -> slider::Appearance {
+    fn hovered(&self, style: &Self::Style) -> slider::Appearance {
         let mut appearance = self.active(style);
         appearance.handle.border_width = 1.5;
         appearance
     }
 
-    fn dragging(&self, style: Self::Style) -> slider::Appearance {
+    fn dragging(&self, style: &Self::Style) -> slider::Appearance {
         let mut appearance = self.hovered(style);
         appearance.handle.border_color = self.palette(style).active;
         appearance.handle.border_width += 0.5;
@@ -381,7 +388,7 @@ impl slider::StyleSheet for Theme {
 impl progress_bar::StyleSheet for Theme {
     type Style = Location;
 
-    fn appearance(&self, style: Self::Style) -> progress_bar::Appearance {
+    fn appearance(&self, style: &Self::Style) -> progress_bar::Appearance {
         let palette = self.palette(style);
         progress_bar::Appearance {
             background: palette.active.into(),
@@ -394,9 +401,9 @@ impl progress_bar::StyleSheet for Theme {
 impl tabs::StyleSheet for Theme {
     type Style = Location;
 
-    fn active(&self, _style: Self::Style, is_active: bool) -> tabs::Appearance {
-        let palette = self.palette(Location::Default);
-        tabs::Appearance {
+    fn active(&self, _style: Self::Style, is_active: bool) -> tab_bar::Appearance {
+        let palette = self.palette(&Location::Default);
+        tab_bar::Appearance {
             background: None,
             border_color: None,
             border_width: 0.0,
@@ -412,9 +419,9 @@ impl tabs::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, _style: Self::Style, is_active: bool) -> tabs::Appearance {
-        let palette = self.palette(Location::Default);
-        tabs::Appearance {
+    fn hovered(&self, _style: Self::Style, is_active: bool) -> tab_bar::Appearance {
+        let palette = self.palette(&Location::Default);
+        tab_bar::Appearance {
             background: None,
             border_color: None,
             border_width: 0.0,
@@ -448,7 +455,7 @@ mod dark {
 //     use iced_aw::tabs;
     use crate::style::{Location, Palette};
 
-    pub fn palette(style: Location) -> Palette {
+    pub fn palette(style: &Location) -> Palette {
         match style {
             Location::Default => DEFAULT,
             Location::Transparent => Palette {
@@ -456,7 +463,7 @@ mod dark {
                 ..Palette::TRANSPARENT
             },
             Location::SettingsBar => SETTINGS_BAR,
-            Location::Alternating { idx, highlight } => alternating(idx, highlight),
+            &Location::Alternating { idx, highlight } => alternating(idx, highlight),
         }
     }
 

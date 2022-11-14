@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use iced::{Alignment, Length, widget};
-use iced::widget::{column, container, horizontal_rule, row, text};
+use iced::widget::{container, horizontal_rule, text, text_input};
 use serde::{Deserialize, Serialize};
 
-use crate::{Container, DeserializeSpell, ListGrammaticallyExt, SpacingExt, SpellButtons, SPELLS, Tap};
+use crate::{Container, DeserializeSpell, ListGrammaticallyExt, SpellButtons, SPELLS};
 use crate::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use crate::spells::static_arc::StArc;
+use crate::utils::{SpacingExt, Tap};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(try_from = "DeserializeSpell")]
@@ -75,20 +76,36 @@ pub struct CustomSpell {
     pub name_lower: String,
     pub level: Level,
     pub casting_time: CastingTime,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub casting_time_id: text_input::Id,
     pub range: Option<String>,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub range_id: text_input::Id,
     pub components: Option<Components>,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub material_id: text_input::Id,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub components_id: text_input::Id,
     pub duration: Option<String>,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub duration_id: text_input::Id,
     pub school: School,
     #[serde(default)]
     pub ritual: bool,
     #[serde(default)]
     pub conc: bool,
     pub description: String,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub description_id: text_input::Id,
     pub desc_lower: String,
     pub higher_levels: Option<String>,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub higher_levels_id: text_input::Id,
     pub higher_levels_lower: Option<String>,
     pub classes: Vec<Class>,
     pub page: Option<u32>,
+    #[serde(skip, default = "text_input::Id::unique")]
+    pub page_id: text_input::Id,
 }
 
 impl PartialEq for CustomSpell {
@@ -107,18 +124,26 @@ impl CustomSpell {
             // name_state: Default::default(),
             level: Level::Cantrip,
             casting_time: CastingTime::Action,
+            casting_time_id: text_input::Id::unique(),
             range: None,
             duration: None,
             components: None,
+            material_id: text_input::Id::unique(),
             school: School::Abjuration,
             ritual: false,
             conc: false,
             description: String::new(),
+            description_id: text_input::Id::unique(),
             desc_lower: String::new(),
             higher_levels: None,
+            higher_levels_id: text_input::Id::unique(),
             higher_levels_lower: None,
             classes: Vec::new(),
             page: None,
+            range_id: text_input::Id::unique(),
+            components_id: text_input::Id::unique(),
+            duration_id: text_input::Id::unique(),
+            page_id: text_input::Id::unique(),
         }
     }
 
@@ -292,18 +317,17 @@ impl Spell {
         data: B::Data,
         collapse: bool,
     ) -> Container<'c> {
-        let text = |label: String| row(vec![])
-            .push(text(label).size(16).width(Length::FillPortion(18)));
+        let text = |label: String| row!(text(label).size(16).width(Length::FillPortion(18)));
 
         let (buttons, title) = button.view(self.id(), data);
-        let title = row(vec![]).push(title);
+        let title = row!(title);
 
-        let buttons = row(vec![]).push(buttons.width(Length::FillPortion(18)));
+        let buttons = row!(buttons.width(Length::FillPortion(18)));
 
-        let mut column = column(vec![])
-            .align_items(Alignment::Center)
-            .push(title)
-            .push(buttons);
+        let mut column = col![
+            title, buttons
+        ].align_items(Alignment::Center);
+
         if !collapse {
             let classes = self.classes().iter().list_grammatically();
             let an_grammar = classes.chars().next()
@@ -329,8 +353,7 @@ impl Spell {
                     col.push(text(format!("Duration: {}", duration))))
                 .push(text(format!("Ritual: {}", if self.ritual() { "Yes" } else { "No" })))
                 .push(horizontal_rule(10))
-                .push(row(vec![])
-                    .push(widget::text(self.description())
+                .push(row!(widget::text(self.description())
                         .size(16)
                         // todo maybe change font to be monospace? have to find a better font
                         // .font(CONSOLAS)
@@ -338,19 +361,18 @@ impl Spell {
                     ))
                 .tap_if_some(self.higher_levels(), |col, higher| col
                     .push(horizontal_rule(8))
-                    .push(row(vec![]).push(crate::text("At higher levels").size(20).width(Length::FillPortion(18))))
+                    .push(row!(crate::text("At higher levels").size(20).width(Length::FillPortion(18))))
                     .push_space(3)
                     .push(text(higher.to_string())))
                 .push(horizontal_rule(8))
                 .push(about);
         }
 
-        container(
-            row(vec![])
-                .push_space(Length::FillPortion(1))
-                .push(column.width(Length::FillPortion(18)))
-                .push_space(Length::FillPortion(1)))
-            .width(Length::Fill)
+        container(row![
+            Length::FillPortion(1),
+            column.width(Length::FillPortion(18)),
+            Length::FillPortion(1),
+        ]).width(Length::Fill)
             .center_x()
     }
 }

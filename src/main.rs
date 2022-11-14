@@ -43,16 +43,15 @@ use iced::{
     Settings,
     widget::{
         button,
-        column,
         container,
         progress_bar,
-        row,
         slider,
         text,
         tooltip::Position,
     },
     window::Icon,
 };
+use iced::widget::text_input;
 use iced_aw::TabLabel;
 use iced_native::{Event, Font, Subscription, window};
 use itertools::{Either, Itertools};
@@ -73,11 +72,14 @@ use crate::spells::spell::{find_spell, SpellId};
 use crate::style::{Location, Theme};
 // use crate::style::{SettingsBarStyle, Style};
 use crate::tab::Tab;
-use crate::utils::{SpacingExt, Tap, TooltipExt, TryRemoveExt};
+use crate::utils::{Tap, TooltipExt, TryRemoveExt};
 
 use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use self::spells::spell::{CustomSpell, StaticSpell};
 use self::spells::static_arc::StArc;
+
+#[macro_use]
+mod utils;
 
 mod fetch;
 mod style;
@@ -87,7 +89,6 @@ mod settings;
 mod character;
 mod hotkey;
 mod hotmouse;
-mod utils;
 mod update;
 mod spells;
 mod error;
@@ -184,15 +185,14 @@ impl UpdateState {
         const VER: &str = cargo_crate_version!();
         match self {
             &Self::Downloading(pct) => {
-                container(row(vec![])
-                    .align_items(Alignment::Center)
-                    .push(text("Downloading").size(10))
-                    .push_space(5)
-                    .push(progress_bar(0.0..=100.0, pct)
+                container(row![
+                    text("Downloading").size(10),
+                    5,
+                    progress_bar(0.0..=100.0, pct)
                         .style(Location::SettingsBar)
                         .height(Length::Units(12)) // bottom bar is 20 pts
-                        .width(Length::Units(100)))
-                )
+                        .width(Length::Units(100))
+                ].align_items(Alignment::Center))
             }
             view_as_text => match view_as_text {
                 Self::Checking => text("Checking for updates..."),
@@ -394,8 +394,8 @@ impl DndSpells {
         Ok(())
     }
 
-    fn refresh_search(&mut self) {
-        self.search_page.update(search::Message::Refresh, &self.custom_spells, &self.characters);
+    fn refresh_search(&mut self) -> Command<Message> {
+        self.search_page.update(search::Message::Refresh, &self.custom_spells, &self.characters)
     }
 }
 
@@ -436,6 +436,7 @@ impl Application for DndSpells {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
+        let mut commands = Vec::new();
         match message {
             Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
                 self.update_state = UpdateState::Errored(e.to_string());
@@ -452,17 +453,20 @@ impl Application for DndSpells {
                 self.col_scale = mult;
                 self.set_num_columns();
             }
-            Message::Search(msg) => self.search_page.update(msg, &self.custom_spells, &self.characters),
+            Message::Search(msg) => {
+                let command = self.search_page.update(msg, &self.custom_spells, &self.characters);
+                commands.push(command);
+            },
             Message::Settings(message) => {
                 use settings::Message;
                 match message {
                     Message::CharacterName(name) => {
-                        self.settings_page.name = name;
+                        self.settings_page.character_name = name;
                     }
                     Message::SubmitCharacter => {
-                        // todo focus
-                        // self.settings_page.character_name_state.focus();
-                        let name = &mut self.settings_page.name;
+                        let command = text_input::focus(self.settings_page.character_name_id.clone());
+                        commands.push(command);
+                        let name = &mut self.settings_page.character_name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
                             self.add_character(name);
@@ -637,8 +641,8 @@ impl Application for DndSpells {
                 // let must_save = self.character_pages.get_mut(&name)
                 //     .map(|c| c.update(msg, num_cols));
                 if add {
-                    // todo
-                    // self.search_page.search.state.focus();
+                    let command = text_input::focus(self.search_page.search.search_id.clone());
+                    commands.push(command);
                     // have to update after adding the spell
                     self.refresh_search();
                 }
@@ -679,11 +683,13 @@ impl Application for DndSpells {
                         match (main_page, self.tab) {
                             (true, _) => {
                                 self.tab = Tab::Search;
-                                self.search_page.update(
+                                let command = self.search_page.update(
                                     search::Message::Search(String::new()),
                                     &self.custom_spells,
                                     &self.characters,
                                 );
+                                println!("command = {:?}", command);
+                                commands.push(command);
                             }
                             (false, Tab::Settings | Tab::Search) => {
                                 self.tab = Tab::Search;
@@ -692,8 +698,8 @@ impl Application for DndSpells {
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
                                     page.tab = None;
-                                    // todo
-                                    // page.search.state.focus();
+                                    let command = text_input::focus(page.search.search_id.clone());
+                                    commands.push(command);
                                 }
                             }
                         }
@@ -825,45 +831,52 @@ impl Application for DndSpells {
                             }
                         }
                     }
-                    // todo
-                    Message::CustomSpellNextField(_forwards) => {
-                        // if let Tab::Settings = self.tab {
-                        //     let mut states = vec![
-                        //         &mut self.settings_page.character_name_state,
-                        //         &mut self.settings_page.spell_name_state,
-                        //     ];
-                        //     if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
-                        //         states.extend([
-                        //             &mut spell.casting_time_extra_state,
-                        //             &mut spell.range_state
-                        //         ]);
-                        //         if matches!(&spell.components, Some(Components { m: Some(_), .. })) {
-                        //             states.extend([&mut spell.material_state]);
-                        //         }
-                        //         // todo
-                        //         states.extend([
-                        //             // &mut spell.components_state,
-                        //             // &mut spell.duration_state,
-                        //             // &mut spell.description_state,
-                        //             // &mut spell.higher_levels_state,
-                        //             // &mut spell.source_state,
-                        //             // &mut spell.page_state
-                        //         ]);
-                        //     }
-                        //     for i in 0..states.len() {
-                        //         if states[i].is_focused() {
-                        //             if forwards && i != states.len() - 1 {
-                        //                 states[i].unfocus();
-                        //                 states[i + 1].focus();
-                        //                 break;
-                        //             } else if !forwards && i != 0 {
-                        //                 states[i].unfocus();
-                        //                 states[i - 1].focus();
-                        //                 break;
-                        //             }
-                        //         }
-                        //     }
-                        // }
+                    Message::CustomSpellNextField(forwards) => {
+                        if let Tab::Settings = self.tab {
+                            let mut ids = vec![
+                                &mut self.settings_page.character_name_id,
+                                &mut self.settings_page.spell_name_id,
+                            ];
+                            // let mut states = vec![
+                            //     &mut self.settings_page.character_name_state,
+                            //     &mut self.settings_page.spell_name_state,
+                            //
+                            if let SpellEditor::Editing { spell } = &mut self.settings_page.spell_editor {
+                                ids.extend([
+                                    &mut spell.casting_time_id,
+                                    &mut spell.range_id,
+                                ]);
+                                // states.extend([
+                                //     &mut spell.casting_time_extra_state,
+                                //     &mut spell.range_state
+                                // ]);
+                                if matches!(&spell.components, Some(Components { m: Some(_), .. })) {
+                                    ids.extend([&mut spell.material_id]);
+                                }
+                                ids.extend([
+                                    &mut spell.components_id,
+                                    &mut spell.duration_id,
+                                    &mut spell.description_id,
+                                    &mut spell.higher_levels_id,
+                                    // &mut spell.source_state,
+                                    &mut spell.page_id
+                                ]);
+                            }
+                            // todo
+                            // for i in 0..ids.len() {
+                            //     if ids[i].is_focused() {
+                            //         if forwards && i != ids.len() - 1 {
+                            //             ids[i].unfocus();
+                            //             ids[i + 1].focus();
+                            //             break;
+                            //         } else if !forwards && i != 0 {
+                            //             ids[i].unfocus();
+                            //             ids[i - 1].focus();
+                            //             break;
+                            //         }
+                            //     }
+                            // }
+                        }
                     }
                     Message::CharacterSpellUpDown(delta) => {
                         if let Tab::Character { index } = self.tab {
@@ -965,7 +978,9 @@ impl Application for DndSpells {
                 println!("close tab = {:?}", tab);
             }
         };
-        Command::none()
+        // println!("commands = {:?}", commands);
+        commands.try_remove(0)
+            .unwrap_or_else(Command::none)
     }
 
     fn view(&self) -> Element<'_> {
@@ -1026,15 +1041,15 @@ impl Application for DndSpells {
             .tooltip_at(&format!("Switch to {} theme", !self.theme()), Position::Top)
             .size(10);
 
-        let bottom_bar = container(row(vec![])
-            .spacing(2)
-            .push_space(4)
-            .push(self.update_state.view())
-            .push_space(Length::Fill)
-            .push(col_slider_reset)
-            .push(col_slider)
-            .push(slider_text)
-            .push(toggle_style)
+        let bottom_bar = container(row![
+            4,
+            self.update_state.view(),
+            Length::Fill,
+            col_slider_reset,
+            col_slider,
+            slider_text,
+            toggle_style,
+        ].spacing(2)
             .height(Length::Units(20))
             .align_items(Alignment::Center)
         ).style(Location::SettingsBar)
@@ -1044,9 +1059,10 @@ impl Application for DndSpells {
             .height(Length::Fill)
             .width(Length::FillPortion(18));
 
-        let content = column(vec![])
-            .push(main_content)
-            .push(bottom_bar);
+        let content = col![
+            main_content,
+            bottom_bar
+        ];
 
         container(content)
             .width(Length::Fill)
@@ -1067,7 +1083,7 @@ impl Application for DndSpells {
                 },
                 Event::Mouse(e) => hotmouse::handle(e),
                 Event::Touch(_) => None,
-                Event::PlatformSpecific(_) => None,
+                // Event::PlatformSpecific(_) => None,
             }
         });
         match &self.update_state {

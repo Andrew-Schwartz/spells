@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use iced::{Alignment, Length};
 use iced_aw::Icon;
-use iced_native::widget::{button, checkbox, column, container, pick_list, row, scrollable, text, text_input};
+use iced_native::Command;
+use iced_native::widget::{button, checkbox, column, container, pick_list, scrollable, text, text_input};
 use itertools::Itertools;
 
 use crate::{character, Container, Element, Location, Row, Scrollable, SpellButtons, SpellId, SPELLS, Theme};
@@ -346,9 +347,19 @@ impl Searcher for ConcentrationSearch {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TextSearch {
     pub text: String,
+    pub id: text_input::Id,
+}
+
+impl Default for TextSearch {
+    fn default() -> Self {
+        Self {
+            text: Default::default(),
+            id: text_input::Id::unique(),
+        }
+    }
 }
 
 impl Searcher for TextSearch {
@@ -416,9 +427,9 @@ impl Searcher for SourceSearch {
     }
 }
 
-#[derive(Default)]
 pub struct SearchOptions {
     pub search: String,
+    pub search_id: text_input::Id,
     // todo make them always appear?
     pub level_search: Option<LevelSearch>,
     pub class_search: Option<ClassSearch>,
@@ -428,6 +439,25 @@ pub struct SearchOptions {
     pub concentration_search: Option<ConcentrationSearch>,
     pub text_search: Option<TextSearch>,
     pub source_search: Option<SourceSearch>,
+}
+
+impl Default for SearchOptions {
+    fn default() -> Self {
+        let id = text_input::Id::unique();
+        println!("id = {:?}", id);
+        Self {
+            search: Default::default(),
+            search_id: id,
+            level_search: Default::default(),
+            class_search: Default::default(),
+            casting_time_search: Default::default(),
+            school_search: Default::default(),
+            ritual_search: Default::default(),
+            concentration_search: Default::default(),
+            text_search: Default::default(),
+            source_search: Default::default(),
+        }
+    }
 }
 
 impl SearchOptions {
@@ -483,7 +513,10 @@ impl SearchOptions {
             "search for a spell",
             self.search.as_str(),
             search_message,
-        ).width(Length::FillPortion(4));
+        ).width(Length::FillPortion(4))
+            .id(self.search_id.clone());
+        // todo did I do this?
+        // text_input::focus(self.search_id.clone());
         let mode = pick_list(
             Mode::ALL.as_ref(),
             None,
@@ -508,31 +541,31 @@ impl SearchOptions {
         ].into_iter()
             .flatten()
             .fold(
-                row(vec![]).align_items(Alignment::Center),
+                row!().align_items(Alignment::Center),
                 |row, searcher| searcher.add_to_row(row, character),
             );
 
+        // todo figure out some way to do the tap stuff in the macro?
         container(
-            column(vec![])
-                .push(row(vec![])
-                    .align_items(Alignment::Center)
-                    .push_space(Length::Fill)
-                    .push(reset_modes)
-                    .push_space(4)
-                    .push(mode)
-                    .push_space(8)
-                    .push(search)
-                    .tap_if_some(before_search_bar.into(), |row, btn| row
+            col![
+                row![
+                    Length::Fill,
+                    reset_modes,
+                    4,
+                    mode,
+                    8,
+                    search
+                ].align_items(Alignment::Center)
+                 .tap_if_some(before_search_bar.into(), |row, btn| row
                         .push_space(8)
                         .push(btn))
-                    .push_space(Length::Fill)
-                )
-                .push(row(vec![])
-                    .push_space(Length::Fill)
-                    .push(advanced_search.width(Length::FillPortion(18)))
-                    // .push(advanced_search.width(Length::FillPortion(18)))
-                    .push_space(Length::Fill)
-                )
+                 .push_space(Length::Fill),
+                row![
+                    Length::Fill,
+                    advanced_search.width(Length::FillPortion(18)),
+                    Length::Fill,
+                ]
+            ]
         )
     }
 }
@@ -580,7 +613,7 @@ impl SearchSpell {
 }
 
 impl SearchPage {
-    pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) {
+    pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) -> Command<crate::Message> {
         fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
             if let Some(idx) = vec.iter().position(|t| *t == entry) {
                 vec.remove(idx);
@@ -669,14 +702,18 @@ impl SearchPage {
         if search {
             self.spells = self.search.search(custom, characters);
         }
+
+        // todo focus
+        // if !matches!(&self.search.text_search, Some(ts) if ts.id.is_focused()) {
+        //     text_input::focus(self.search.search_id.clone())
+        // } else {
+        println!("self.search.search_id = {:?}", self.search.search_id);
+        text_input::focus(self.search.search_id.clone())
+        // Command::none()
+        // }
     }
 
     pub fn view<'s, 'c: 's>(&'s self) -> Container<'c> {
-        // todo focus
-        // if !matches!(&self.search.text_search, Some(ts) if ts.state.is_focused()) {
-        //     self.search.state.focus();
-        // }
-
         let collapse_button = button(
             text_icon(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                 .size(15),
@@ -718,7 +755,7 @@ impl SpellButtons for SearchPageButtons<'_> {
     type Data = ();
 
     fn view<'c>(self, id: SpellId, (): Self::Data) -> (Row<'c>, Element<'c>) {
-        let mut buttons = row(vec![]);
+        let mut buttons = row!();
         if !self.0.is_empty() {
             buttons = buttons.push("Add to:")
                 .push_space(15);
