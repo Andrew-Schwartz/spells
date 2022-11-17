@@ -556,11 +556,11 @@ dependencies = [
     "bit_field",
     "deflate",
     "flume",
- "half",
- "inflate",
- "lebe",
- "smallvec",
- "threadpool",
+    "half",
+    "inflate",
+    "lebe",
+    "smallvec",
+    "threadpool",
 ]
 
 [[package]]
@@ -693,10 +693,10 @@ dependencies = [
     "futures-channel",
     "futures-core",
     "futures-executor",
- "futures-io",
- "futures-sink",
- "futures-task",
- "futures-util",
+    "futures-io",
+    "futures-sink",
+    "futures-task",
+    "futures-util",
 ]
 
 [[package]]
@@ -1095,7 +1095,6 @@ dependencies = [
 [[package]]
 name = "iced_aw"
 version = "0.2.0"
-source = "git+https://github.com/iced-rs/iced_aw?branch=main#5e1c1d0b6b907dc990490034bb3519cf836bd095"
 dependencies = [
     "iced_graphics",
     "iced_native",
@@ -2049,7 +2048,7 @@ dependencies = [
     "autocfg",
     "crossbeam-deque",
     "either",
- "rayon-core",
+    "rayon-core",
 ]
 
 [[package]]
@@ -2452,8 +2451,8 @@ dependencies = [
 name = "spells"
 version = "1.4.0"
 dependencies = [
- "bytes",
- "dirs",
+    "bytes",
+    "dirs",
     "futures",
     "iced",
     "iced_aw",
@@ -2775,8 +2774,8 @@ version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c"
 dependencies = [
- "form_urlencoded",
- "idna",
+    "form_urlencoded",
+    "idna",
     "matches",
     "percent-encoding",
 ]

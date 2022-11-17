@@ -5,6 +5,7 @@ use iced::{Alignment, Length};
 use iced_aw::Icon;
 use iced_native::Command;
 use iced_native::widget::{button, checkbox, column, container, pick_list, scrollable, text, text_input};
+use iced_native::widget::text_input::Id;
 use itertools::Itertools;
 
 use crate::{character, Container, Element, Location, Row, Scrollable, SpellButtons, SpellId, SPELLS, Theme};
@@ -429,7 +430,7 @@ impl Searcher for SourceSearch {
 
 pub struct SearchOptions {
     pub search: String,
-    pub search_id: text_input::Id,
+    pub id: Id,
     // todo make them always appear?
     pub level_search: Option<LevelSearch>,
     pub class_search: Option<ClassSearch>,
@@ -443,11 +444,9 @@ pub struct SearchOptions {
 
 impl Default for SearchOptions {
     fn default() -> Self {
-        let id = text_input::Id::unique();
-        println!("id = {:?}", id);
         Self {
             search: Default::default(),
-            search_id: id,
+            id: Id::unique(),
             level_search: Default::default(),
             class_search: Default::default(),
             casting_time_search: Default::default(),
@@ -514,7 +513,7 @@ impl SearchOptions {
             self.search.as_str(),
             search_message,
         ).width(Length::FillPortion(4))
-            .id(self.search_id.clone());
+            .id(self.id.clone());
         // todo did I do this?
         // text_input::focus(self.search_id.clone());
         let mode = pick_list(
@@ -707,8 +706,7 @@ impl SearchPage {
         // if !matches!(&self.search.text_search, Some(ts) if ts.id.is_focused()) {
         //     text_input::focus(self.search.search_id.clone())
         // } else {
-        println!("self.search.search_id = {:?}", self.search.search_id);
-        text_input::focus(self.search.search_id.clone())
+        text_input::focus(self.search.id.clone())
         // Command::none()
         // }
     }

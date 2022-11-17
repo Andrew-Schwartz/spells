@@ -61,8 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.4.0
-          release_name: D&D Spells v1.4.0 New character page layout, including keeping track of used spell slots
+          tag_name: v1.4.1
+          release_name: D&D Spells v1.4.1 Focusing of fields works again
           draft: true
           prerelease: false
       - name: Get Names
