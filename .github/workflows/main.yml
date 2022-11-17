@@ -23,7 +23,8 @@ jobs:
       - name: Build
         run: |
           rustup update
-          cargo b --release +nightly
+          rustup override set nightly
+          cargo b --release
       - run: |
           rustup update
           dir=artifact-${{ matrix.os }}
