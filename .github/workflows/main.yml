@@ -21,14 +21,18 @@ jobs:
       - run: sudo apt install libxkbcommon-dev
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: cargo b --release
+        run: |
+          rustup update
+          cargo b --release +nightly
       - run: |
+          rustup update
           dir=artifact-${{ matrix.os }}
           mkdir $dir
           echo "$(cargo r --release -- TARGET)" > $dir/TARGET
           mv target/release/spells $dir/spells
         if: matrix.os != 'windows-latest'
       - run: |
+          rustup update
           $dir="artifact-${{ matrix.os }}"
           mkdir $dir
           echo "$(cargo r --release -- TARGET)" > $dir/TARGET

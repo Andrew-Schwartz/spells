@@ -1,4 +1,5 @@
 #![feature(array_methods)]
+#![feature(mixed_integer_ops)]
 #![feature(const_option_ext)]
 
 // ignored on other targets
