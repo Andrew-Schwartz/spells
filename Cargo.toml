@@ -26,10 +26,6 @@ iced_native = "0.6.1"
 iced_style = "0.5.0"
 iced_core = "0.6.1"
 iced_futures = { version = "0.5.1", features = ["tokio"] }
-#iced_style = { git = "https://github.com/iced-rs/iced" }
-#iced_native = { git = "https://github.com/iced-rs/iced" }
-#iced_core = { git = "https://github.com/iced-rs/iced" }
-#iced_futures = { git = "https://github.com/iced-rs/iced", features = ["tokio"] }
 palette = "0.6.1"
 serde = { version = "1.0.120", features = ["derive", "rc"] }
 serde_json = "1.0.61"

@@ -1,5 +1,4 @@
 #![feature(array_methods)]
-#![feature(mixed_integer_ops)]
 #![feature(const_option_ext)]
 
 // ignored on other targets
@@ -140,10 +139,10 @@ pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
-fn main() -> iced::Result {
+fn main() {
     if let Some("TARGET") = std::env::args().nth(1).as_deref() {
         println!("{}", self_update::get_target());
-        return Ok(());
+        return
     }
 
     DndSpells::run(Settings {
@@ -158,7 +157,7 @@ fn main() -> iced::Result {
         default_text_size: 18,
         antialiasing: true,
         ..Default::default()
-    })
+    }).unwrap()
 }
 
 #[derive(Debug)]
@@ -189,11 +188,17 @@ impl UpdateState {
             view_as_text => match view_as_text {
                 Self::Checking => text("Checking for updates..."),
                 Self::Ready => text("Preparing to download..."),
-                Self::Downloaded => text("Downloaded new version! Restart program to get new features!"),
+                // todo for ubuntu, mac you don't need to restart
+                Self::Downloaded => text(if cfg!(windows) {
+                    "Downloaded new version! Restart program to get new features!".to_string()
+                } else {
+                    // todo this VER might be the old version still
+                    format!("Running new version v{}!", VER)
+                }),
                 Self::UpToDate => text(format!("Spells v{}", VER)),
                 Self::Errored(e) => text(format!("Error downloading new version: {}. Running v{}", e, VER)),
                 Self::Downloading(_) => unreachable!(),
-            }.size(10).tap(container)
+            }.size(11).tap(container)
         }.style(Location::SettingsBar)
     }
 }
