@@ -62,6 +62,7 @@ impl From<Character> for ClosedCharacter {
     }
 }
 
+#[derive(Default)]
 pub struct SettingsPage {
     pub character_name: String,
     pub character_name_id: text_input::Id,
@@ -90,6 +91,12 @@ pub enum SpellEditor {
     Editing {
         spell: Box<CustomSpell>,
     },
+}
+
+impl Default for SpellEditor {
+    fn default() -> Self {
+        Self::Searching { spells: Default::default() }
+    }
 }
 
 impl SpellEditor {

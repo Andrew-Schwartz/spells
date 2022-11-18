@@ -92,24 +92,17 @@ static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
     fs::create_dir_all(&path).unwrap();
     path
 });
-static CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
+
+fn get_file(name: &str) -> PathBuf {
     let mut path = SAVE_DIR.clone();
-    path.push("characters.json");
-    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
+    path.push(name);
+    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
-});
-static CLOSED_CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = SAVE_DIR.clone();
-    path.push("closed-characters.json");
-    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
-    path
-});
-static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = SAVE_DIR.clone();
-    path.push("custom-spells.json");
-    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
-    path
-});
+}
+
+static CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("characters.json"));
+static CLOSED_CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("closed-characters.json"));
+static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("custom-spells.json"));
 
 // static SEARCH_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
 
@@ -342,33 +335,40 @@ impl DndSpells {
         }
     }
 
-    fn open() -> error::Result<Self> {
-        let custom_spells = Self::read_spells(&SPELL_FILE)?;
-        let characters = Self::read_characters(&CHARACTER_FILE, &custom_spells)?;
-        let closed_characters = Self::read_characters(&CLOSED_CHARACTER_FILE, &custom_spells)?;
+    fn set_spells_characters(&mut self) {
+        self.custom_spells = Self::read_spells(&*SPELL_FILE)
+            .unwrap_or_default();
+        self.characters = Self::read_characters(&*CHARACTER_FILE, &self.custom_spells)
+            .unwrap_or_default();
+        self.closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &self.custom_spells)
+            .unwrap_or_default();
+        self.settings_page = SettingsPage::new(&self.custom_spells);
+    }
+
+    fn open() -> Self {
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
             update_state: UpdateState::Checking,
-            // update_status: format!("Running {}", cargo_crate_version!()),
             update_url: "".to_string(),
             // style: Style::default(),
             tab: Tab::Search,
             width,
             height,
             control_pressed: false,
-            search_page: SearchPage::new(&custom_spells, &characters),
-            characters,
-            closed_characters,
-            settings_page: SettingsPage::new(&custom_spells),
+            search_page: Default::default(),
+            characters: vec![],
+            closed_characters: vec![],
+            settings_page: Default::default(),
             col_scale: 1.0,
             save_states: Default::default(),
             state: None,
-            custom_spells,
+            custom_spells: vec![],
             num_cols: 2,
             mouse: Default::default(),
         };
+        window.set_spells_characters();
         window.save_state();
-        Ok(window)
+        window
     }
 
     fn save(&mut self) -> error::Result<()> {
@@ -443,16 +443,19 @@ impl Application for DndSpells {
                     focus(self.search_page.search.id.clone());
                 }
                 if let Err(e) = update::handle(self, msg) {
-                    self.update_state = UpdateState::Errored(e.to_string());
+                    self.update_state = UpdateState::Errored(e.to_string())
                 }
-            },
+                if let UpdateState::Downloaded = &self.update_state {
+                    self.set_spells_characters();
+                }
+            }
             Message::ToggleTheme => {
                 todo!();
                 // self.style = match self.style {
                 //     Style::Light => Style::Dark,
                 //     Style::Dark => Style::Light,
                 // }
-            },
+            }
             Message::SetColScale(mult) => {
                 println!("mult = {:?}", mult);
                 self.col_scale = mult;
@@ -482,7 +485,6 @@ impl Application for DndSpells {
                     Message::Open(index) => {
                         let character = self.closed_characters.remove(index);
                         self.add_character(character.character);
-                        self.save().expect("todoooooo");
                     }
                     Message::Rename(index) => {
                         let rename = match &mut self.closed_characters[index].rename {
