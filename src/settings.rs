@@ -62,13 +62,24 @@ impl From<Character> for ClosedCharacter {
     }
 }
 
-#[derive(Default)]
 pub struct SettingsPage {
     pub character_name: String,
     pub character_name_id: text_input::Id,
     pub spell_name: String,
     pub spell_name_id: text_input::Id,
     pub spell_editor: SpellEditor,
+}
+
+impl Default for SettingsPage {
+    fn default() -> Self {
+        Self {
+            character_name: Default::default(),
+            character_name_id: text_input::Id::unique(),
+            spell_name: Default::default(),
+            spell_name_id: text_input::Id::unique(),
+            spell_editor: Default::default(),
+        }
+    }
 }
 
 impl SettingsPage {

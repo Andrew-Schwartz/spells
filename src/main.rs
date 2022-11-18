@@ -181,7 +181,6 @@ impl UpdateState {
             view_as_text => match view_as_text {
                 Self::Checking => text("Checking for updates..."),
                 Self::Ready => text("Preparing to download..."),
-                // todo for ubuntu, mac you don't need to restart
                 Self::Downloaded => text(if cfg!(windows) {
                     "Downloaded new version! Restart program to get new features!".to_string()
                 } else {
@@ -343,6 +342,7 @@ impl DndSpells {
         self.closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &self.custom_spells)
             .unwrap_or_default();
         self.settings_page = SettingsPage::new(&self.custom_spells);
+        self.search_page = SearchPage::new(&self.custom_spells, &self.characters);
     }
 
     fn open() -> Self {
@@ -404,7 +404,7 @@ impl Application for DndSpells {
     type Flags = ();
 
     fn new((): Self::Flags) -> (Self, Command<Message>) {
-        let window = Self::open().expect("failed to start");
+        let window = Self::open();
         // let commands = Command::batch([
         //     async { Message::Search(search::Message::Refresh) }.into(),
         //     async {

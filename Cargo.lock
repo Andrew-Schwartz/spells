@@ -2450,7 +2450,7 @@ dependencies = [
 
 [[package]]
 name = "spells"
-version = "1.3.6"
+version = "1.4.2"
 dependencies = [
     "bytes",
     "dirs",
@@ -2461,16 +2461,16 @@ dependencies = [
     "iced_futures",
     "iced_native",
     "iced_style",
- "image",
- "itertools",
- "levenshtein",
- "num-traits",
- "once_cell",
- "palette",
- "reqwest",
- "self_update",
- "semver",
- "serde",
+    "image",
+    "itertools",
+    "levenshtein",
+    "num-traits",
+    "once_cell",
+    "palette",
+    "reqwest",
+    "self_update",
+    "semver",
+    "serde",
  "serde_json",
  "tempfile",
  "thiserror",

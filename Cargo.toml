@@ -1,6 +1,6 @@
 [package]
 name = "spells"
-version = "1.4.1"
+version = "1.4.2"
 authors = ["Andrew-Schwartz <andrewschwartz59@gmail.com>"]
 edition = "2021"
 

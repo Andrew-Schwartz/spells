@@ -569,6 +569,7 @@ impl SearchOptions {
     }
 }
 
+#[derive(Default)]
 pub struct SearchPage {
     collapse: bool,
     pub search: SearchOptions,
