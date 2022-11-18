@@ -67,8 +67,9 @@ impl From<Character> for ClosedCharacter {
     }
 }
 
+#[derive(Default)]
 pub struct SettingsPage {
-    pub name: String,
+    pub character_name: String,
     pub character_name_state: text_input::State,
     create_character: button::State,
     character_scroll: scrollable::State,
@@ -83,7 +84,7 @@ pub struct SettingsPage {
 impl SettingsPage {
     pub fn new(custom_spells: &[CustomSpell]) -> Self {
         Self {
-            name: Default::default(),
+            character_name: Default::default(),
             character_name_state: Default::default(),
             create_character: Default::default(),
             character_scroll: Default::default(),
@@ -105,6 +106,12 @@ pub enum SpellEditor {
     Editing {
         spell: CustomSpell,
     },
+}
+
+impl Default for SpellEditor {
+    fn default() -> Self {
+        Self::Searching { spells: Default::default() }
+    }
 }
 
 impl SpellEditor {
@@ -142,7 +149,7 @@ impl SettingsPage {
         let character_name_input = TextInput::new(
             &mut self.character_name_state,
             "Character Name",
-            &self.name,
+            &self.character_name,
             |n| crate::Message::Settings(Message::CharacterName(n)),
         ).style(style)
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));

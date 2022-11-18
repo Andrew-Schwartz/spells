@@ -75,24 +75,17 @@ static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
     std::fs::create_dir_all(&path).unwrap();
     path
 });
-static CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
+
+fn get_file(name: &str) -> PathBuf {
     let mut path = SAVE_DIR.clone();
-    path.push("characters.json");
+    path.push(name);
     std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
-});
-static CLOSED_CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = SAVE_DIR.clone();
-    path.push("closed-characters.json");
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
-    path
-});
-static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = SAVE_DIR.clone();
-    path.push("custom-spells.json");
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
-    path
-});
+}
+
+static CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("characters.json"));
+static CLOSED_CHARACTER_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("closed-characters.json"));
+static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("custom-spells.json"));
 
 // static ICON: Lazy<Icon> = Lazy::new(|| );
 fn icon() -> Icon {
@@ -310,14 +303,20 @@ impl DndSpells {
         }
     }
 
-    fn open() -> anyhow::Result<Self> {
-        let custom_spells = Self::read_spells(&*SPELL_FILE)?;
-        let characters = Self::read_characters(&*CHARACTER_FILE, &custom_spells)?;
-        let closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &custom_spells)?;
+    fn set_spells_characters(&mut self) {
+        self.custom_spells = Self::read_spells(&*SPELL_FILE)
+            .unwrap_or_default();
+        self.characters = Self::read_characters(&*CHARACTER_FILE, &self.custom_spells)
+            .unwrap_or_default();
+        self.closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &self.custom_spells)
+            .unwrap_or_default();
+        self.settings_page = SettingsPage::new(&self.custom_spells);
+    }
+
+    fn open() -> Self {
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
             update_state: UpdateState::Checking,
-            // update_status: format!("Running {}", cargo_crate_version!()),
             update_url: "".to_string(),
             style: Style::default(),
             tab: Tab::Search,
@@ -325,21 +324,22 @@ impl DndSpells {
             height,
             control_pressed: false,
             search_page: Default::default(),
-            characters,
-            closed_characters,
-            settings_page: SettingsPage::new(&custom_spells),
+            characters: vec![],
+            closed_characters: vec![],
+            settings_page: Default::default(),
             col_scale: 1.0,
             col_reset: Default::default(),
             col_slider: Default::default(),
             style_button: Default::default(),
             save_states: Default::default(),
             state: None,
-            custom_spells,
+            custom_spells: vec![],
             num_cols: 2,
             mouse: Default::default(),
         };
+        window.set_spells_characters();
         window.save_state();
-        Ok(window)
+        window
     }
 
     fn save(&mut self) -> anyhow::Result<()> {
@@ -373,7 +373,7 @@ impl Application for DndSpells {
     type Flags = ();
 
     fn new((): Self::Flags) -> (Self, Command<Message>) {
-        let window = Self::open().expect("failed to start");
+        let window = Self::open();
         let commands = Command::batch([
             async { Message::Search(search::Message::Refresh) }.into(),
             async {
@@ -400,8 +400,13 @@ impl Application for DndSpells {
 
     fn update(&mut self, message: Self::Message, clipboard: &mut iced::Clipboard) -> Command<Message> {
         match message {
-            Message::Update(msg) => if let Err(e) = update::handle(self, msg) {
-                self.update_state = UpdateState::Errored(e.to_string())
+            Message::Update(msg) => {
+                if let Err(e) = update::handle(self, msg) {
+                    self.update_state = UpdateState::Errored(e.to_string())
+                }
+                if let UpdateState::Downloaded = &self.update_state {
+                    self.set_spells_characters();
+                }
             },
             Message::ToggleTheme => self.style = match self.style {
                 Style::Light => Style::Dark,
@@ -417,11 +422,11 @@ impl Application for DndSpells {
                 use settings::Message;
                 match message {
                     Message::CharacterName(name) => {
-                        self.settings_page.name = name;
+                        self.settings_page.character_name = name;
                     }
                     Message::SubmitCharacter => {
                         self.settings_page.character_name_state.focus();
-                        let name = &mut self.settings_page.name;
+                        let name = &mut self.settings_page.character_name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
                             self.add_character(name);
@@ -433,7 +438,6 @@ impl Application for DndSpells {
                     Message::Open(index) => {
                         let character = self.closed_characters.remove(index);
                         self.add_character(character.character);
-                        self.save().expect("todoooooo");
                     }
                     Message::Rename(index) => {
                         let rename = match &mut self.closed_characters[index].rename {
