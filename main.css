@@ -22,10 +22,40 @@ body {
     background-color: var(--btnBg);
 }
 
-/*.input {*/
-/*    color: inherit;*/
-/*    background-color: var(--btnBg);*/
-/*    box-shadow: none;*/
-/*    border-style: hidden;*/
-/*    border-radius: inherit;*/
-/*}*/
+.input {
+    color: inherit;
+    background-color: var(--btnBg);
+    box-shadow: none;
+    border-style: hidden;
+    border-radius: inherit;
+}
+
+.spell {
+    display: inline-flex;
+    flex-direction: column;
+    /*row-gap: -;*/
+    justify-content: space-around;
+    /*border: 1px solid black;*/
+}
+
+p {
+    border: inherit;
+    flex: 1;
+    margin: 2px;
+}
+
+h1 {
+    /* u r d l */
+    margin: 10px 0 4px 0;
+    border: inherit;
+}
+
+h3 {
+    margin: 4px;
+    border: inherit;
+}
+
+hr {
+    margin: 5px;
+    width: 100%;
+}
