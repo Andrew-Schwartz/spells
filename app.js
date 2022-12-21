@@ -17,7 +17,7 @@ function displaySpell(spell) {
         `
         : "";
     return `
-        <div class="spell">
+<!--        <div class="spells">-->
             <h1 class="spell_part">${spell.name}</h1>
             <hr>
             <p>${spell.school}</p>
@@ -31,7 +31,7 @@ function displaySpell(spell) {
             <p>${spell.description}</p>
             ${higherLevels}
             <p></p>
-        </div>
+<!--        </div>-->
     `
 }
 
@@ -48,7 +48,7 @@ function setSpells(needle) {
 }
 
 function spellName() {
-    const name = document.getElementById("spellName").value;
+    const name = document.getElementById("spellName").value.toLowerCase();
     // document.getElementById("sn").innerHTML = "Spell: " + name;
     setSpells(name)
     // spells(input, names => {

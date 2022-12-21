@@ -22,20 +22,21 @@ body {
     background-color: var(--btnBg);
 }
 
-.input {
+.search {
     color: inherit;
     background-color: var(--btnBg);
     box-shadow: none;
     border-style: hidden;
     border-radius: inherit;
+    width: 99.5%;
 }
 
-.spell {
+.spells {
     display: inline-flex;
     flex-direction: column;
     /*row-gap: -;*/
     justify-content: space-around;
-    /*border: 1px solid black;*/
+    /*border: 1px solid green;*/
 }
 
 p {
@@ -56,6 +57,7 @@ h3 {
 }
 
 hr {
+    border-color: #999;
     margin: 5px;
-    width: 100%;
+    width: 99%;
 }
