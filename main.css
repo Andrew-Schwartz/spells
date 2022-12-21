@@ -1,0 +1,31 @@
+.dark-theme {
+    --text: #ddd;
+    --bg: #39393f;
+    --btnBg: #40444b;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: helvetica, sans-serif;
+}
+
+.btn {
+    position: absolute;
+    top: 20px;
+    left: 250px;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    border: none;
+    color: var(--text);
+    background-color: var(--btnBg);
+}
+
+/*.input {*/
+/*    color: inherit;*/
+/*    background-color: var(--btnBg);*/
+/*    box-shadow: none;*/
+/*    border-style: hidden;*/
+/*    border-radius: inherit;*/
+/*}*/
