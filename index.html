@@ -5,17 +5,57 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>D&D Spells Web</title>
-     <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="main.css">
 </head>
 
 <body class="dark-theme" onload="loadSpells()">
 
 <h1>D&D Spells!</h1>
 
-<input id="spellName" type="text" class="search" oninput="spellName()" placeholder="Search for a spell"/>
-<div>
+<input id="spellName" type="text" oninput="spellName()" placeholder="Search for a spell"/>
+<div class="advancedSearch">
+    <label>Level:</label>
 
+    <button class="btn-inactive" id="level-0" onclick="levelSelect(0)">Cantrip</button>
+    <button class="btn-inactive" id="level-1" onclick="levelSelect(1)">1</button>
+    <button class="btn-inactive" id="level-2" onclick="levelSelect(2)">2</button>
+    <button class="btn-inactive" id="level-3" onclick="levelSelect(3)">3</button>
+    <button class="btn-inactive" id="level-4" onclick="levelSelect(4)">4</button>
+    <button class="btn-inactive" id="level-5" onclick="levelSelect(5)">5</button>
+    <button class="btn-inactive" id="level-6" onclick="levelSelect(6)">6</button>
+    <button class="btn-inactive" id="level-7" onclick="levelSelect(7)">7</button>
+    <button class="btn-inactive" id="level-8" onclick="levelSelect(8)">8</button>
+    <button class="btn-inactive" id="level-9" onclick="levelSelect(9)">9</button>
 </div>
+
+<p></p>
+<div class="advancedSearch">
+    <label>Class: </label>
+    <button class="btn-inactive" id="Artificer" onclick="classSelect('Artificer')">Artificer</button>
+    <button class="btn-inactive" id="Bard" onclick="classSelect('Bard')">Bard</button>
+    <button class="btn-inactive" id="Cleric" onclick="classSelect('Cleric')">Cleric</button>
+    <button class="btn-inactive" id="Druid" onclick="classSelect('Druid')">Druid</button>
+    <button class="btn-inactive" id="Paladin" onclick="classSelect('Paladin')">Paladin</button>
+    <button class="btn-inactive" id="Ranger" onclick="classSelect('Ranger')">Ranger</button>
+    <button class="btn-inactive" id="Sorcerer" onclick="classSelect('Sorcerer')">Sorcerer</button>
+    <button class="btn-inactive" id="Warlock" onclick="classSelect('Warlock')">Warlock</button>
+    <button class="btn-inactive" id="Wizard" onclick="classSelect('Wizard')">Wizard</button>
+</div>
+
+<p></p>
+<div class="advancedSearch">
+    <label>School:</label>
+    <button class="btn-inactive" id="Abjuration" onclick="schoolSelect('Abjuration')">Abjuration</button>
+    <button class="btn-inactive" id="Conjuration" onclick="schoolSelect('Conjuration')">Conjuration</button>
+    <button class="btn-inactive" id="Divination" onclick="schoolSelect('Divination')">Divination</button>
+    <button class="btn-inactive" id="Enchantment" onclick="schoolSelect('Enchantment')">Enchantment</button>
+    <button class="btn-inactive" id="Evocation" onclick="schoolSelect('Evocation')">Evocation</button>
+    <button class="btn-inactive" id="Illusion" onclick="schoolSelect('Illusion')">Illusion</button>
+    <button class="btn-inactive" id="Transmutation" onclick="schoolSelect('Transmutation')">Transmutation</button>
+    <button class="btn-inactive" id="Necromancy" onclick="schoolSelect('Necromancy')">Necromancy</button>
+</div>
+
+<p></p>
 
 <div class="spells" id="spells">
     <p><em>Loading spells...</em></p>

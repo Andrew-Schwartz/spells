@@ -22,15 +22,6 @@ body {
     background-color: var(--btnBg);
 }
 
-.search {
-    color: inherit;
-    background-color: var(--btnBg);
-    box-shadow: none;
-    border-style: hidden;
-    border-radius: inherit;
-    width: 99.5%;
-}
-
 .spells {
     display: inline-flex;
     flex-direction: column;
@@ -39,7 +30,35 @@ body {
     /*border: 1px solid green;*/
 }
 
+.advancedSearch {
+    display: inline-flex;
+    justify-content: space-around;
+}
+
+input[type=text] {
+    color: inherit;
+    background-color: var(--btnBg);
+    box-shadow: none;
+    border-style: hidden;
+    width: 99.5%;
+    padding: 6px 10px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border-radius: 6px;
+}
+
+select {
+    color: inherit;
+    vertical-align: center;
+    background-color: var(--btnBg);
+    margin: 0px 6px;
+    border: none;
+    border-radius: 4px;
+    padding: 0px 2px;
+}
+
 p {
+    vertical-align: center;
     border: inherit;
     flex: 1;
     margin: 2px;
@@ -60,4 +79,22 @@ hr {
     border-color: #999;
     margin: 5px;
     width: 99%;
+}
+
+.btn-active {
+    color: var(--text);
+    background-color: var(--bg);
+    border: none;
+    border-radius: 3px;
+    margin: 0;
+    padding: 0 1px;
+}
+
+.btn-inactive {
+    color: #888;
+    background-color: var(--bg);
+    border: none;
+    border-radius: 3px;
+    margin: 0;
+    padding: 0 1px;
 }
