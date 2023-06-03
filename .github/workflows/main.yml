@@ -1,3 +1,4 @@
+#file: noinspection YAMLSchemaValidation
 name: Build & Release
 
 on:
@@ -66,8 +67,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.4.2
-          release_name: D&D Spells v1.4.2 Focusing of fields works again
+          tag_name: v1.4.3
+          release_name: D&D Spells v1.4.3 Bug fixes
           draft: true
           prerelease: false
       - name: Get Names

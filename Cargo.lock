@@ -1840,7 +1840,7 @@ checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
 dependencies = [
     "instant",
     "lock_api",
- "parking_lot_core 0.8.5",
+    "parking_lot_core 0.8.5",
 ]
 
 [[package]]
@@ -2497,7 +2497,7 @@ dependencies = [
 
 [[package]]
 name = "spells"
-version = "1.4.2"
+version = "1.4.3"
 dependencies = [
     "bytes",
     "dirs",
@@ -2588,9 +2588,9 @@ dependencies = [
     "cfg-if",
     "fastrand",
     "libc",
- "redox_syscall",
- "remove_dir_all",
- "winapi",
+    "redox_syscall",
+    "remove_dir_all",
+    "winapi",
 ]
 
 [[package]]
@@ -3121,10 +3121,10 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b47d7fb4df5cd1fea61e5ee3841380f54359bac814e227d8f72709f4f193f8cf"
 dependencies = [
- "clipboard-win",
- "clipboard_macos",
- "clipboard_wayland",
- "clipboard_x11",
+    "clipboard-win",
+    "clipboard_macos",
+    "clipboard_wayland",
+    "clipboard_x11",
     "raw-window-handle 0.3.4",
     "thiserror",
 ]
@@ -3247,16 +3247,16 @@ dependencies = [
     "bitflags",
     "cocoa",
     "core-foundation",
- "core-graphics",
- "dispatch",
- "instant",
- "libc",
- "log",
- "mio",
- "ndk",
- "ndk-glue",
- "objc",
- "once_cell",
+    "core-graphics",
+    "dispatch",
+    "instant",
+    "libc",
+    "log",
+    "mio",
+    "ndk",
+    "ndk-glue",
+    "objc",
+    "once_cell",
     "parking_lot 0.12.1",
     "percent-encoding",
     "raw-window-handle 0.4.3",

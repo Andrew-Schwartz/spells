@@ -483,7 +483,8 @@ impl CharacterPage {
                 .tap(scrollable)
                 .into()
         } else {
-            let col = search_results.iter()
+            // 'All' tab
+            let list_spells = search_results.iter()
                 .enumerate()
                 // cantrip always have no slot
                 .zip(iter::once(&Slots::default()).chain(slots))
@@ -580,7 +581,6 @@ impl CharacterPage {
                             .push(spells_col)
                     },
                 );
-            // 'All' tab
 
             let view_spell = view_spell.as_ref()
                 .and_then(|id| self.character.spells[id.level]
@@ -596,9 +596,9 @@ impl CharacterPage {
                                  down: true,
                              }, true, false));
             row![
-                container(scrollable(col)).width(Length::FillPortion(3)),
+                container(scrollable(list_spells)).width(Length::FillPortion(3)),
                 container(scrollable(view_spell)).width(Length::FillPortion(4)).padding([0, 0, 10, 0])
-            ].align_items(Alignment::Center)
+            ].align_items(Alignment::Start)
                 .into()
         };
 

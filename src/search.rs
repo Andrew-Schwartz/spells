@@ -121,7 +121,7 @@ fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
                 }
             })
                 // todo turn off highlight
-                .style(Location::Default)
+                .style(Location::Transparent)
                 .padding(0)
         })
         .fold(row.push_space(3), Row::push)
@@ -439,6 +439,7 @@ pub struct SearchOptions {
     pub concentration_search: Option<ConcentrationSearch>,
     pub text_search: Option<TextSearch>,
     pub source_search: Option<SourceSearch>,
+    // todo VSM search
 }
 
 impl Default for SearchOptions {
@@ -544,7 +545,6 @@ impl SearchOptions {
                 |row, searcher| searcher.add_to_row(row, character),
             );
 
-        // todo figure out some way to do the tap stuff in the macro?
         container(
             col![
                 row![
@@ -557,7 +557,8 @@ impl SearchOptions {
                 ].align_items(Alignment::Center)
                  .tap_if_some(before_search_bar.into(), |row, btn| row
                         .push_space(8)
-                        .push(btn))
+                        .push(btn)
+                 )
                  .push_space(Length::Fill),
                 row![
                     Length::Fill,

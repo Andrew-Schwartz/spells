@@ -42,6 +42,7 @@ use iced::{Alignment, alignment::Vertical, Application, Command, Length, mouse::
 use iced::widget::text_input;
 use iced_aw::TabLabel;
 use iced_native::{Event, Font, Subscription, window};
+use iced_native::widget::slider;
 use itertools::{Either, Itertools};
 use once_cell::sync::Lazy;
 use self_update::cargo_crate_version;
@@ -95,7 +96,7 @@ static SAVE_DIR: Lazy<PathBuf> = Lazy::new(|| {
 fn get_file(name: &str) -> PathBuf {
     let mut path = SAVE_DIR.clone();
     path.push(name);
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
+    fs::OpenOptions::new().create(true).append(true).open(&path).unwrap();
     path
 }
 
@@ -127,9 +128,9 @@ pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
 //     bytes: include_bytes!("../resources/consola.ttf"),
 // };
 
-/// want two columns for starting window size with a bit of room to expand
-#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
+// /// want two columns for starting window size with a bit of room to expand
+// #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+// const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
 fn main() {
     if let Some("TARGET") = std::env::args().nth(1).as_deref() {
@@ -206,7 +207,6 @@ pub struct DndSpells {
     characters: Vec<CharacterPage>,
     closed_characters: Vec<ClosedCharacter>,
     settings_page: SettingsPage,
-    pub col_scale: f32,
     /// Vec<(characters, closed_characters)>
     save_states: Vec<(Vec<SerializeCharacter>, Vec<SerializeCharacter>)>,
     state: Option<usize>,
@@ -219,7 +219,7 @@ pub struct DndSpells {
 pub enum Message {
     Update(update::Message),
     ToggleTheme,
-    SetColScale(f32),
+    SetNCols(u32),
     // SwitchTab(Tab),
     Search(search::Message),
     Settings(settings::Message),
@@ -235,25 +235,20 @@ pub enum Message {
 }
 
 impl DndSpells {
-    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-    fn set_num_columns(&mut self) {
-        self.num_cols = (self.width as f32 / (COLUMN_WIDTH * self.col_scale)).ceil() as _;
-    }
-
-    fn add_character<C: Into<CharacterPage>>(&mut self, character: C) {
+    fn add_character<C: Into<CharacterPage>>(&mut self, character: C) -> Command<Message> {
         self.characters.push(character.into());
-        self.refresh_search();
         self.tab = Tab::Character { index: self.characters.len() - 1 };
         self.save().expect("failed to save");
+        self.refresh_search()
     }
 
-    fn swap_characters(&mut self, a: usize, b: usize) {
+    fn swap_characters(&mut self, a: usize, b: usize) -> Command<Message> {
         self.characters.swap(a, b);
-        self.refresh_search();
         self.save().expect("blah");
+        self.refresh_search()
     }
 
-    fn close_character(&mut self, character: usize) {
+    fn close_character(&mut self, character: usize) -> Command<Message> {
         let character = self.characters.remove(character);
         self.tab = match self.tab {
             Tab::Character { index } if index >= self.characters.len() => Tab::Character {
@@ -262,11 +257,11 @@ impl DndSpells {
             tab => tab,
         };
         self.closed_characters.push(character.character.into());
-        self.refresh_search();
         self.save().expect("waa haa");
+        self.refresh_search()
     }
 
-    // todo spells save state, they keybinds should do that when the spell editor is open3
+    // todo spells save state, then key binds should do that when the spell editor is open3
     fn save_state(&mut self) {
         if let Some(idx) = self.state.take() {
             self.save_states.truncate(idx + 1);
@@ -358,7 +353,6 @@ impl DndSpells {
             characters: vec![],
             closed_characters: vec![],
             settings_page: Default::default(),
-            col_scale: 1.0,
             save_states: Default::default(),
             state: None,
             custom_spells: vec![],
@@ -455,10 +449,9 @@ impl Application for DndSpells {
                 //     Style::Dark => Style::Light,
                 // }
             }
-            Message::SetColScale(mult) => {
-                println!("mult = {:?}", mult);
-                self.col_scale = mult;
-                self.set_num_columns();
+            Message::SetNCols(n) => {
+                // println!("mult = {:?}", mult);
+                self.num_cols = n as usize;
             }
             Message::Search(msg) => {
                 let command = self.search_page.update(msg, &self.custom_spells, &self.characters);
@@ -475,7 +468,7 @@ impl Application for DndSpells {
                         let name = &mut self.settings_page.character_name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
-                            self.add_character(name);
+                            commands.push(self.add_character(name));
                         } else {
                             // todo notify in gui somehow
                             println!("{} is already a character", name);
@@ -483,7 +476,7 @@ impl Application for DndSpells {
                     }
                     Message::Open(index) => {
                         let character = self.closed_characters.remove(index);
-                        self.add_character(character.character);
+                        commands.push(self.add_character(character.character));
                     }
                     Message::Rename(index) => {
                         let rename = match &mut self.closed_characters[index].rename {
@@ -494,7 +487,7 @@ impl Application for DndSpells {
                                 if !name.is_empty() {
                                     let name = mem::take(name);
                                     self.closed_characters[index].character.name = Arc::from(name);
-                                    self.save().expect("ASDSADAS");
+                                    self.save().expect("to do lol");
                                 }
                                 Either::Left(())
                             }
@@ -625,7 +618,7 @@ impl Application for DndSpells {
                             } else {
                                 self.custom_spells.push(*spell.clone());
                             }
-                            self.refresh_search();
+                            commands.push(self.refresh_search());
                             self.save().unwrap();
                         }
                     },
@@ -650,10 +643,10 @@ impl Application for DndSpells {
                 }
                 if add {
                     // have to update after adding the spell
-                    self.refresh_search();
+                    commands.push(self.refresh_search());
                 }
                 if let Some(true) = must_save {
-                    self.refresh_search();
+                    commands.push(self.refresh_search());
                     self.save().expect("todo #2");
                 }
             }
@@ -663,12 +656,12 @@ impl Application for DndSpells {
                 } else {
                     min(idx + delta as usize, self.characters.len() - 1)
                 };
-                self.swap_characters(idx, new_idx);
+                commands.push(self.swap_characters(idx, new_idx));
                 self.tab = Tab::Character { index: new_idx };
             }
             Message::CloseCharacter(index) => {
                 // todo currently just goes to next tab, is that good?
-                self.close_character(index);
+                commands.push(self.close_character(index));
             }
             Message::Hotkey(message) => {
                 use hotkey::Message;
@@ -698,7 +691,7 @@ impl Application for DndSpells {
                             }
                             (false, Tab::Settings | Tab::Search) => {
                                 self.tab = Tab::Search;
-                                self.refresh_search();
+                                commands.push(self.refresh_search())
                             }
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
@@ -839,7 +832,7 @@ impl Application for DndSpells {
                             if let Some(character) = self.characters.get_mut(idx) {
                                 let spell = find_spell(&spell.name, &self.custom_spells).unwrap();
                                 character.add_spell(spell);
-                                self.refresh_search();
+                                commands.push(self.refresh_search())
                             }
                         }
                     }
@@ -893,7 +886,6 @@ impl Application for DndSpells {
             Message::Resize(width, height) => {
                 self.width = width;
                 self.height = height;
-                self.set_num_columns();
             }
             Message::MouseState(msg) => {
                 // println!("self.mouse = {:?}", self.mouse);
@@ -927,9 +919,9 @@ impl Application for DndSpells {
                             let delta = match delta {
                                 ScrollDelta::Lines { y, .. }
                                 | ScrollDelta::Pixels { y, .. } => y,
-                            };
+                            }.signum() as usize;
                             println!("delta = {:?}", delta);
-                            self.col_scale += delta;
+                            self.num_cols += delta;
                         }
                     }
                 }
@@ -979,28 +971,28 @@ impl Application for DndSpells {
             // .on_close(Message::CloseTab)
             ;
 
-        // #[allow(clippy::float_cmp)]
-        // let col_slider_reset = button(
-        //     text("Reset")
-        //         .vertical_alignment(Vertical::Center)
-        //         .size(12),
-        // ).style(Location::Transparent)
-        //     .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
-        //
-        // // todo monospace font and pad with spaces
-        // let slider_text = text(
-        //     format!("{:3.0}%", self.col_scale * 100.0)
-        // ).size(10)
-        //     .vertical_alignment(Vertical::Center);
+        #[allow(clippy::float_cmp)]
+            let col_slider_reset = button(
+            text("Reset")
+                .vertical_alignment(Vertical::Center)
+                .size(12),
+        ).style(Location::Transparent)
+            .tap_if(self.num_cols != 2, |reset| reset.on_press(Message::SetNCols(2)));
 
-        // let col_slider = slider(
-        //     0.5..=4.0,
-        //     self.col_scale,
-        //     Message::SetColScale,
-        // )
-        //     .width(Length::Units(120))
-        //     .step(0.01)
-        //     .style(style);
+        // todo monospace font
+        let slider_text = text(
+            format!("{} cols", self.num_cols)
+        ).size(10)
+            .vertical_alignment(Vertical::Center);
+
+        let col_slider = slider(
+            1_u32..=5,
+            self.num_cols as u32,
+            Message::SetNCols,
+        )
+            .width(Length::Fixed(120.0))
+            .step(1)
+            .style(style);
 
         let toggle_style = button(
             text(iced_aw::Icon::BrightnessHigh)
@@ -1015,9 +1007,9 @@ impl Application for DndSpells {
             4,
             self.update_state.view(),
             Length::Fill,
-            // col_slider_reset,
-            // col_slider,
-            // slider_text,
+            col_slider_reset,
+            col_slider,
+            slider_text,
             toggle_style,
         ].spacing(2)
             .height(Length::Fixed(20.0))

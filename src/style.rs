@@ -374,10 +374,11 @@ impl slider::StyleSheet for Theme {
 
     fn active(&self, style: &Self::Style) -> slider::Appearance {
         let palette = self.palette(style);
+        let color = palette.text.a(0.5);
         slider::Appearance {
             // todo this has to be transparent for TRANSPARENT
             rail: Rail {
-                colors: (palette.text, Color::TRANSPARENT),
+                colors: (color, color),
                 width: 2.0,
             },
             handle: Handle {
@@ -385,7 +386,7 @@ impl slider::StyleSheet for Theme {
                 color: palette.surface,
                 border_width: 1.0,
                 // todo this has to be transparent for TRANSPARENT
-                border_color: palette.text,
+                border_color: color,
             },
         }
     }

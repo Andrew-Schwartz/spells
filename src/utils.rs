@@ -144,6 +144,7 @@ pub trait ColorExt {
     fn r(self, r: f32) -> Self;
     fn g(self, g: f32) -> Self;
     fn b(self, b: f32) -> Self;
+    /// 1.0 is fully opaque
     fn a(self, a: f32) -> Self;
 
     fn darken(self, amount: f32) -> Self;
@@ -166,6 +167,7 @@ impl ColorExt for Color {
         self
     }
 
+    /// 1.0 is fully opaque
     fn a(mut self, a: f32) -> Self {
         self.a = a;
         self
