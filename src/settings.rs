@@ -129,7 +129,7 @@ impl SettingsPage {
     pub fn view<'s, 'c: 's>(
         &'s self,
         closed_characters: &[ClosedCharacter],
-        width: u32,
+        width: u16,
     ) -> Container<'c> {
         const PADDING: u16 = 12;
         const RULE_SPACING: u16 = 24;
@@ -145,23 +145,23 @@ impl SettingsPage {
         let character_name_input = text_input(
             "Character Name",
             &self.character_name,
-            |n| crate::Message::Settings(Message::CharacterName(n)),
         )
             .id(self.character_name_id.clone())
+            .on_input(|n| crate::Message::Settings(Message::CharacterName(n)))
             .on_submit(crate::Message::Settings(Message::SubmitCharacter));
         let create_character_button = button(
             text("Create").size(16),
         )
             .on_press(crate::Message::Settings(Message::SubmitCharacter));
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_lossless)]
-            let text_width = (width as f32 / 2.0
+            let text_width = width as f32 / 2.0
             - PADDING as f32
             - RULE_SPACING as f32
             - NAME_PADDING as f32
             - 45.0 // open button
             - (2 * SPACING) as f32
             - 51.0 // delete button
-        ) as u32;
+            ;
         let closed_character_buttons = closed_characters.iter()
             .enumerate()
             .fold(col!(), |col, (idx, closed)| {
@@ -191,9 +191,9 @@ impl SettingsPage {
                         let cancel_input = text_input(
                             "Submit now to cancel",
                             name,
-                            move |s| crate::Message::Settings(Message::RenameString(idx, s)),
                         ).style(highlight)
-                            .width(Length::Units(140))
+                            .width(Length::Fixed(140.0))
+                            .on_input(move |s| crate::Message::Settings(Message::RenameString(idx, s)))
                             .on_submit(crate::Message::Settings(Message::Rename(idx)));
                         let button = button(
                             text("Submit").size(15),
@@ -243,8 +243,9 @@ impl SettingsPage {
         let spell_name = text_input(
             "Spell Name",
             &self.spell_name,
-            |n| crate::Message::Settings(Message::SpellName(n)),
-        ).on_submit(crate::Message::Settings(Message::SubmitSpell));
+        )
+            .on_input(|n| crate::Message::Settings(Message::SpellName(n)))
+            .on_submit(crate::Message::Settings(Message::SubmitSpell));
 
         let create_spell_button = button(
             text("Create").size(16),
@@ -361,24 +362,21 @@ impl SettingsPage {
                         text_input(
                             "",
                             when.as_deref().unwrap_or(""),
-                            edit_message(Edit::CastingTimeWhen),
-                        ),
+                        ).on_input(edit_message(Edit::CastingTimeWhen)),
                     )),
                     &(CastingTime::Minute(n) | CastingTime::Hour(n)) => Some(make_row(
                         if matches!(&spell.casting_time, CastingTime::Minute(_)) { "Minutes:" } else { "Hours:" },
                         text_input(
                             "",
                             &n.to_string(),
-                            edit_message(Edit::CastingTimeN),
-                        ),
+                        ).on_input(edit_message(Edit::CastingTimeN)),
                     )),
                 };
 
                 let range = text_input(
                     "",
                     spell.range.as_deref().unwrap_or(""),
-                    edit_message(Edit::Range),
-                );
+                ).on_input(edit_message(Edit::Range));
 
                 let Components { v, s, m } = spell.components.clone().unwrap_or_default();
                 let v = checkbox(
@@ -407,14 +405,12 @@ impl SettingsPage {
                 let material_component = m.map(|mat| text_input(
                     "material",
                     &mat,
-                    edit_message(Edit::ComponentMaterial),
-                ));
+                ).on_input(edit_message(Edit::ComponentMaterial)));
 
                 let duration = text_input(
                     "",
                     spell.duration.as_deref().unwrap_or(""),
-                    edit_message(Edit::Duration),
-                );
+                ).on_input(edit_message(Edit::Duration));
 
                 let ritual = checkbox(
                     "",
@@ -431,16 +427,15 @@ impl SettingsPage {
                 let description = text_input(
                     "Describe the spell's effects...",
                     &spell.description,
-                    edit_message(Edit::Description),
                 )
+                    .on_input(edit_message(Edit::Description))
                     // .on_submit(crate::Message::Settings(Message::EditSpell(Edit::DescEnter)))
                     ;
 
                 let higher_levels = text_input(
                     "Higher level effects...",
                     spell.higher_levels.as_deref().unwrap_or(""),
-                    edit_message(Edit::HigherLevels),
-                );
+                ).on_input(edit_message(Edit::HigherLevels));
 
                 let classes = pick_list(
                     &Class::ALL[..],

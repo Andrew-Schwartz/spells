@@ -142,7 +142,7 @@ pub fn handle(app: &mut DndSpells, message: Message) -> error::Result<(), Update
                 let this_version = Version::parse(cargo_crate_version!())
                     .expect("I always use semver correctly");
                 if latest_version > this_version {
-                    if let Some(asset) = latest_release.asset_for(self_update::get_target()) {
+                    if let Some(asset) = latest_release.asset_for(self_update::get_target(), None) {
                         app.update_url = asset.download_url;
                         UpdateState::Ready
                     } else {

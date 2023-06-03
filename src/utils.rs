@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-use iced::{Color, Length, widget::tooltip::Position};
+use iced::{Length, widget::tooltip::Position};
 use iced::widget::{Column, Row};
 use iced_aw::Icon;
+use iced_core::Color;
 use iced_native::widget::{horizontal_space, Space, text, vertical_space};
 use palette::{FromColor, Hsl, Srgb};
 
@@ -128,11 +129,15 @@ impl<'a, Message: 'a, Renderer: iced_native::Renderer> SpacingExt for Row<'a, Me
 }
 
 fn to_hsl(color: Color) -> Hsl {
-    Hsl::from_color(Srgb::from(color))
+    // Hsl::from_color(<Srgb as From<Color>>::from(color))
+    let Color { r, g, b, a: _ } = color;
+    Hsl::from_color(Srgb::new(r, g, b))
 }
 
 fn from_hsl(hsl: Hsl) -> Color {
-    Srgb::from_color(hsl).into()
+    // Srgb::from_color(hsl).into()
+    let Srgb { red, green, blue, standard: _ } = Srgb::from_color(hsl);
+    Color::from_rgb(red, green, blue)
 }
 
 pub trait ColorExt {

@@ -36,7 +36,6 @@ use iced::{Alignment, alignment::Vertical, Application, Command, Length, mouse::
     button,
     container,
     progress_bar,
-    slider,
     text,
     tooltip::Position,
 }, widget, window::Icon};
@@ -113,7 +112,7 @@ fn icon() -> Icon {
     const HEIGHT: u32 = 1500;
     let image = image::load_from_memory(LOGO).expect("failed to read logo");
 
-    Icon::from_rgba(image.into_bytes(), WIDTH, HEIGHT).unwrap()
+    window::icon::from_rgba(image.into_bytes(), WIDTH, HEIGHT).unwrap()
 }
 
 const WIDTH: u32 = 1100;
@@ -147,7 +146,7 @@ fn main() {
             ..Default::default()
         },
         // default_font: Some(include_bytes!("../resources/arial.ttf")),
-        default_text_size: 18,
+        default_text_size: 18.0,
         antialiasing: true,
         ..Default::default()
     }).unwrap()
@@ -174,8 +173,8 @@ impl UpdateState {
                     5,
                     progress_bar(0.0..=100.0, pct)
                         .style(Location::SettingsBar)
-                        .height(Length::Units(12)) // bottom bar is 20 pts
-                        .width(Length::Units(100))
+                        .height(Length::Fixed(12.0)) // bottom bar is 20 pts
+                        .width(Length::Fixed(100.0))
                 ].align_items(Alignment::Center))
             }
             view_as_text => match view_as_text {
@@ -200,8 +199,8 @@ pub struct DndSpells {
     update_url: String,
     // style: Style,
     tab: Tab,
-    width: u32,
-    height: u32,
+    width: u16,
+    height: u16,
     control_pressed: bool,
     search_page: SearchPage,
     characters: Vec<CharacterPage>,
@@ -230,7 +229,7 @@ pub enum Message {
     Hotkey(hotkey::Message),
     MouseState(hotmouse::StateMessage),
     ScrollIGuessHopefully(Pt),
-    Resize(u32, u32),
+    Resize(u16, u16),
     SelectTab(usize),
     CloseTab(usize),
 }
@@ -352,8 +351,8 @@ impl DndSpells {
             update_url: "".to_string(),
             // style: Style::default(),
             tab: Tab::Search,
-            width,
-            height,
+            width: width as u16,
+            height: height as u16,
             control_pressed: false,
             search_page: Default::default(),
             characters: vec![],
@@ -975,33 +974,33 @@ impl Application for DndSpells {
             |tabs, (label, tab)| tabs.push(label, tab),
         ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width).max_height(height))
             .tab_bar_style(style)
-            .icon_size(10)
+            .icon_size(10.0)
             .icon_font(iced_aw::ICON_FONT)
             // .on_close(Message::CloseTab)
             ;
 
-        #[allow(clippy::float_cmp)]
-            let col_slider_reset = button(
-            text("Reset")
-                .vertical_alignment(Vertical::Center)
-                .size(12),
-        ).style(Location::Transparent)
-            .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
+        // #[allow(clippy::float_cmp)]
+        // let col_slider_reset = button(
+        //     text("Reset")
+        //         .vertical_alignment(Vertical::Center)
+        //         .size(12),
+        // ).style(Location::Transparent)
+        //     .tap_if(self.col_scale != 1.0, |reset| reset.on_press(Message::SetColScale(1.0)));
+        //
+        // // todo monospace font and pad with spaces
+        // let slider_text = text(
+        //     format!("{:3.0}%", self.col_scale * 100.0)
+        // ).size(10)
+        //     .vertical_alignment(Vertical::Center);
 
-        // todo monospace font and pad with spaces
-        let slider_text = text(
-            format!("{:3.0}%", self.col_scale * 100.0)
-        ).size(10)
-            .vertical_alignment(Vertical::Center);
-
-        let col_slider = slider(
-            0.5..=4.0,
-            self.col_scale,
-            Message::SetColScale,
-        )
-            .width(Length::Units(120))
-            .step(0.01)
-            .style(style);
+        // let col_slider = slider(
+        //     0.5..=4.0,
+        //     self.col_scale,
+        //     Message::SetColScale,
+        // )
+        //     .width(Length::Units(120))
+        //     .step(0.01)
+        //     .style(style);
 
         let toggle_style = button(
             text(iced_aw::Icon::BrightnessHigh)
@@ -1016,12 +1015,12 @@ impl Application for DndSpells {
             4,
             self.update_state.view(),
             Length::Fill,
-            col_slider_reset,
-            col_slider,
-            slider_text,
+            // col_slider_reset,
+            // col_slider,
+            // slider_text,
             toggle_style,
         ].spacing(2)
-            .height(Length::Units(20))
+            .height(Length::Fixed(20.0))
             .align_items(Alignment::Center)
         ).style(Location::SettingsBar)
             .align_y(Vertical::Center);
@@ -1049,7 +1048,7 @@ impl Application for DndSpells {
             match event {
                 Event::Keyboard(e) => hotkey::handle(e),
                 Event::Window(e) => match e {
-                    window::Event::Resized { width, height } => Some(Message::Resize(width, height)),
+                    window::Event::Resized { width, height } => Some(Message::Resize(width as u16, height as u16)),
                     _ => None,
                 },
                 Event::Mouse(e) => hotmouse::handle(e),

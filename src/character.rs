@@ -598,7 +598,7 @@ impl CharacterPage {
             row![
                 container(scrollable(col)).width(Length::FillPortion(3)),
                 container(scrollable(view_spell)).width(Length::FillPortion(4)).padding([0, 0, 10, 0])
-            ].align_items(Alignment::Fill)
+            ].align_items(Alignment::Center)
                 .into()
         };
 

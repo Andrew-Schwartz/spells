@@ -8,7 +8,7 @@ use iced_aw::style::tab_bar;
 use iced_aw::tabs;
 use iced_style::{menu, rule};
 use iced_style::rule::FillMode;
-use iced_style::slider::{Handle, HandleShape};
+use iced_style::slider::{Handle, HandleShape, Rail};
 
 use crate::utils::ColorExt;
 
@@ -208,6 +208,7 @@ impl text_input::StyleSheet for Theme {
             border_radius: 2.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
+            icon_color: self.value_color(style),
         }
     }
 
@@ -232,6 +233,10 @@ impl text_input::StyleSheet for Theme {
         self.palette(style).text
     }
 
+    fn disabled_color(&self, style: &Self::Style) -> Color {
+        self.palette(style).disabled
+    }
+
     fn selection_color(&self, style: &Self::Style) -> Color {
         self.palette(style).active
     }
@@ -241,6 +246,12 @@ impl text_input::StyleSheet for Theme {
             border_width: 1.0,
             border_color: self.palette(style).accent.a(0.3),
             ..self.focused(style)
+        }
+    }
+
+    fn disabled(&self, style: &Self::Style) -> text_input::Appearance {
+        text_input::Appearance {
+            ..self.active(style)
         }
     }
 }
@@ -264,16 +275,20 @@ impl scrollable::StyleSheet for Theme {
         }
     }
 
-    fn hovered(&self, style: &Self::Style) -> Scrollbar {
+    fn hovered(&self, style: &Self::Style, is_mouse_over_scrollbar: bool) -> Scrollbar {
         let palette = self.palette(style);
         let active = self.active(style);
-        Scrollbar {
-            background: palette.surface.darken(0.4).into(),
-            scroller: Scroller {
-                color: palette.surface.darken(0.7),
-                ..active.scroller
-            },
-            ..active
+        if is_mouse_over_scrollbar {
+            Scrollbar {
+                background: palette.surface.darken(0.4).into(),
+                scroller: Scroller {
+                    color: palette.surface.darken(0.7),
+                    ..active.scroller
+                },
+                ..active
+            }
+        } else {
+            active
         }
     }
 }
@@ -304,11 +319,12 @@ impl pick_list::StyleSheet for Theme {
         pick_list::Appearance {
             text_color: palette.text,
             placeholder_color: palette.text,
+            // todo what does this do
+            handle_color: Color::TRANSPARENT,
             background: palette.surface.into(),
             border_color: Color::TRANSPARENT,
             border_radius: 3.0,
             border_width: 0.0,
-            icon_size: 0.0,
         }
     }
 
@@ -331,12 +347,12 @@ impl checkbox::StyleSheet for Theme {
             } else {
                 palette.surface
             }.into(),
-            checkmark_color: palette.text,
             border_radius: 2.0,
             border_width: 1.0,
             border_color: palette.active,
             // todo
             text_color: palette.text.into(),
+            icon_color: palette.text,
         }
     }
 
@@ -360,7 +376,10 @@ impl slider::StyleSheet for Theme {
         let palette = self.palette(style);
         slider::Appearance {
             // todo this has to be transparent for TRANSPARENT
-            rail_colors: (palette.text, Color::TRANSPARENT),
+            rail: Rail {
+                colors: (palette.text, Color::TRANSPARENT),
+                width: 2.0,
+            },
             handle: Handle {
                 shape: HandleShape::Circle { radius: 7.0 },
                 color: palette.surface,

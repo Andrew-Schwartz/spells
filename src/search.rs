@@ -388,8 +388,7 @@ impl Searcher for TextSearch {
         let input = text_input(
             "int|wis",
             &self.text,
-            on_selected(character, Message::SearchText),
-        );
+        ).on_input(on_selected(character, Message::SearchText));
         row.push(text).push_space(4).push(input)
     }
 }
@@ -511,17 +510,18 @@ impl SearchOptions {
         let search = text_input(
             "search for a spell",
             self.search.as_str(),
-            search_message,
-        ).width(Length::FillPortion(4))
+        )
+            .on_input(search_message)
+            .width(Length::FillPortion(4))
             .id(self.id.clone());
         // todo did I do this?
         // text_input::focus(self.search_id.clone());
         let mode = pick_list(
-            Mode::ALL.as_ref(),
+            <[Mode; 8] as AsRef<[Mode]>>::as_ref(&Mode::ALL),
             None,
             mode_message,
         ).placeholder("Advanced Search")
-            .width(Length::Units(114))
+            .width(Length::Fixed(114.0))
             .text_size(15);
         let reset_modes = button(
             text("Reset").size(14),
@@ -721,7 +721,8 @@ impl SearchPage {
         // scroll bar of spells
         let collapse_all = self.collapse;
         let spells_col = self.spells.iter()
-            .fold(column(vec![]).align_items(Alignment::Fill), |col, spell| {
+            // todo is center right? it was Full before
+            .fold(column(vec![]).align_items(Alignment::Center), |col, spell| {
                 let collapse = match spell.collapse {
                     Some(collapse) => collapse,
                     None => collapse_all,
@@ -732,7 +733,7 @@ impl SearchPage {
         let scroll: Scrollable<'_> = scrollable::<'_, _, iced::Renderer<Theme>>(spells_col);
 
         let column = column(vec![])
-            .align_items(Alignment::Fill)
+            .align_items(Alignment::Center)
             .spacing(6)
             .push_space(10)
             .push(self.search.view(
