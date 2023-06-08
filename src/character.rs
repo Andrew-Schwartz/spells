@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::convert::identity;
 use std::iter;
 use std::sync::Arc;
 
@@ -11,11 +12,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{Container, Element, Level, Location, Row, search, SpellButtons, SpellId, Tap};
-use crate::search::{Mode, Searcher, SearchOptions};
+use crate::search::{Searcher, SearchOptions};
 use crate::spells::spell::{CustomSpell, find_spell, Spell};
 use crate::spells::static_arc::StArc;
 // use crate::style::Style;
-use crate::utils::{SpacingExt, text_icon, TooltipExt};
+use crate::utils::{SpacingExt, text_icon, Toggle, TooltipExt};
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveSpell {
@@ -181,17 +182,9 @@ impl CharacterPage {
         self.search_results = self.character.spells.each_ref()
             .map(|spells| spells.iter()
                 .enumerate()
-                .filter(|(_, (spell, _))| [
-                    self.search.level_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.class_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.school_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.casting_time_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.ritual_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.concentration_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.text_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                    self.search.source_search.as_ref().map::<&dyn Searcher, _>(|s| s),
-                ].into_iter()
-                    .flatten()
+                .filter(|(_, (spell, _))| self.search.searchers()
+                    .into_iter()
+                    // .flatten()
                     .filter(|searcher| !searcher.is_empty())
                     .all(|searcher| searcher.matches(spell)))
                 .filter(|(_, (spell, _))| spell.name_lower().contains(&needle))
@@ -273,13 +266,14 @@ impl CharacterPage {
                 idx.is_some()
             }
             Message::Search(search) => {
-                fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
+                fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) -> bool {
                     if let Some(idx) = vec.iter().position(|t| *t == entry) {
                         vec.remove(idx);
                     } else {
                         vec.push(entry);
                         vec.sort();
                     }
+                    !vec.is_empty()
                 }
 
                 let search = match search {
@@ -289,63 +283,59 @@ impl CharacterPage {
                         true
                     }
                     search::Message::Refresh => true,
-                    search::Message::PickMode(mode) => {
-                        match mode {
-                            Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
-                            Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
-                            Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
-                            Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
-                            Mode::Ritual => {
-                                SearchOptions::toggle_mode(&mut self.search.ritual_search);
-                                // the default (false) will still match spells, so redo the search
-                                // self.spells = self.search.search(custom, characters);
-                            }
-                            Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
-                            Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
-                            Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
-                        }
-                        false
-                    }
+                    // search::Message::PickMode(mode) => {
+                    //     todo!()
+                    //     // match mode {
+                    //     //     Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
+                    //     //     Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
+                    //     //     Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
+                    //     //     Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
+                    //     //     Mode::Ritual => {
+                    //     //         SearchOptions::toggle_mode(&mut self.search.ritual_search);
+                    //     //         // the default (false) will still match spells, so redo the search
+                    //     //         // self.spells = self.search.search(custom, characters);
+                    //     //     }
+                    //     //     Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
+                    //     //     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
+                    //     //     Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
+                    //     // }
+                    //     // false
+                    // }
                     search::Message::ResetModes => {
-                        self.search.level_search = None;
-                        self.search.class_search = None;
-                        self.search.casting_time_search = None;
-                        self.search.school_search = None;
-                        self.search.ritual_search = None;
-                        self.search.concentration_search = None;
-                        self.search.text_search = None;
-                        self.search.source_search = None;
+                        self.search.level_search.clear();
+                        self.search.class_search.clear();
+                        self.search.casting_time_search.clear();
+                        self.search.school_search.clear();
+                        self.search.ritual_search.clear();
+                        self.search.concentration_search.clear();
+                        self.search.text_search.clear();
+                        self.search.source_search.clear();
                         false
                     }
                     search::Message::CollapseAll => todo!(),
                     search::Message::Collapse(_id) => todo!(),
-                    search::Message::PickLevel(level) => self.search.level_search
-                        .as_mut()
-                        .map(|levels| toggle(&mut levels.levels, level))
-                        .is_some(),
-                    search::Message::PickClass(class) => self.search.class_search
-                        .as_mut()
-                        .map(|classes| toggle(&mut classes.classes, class))
-                        .is_some(),
-                    search::Message::PickCastingTime(casting_time) => self.search.casting_time_search
-                        .as_mut()
-                        .map(|times| toggle(&mut times.times, casting_time))
-                        .is_some(),
-                    search::Message::PickSchool(school) => self.search.school_search.as_mut()
-                        .map(|schools| toggle(&mut schools.schools, school))
-                        .is_some(),
-                    search::Message::PickSource(source) => self.search.source_search.as_mut()
-                        .map(|sources| toggle(&mut sources.sources, source))
-                        .is_some(),
-                    search::Message::ToggleRitual(ritual) => self.search.ritual_search.as_mut()
-                        .map(|search| search.ritual = ritual)
-                        .is_some(),
-                    search::Message::ToggleConcentration(conc) => self.search.concentration_search.as_mut()
-                        .map(|search| search.concentration = conc)
-                        .is_some(),
-                    search::Message::SearchText(text) => self.search.text_search.as_mut()
-                        .map(|search| search.text = text.to_lowercase())
-                        .is_some(),
+                    search::Message::PickLevel(level) => {
+                        self.search.level_search.levels[level as usize].toggle();
+                        self.search.level_search.levels
+                            .into_iter()
+                            .any(identity)
+                    }
+                    search::Message::PickClass(class) => toggle(&mut self.search.class_search.classes, class),
+                    search::Message::PickCastingTime(casting_time) => toggle(&mut self.search.casting_time_search.times, casting_time),
+                    search::Message::PickSchool(school) => toggle(&mut self.search.school_search.schools, school),
+                    search::Message::PickSource(source) => toggle(&mut self.search.source_search.sources, source),
+                    search::Message::ToggleRitual => todo!(),
+                    search::Message::ToggleRitualEnabled => todo!(),
+                    search::Message::ToggleConcentration => todo!(),
+                    search::Message::ToggleConcentrationEnabled => todo!(),
+                    search::Message::SearchText(text) => {
+                        self.search.text_search.text = text.to_lowercase();
+                        !self.search.text_search.text.is_empty()
+                    },
+                    search::Message::ToggleAdvanced => {
+                        self.search.show_advanced_search.toggle();
+                        false
+                    }
                 };
                 if search {
                     self.search();
@@ -605,7 +595,7 @@ impl CharacterPage {
         let search_col = col!(search.view(
             None,
             move |s| message(Message::Search(search::Message::Search(s))),
-            move |m| message(Message::Search(search::Message::PickMode(m))),
+            // move |m| message(Message::Search(search::Message::PickMode(m))),
             message(Message::Search(search::Message::ResetModes)),
             Some(index),
         )).align_items(Alignment::Center);

@@ -95,13 +95,14 @@ impl Palette {
     };
 }
 
-#[derive(Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, PartialEq)]
 pub enum Location {
     #[default]
     Default,
     Transparent,
     SettingsBar,
     Alternating { idx: usize, highlight: bool },
+    AdvancedSearch { enabled: bool },
 }
 
 impl text::StyleSheet for Theme {
@@ -179,8 +180,8 @@ impl button::StyleSheet for Theme {
         let palette = self.palette(style);
         button::Appearance {
             border_width: 1.0,
-            // todo
-            border_color: if *style == Location::Transparent {
+            // todo better way to do this than edge case handling
+            border_color: if matches!(style, Location::Transparent | Location::AdvancedSearch { .. }) {
                 Color::TRANSPARENT
             } else {
                 palette.text
@@ -474,6 +475,7 @@ mod dark {
 //     };
 //     use iced_aw::tabs;
     use crate::style::{Location, Palette};
+    use crate::utils::ColorExt;
 
     pub fn palette(style: &Location) -> Palette {
         match style {
@@ -484,6 +486,10 @@ mod dark {
             },
             Location::SettingsBar => SETTINGS_BAR,
             &Location::Alternating { idx, highlight } => alternating(idx, highlight),
+            &Location::AdvancedSearch { enabled } => Palette {
+                text: DEFAULT.text.a(if enabled { 1.0 } else { 0.5 }),
+                ..Palette::TRANSPARENT
+            }
         }
     }
 

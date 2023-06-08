@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Not;
 
 use iced::{Length, widget::tooltip::Position};
 use iced::widget::{Column, Row};
@@ -109,6 +110,12 @@ impl<'a, D: Dir> DirectionalElement<'a, D> for Length {
 impl<'a, D: Dir> DirectionalElement<'a, D> for u16 {
     fn into_element(self) -> Element<'a> {
         <Space as DirectionalElement<'a, D>>::into_element(D::space(self.into()))
+    }
+}
+
+impl<'a, D: Dir> DirectionalElement<'a, D> for &'a str {
+    fn into_element(self) -> Element<'a> {
+        Text::new(self).into()
     }
 }
 
@@ -283,4 +290,14 @@ impl<'a, E: Into<Element<'a>>> TooltipExt<'a> for E {}
 
 pub fn text_icon(icon: Icon) -> Text<'static> {
     text(icon).font(ICON_FONT)
+}
+
+pub trait Toggle: Not {
+    fn toggle(&mut self);
+}
+
+impl Toggle for bool {
+    fn toggle(&mut self) {
+        *self = !*self
+    }
 }

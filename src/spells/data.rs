@@ -387,20 +387,20 @@ impl Level {
         Self::from_u8(self.as_u8() + 1)
     }
 
-    pub const fn next_saturating(self) -> Self {
+    pub fn next_saturating(self) -> Self {
         self.next_checked().unwrap_or(self)
     }
 
-    pub const fn prev_checked(self) -> Option<Self> {
+    pub fn prev_checked(self) -> Option<Self> {
         self.as_u8().checked_sub(1)
             .and_then(Self::from_u8)
     }
 
-    pub const fn prev_saturating(self) -> Self {
+    pub fn prev_saturating(self) -> Self {
         self.prev_checked().unwrap_or(self)
     }
 
-    pub const fn add_checked(self, offset: isize) -> Option<Self> {
+    pub fn add_checked(self, offset: isize) -> Option<Self> {
         match offset {
             1 => self.next_checked(),
             -1 => self.prev_checked(),
