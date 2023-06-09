@@ -84,6 +84,12 @@ pub struct Palette {
     disabled: Color,
 }
 
+pub struct Palette2 {
+    text: Color,
+    background: Color,
+
+}
+
 impl Palette {
     const TRANSPARENT: Self = Palette {
         text: Color::TRANSPARENT,

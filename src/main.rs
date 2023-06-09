@@ -8,7 +8,7 @@
 // @formatter:off
 #![allow(
 clippy::cast_possible_truncation,
-clippy::cast_precision_loss
+clippy::cast_precision_loss,
 clippy::cast_sign_loss,
 clippy::default_trait_access,
 clippy::enum_glob_use,
