@@ -296,12 +296,10 @@ pub fn text_icon(icon: Icon) -> Text<'static> {
     text(icon).font(ICON_FONT)
 }
 
-pub trait Toggle: Not {
-    fn toggle(&mut self);
-}
-
-impl Toggle for bool {
+pub trait Toggle: Not<Output=Self> + Copy {
     fn toggle(&mut self) {
         *self = !*self;
     }
 }
+
+impl<T: Not<Output=T> + Copy> Toggle for T {}

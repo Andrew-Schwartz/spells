@@ -170,6 +170,7 @@ impl StaticSpell {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Spell {
     Static(&'static StaticSpell),
+    // todo could
     Custom(CustomSpell),
 }
 

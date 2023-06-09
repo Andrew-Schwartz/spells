@@ -67,7 +67,7 @@ impl Theme {
     fn palette(self, style: &Location) -> Palette {
         match self {
             Self::Dark => dark::palette(style),
-            Self::Light => todo!(),
+            Self::Light => light::palette(style),
         }
     }
 }
@@ -209,7 +209,7 @@ impl text_input::StyleSheet for Theme {
         let palette = self.palette(style);
         text_input::Appearance {
             background: palette.surface.into(),
-            border_radius: 2.0,
+            border_radius: 4.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
             icon_color: self.value_color(style),
@@ -387,7 +387,7 @@ impl slider::StyleSheet for Theme {
             },
             handle: Handle {
                 shape: HandleShape::Circle { radius: 7.0 },
-                color: palette.surface,
+                color: palette.background,
                 border_width: 1.0,
                 // todo this has to be transparent for TRANSPARENT
                 border_color: color,
@@ -462,21 +462,19 @@ impl tabs::StyleSheet for Theme {
     }
 }
 
-#[allow(clippy::cast_precision_loss)]
+macro_rules! color {
+    ($r:literal $g:literal $b:literal) => {
+        Color::from_rgb(
+            $r as f32 / 255.0,
+            $g as f32 / 255.0,
+            $b as f32 / 255.0,
+        )
+    };
+}
+
 mod dark {
     use iced::Color;
 
-    // use iced::widget::{
-//         button,
-//         checkbox,
-//         container,
-//         pick_list,
-//         progress_bar,
-//         scrollable,
-//         slider::{self, Handle, HandleShape},
-//         text_input,
-//     };
-//     use iced_aw::tabs;
     use crate::style::{Location, Palette};
     use crate::utils::ColorExt;
 
@@ -575,207 +573,72 @@ mod dark {
             ..DEFAULT
         }
     }
+}
 
-    mod color {
-        // use iced::Color;
+mod light {
+    use iced::Color;
 
-        /*pub mod tab_bar {
-                    use iced::Color;
+    use crate::style::{Location, Palette};
+    use crate::utils::ColorExt;
 
-                    pub const BACKGROUND: Color = Color::from_rgb(
-                        0x2E as f32 / 255.0,
-                        0x2F as f32 / 255.0,
-                        0x37 as f32 / 255.0,
-                    );
-                }
-
-                pub mod settings_bar {
-                    use iced::Color;
-
-                    pub const PROGRESS_BAR: Color = Color::from_rgb(
-                        0x3E as f32 / 255.0,
-                        0x3F as f32 / 255.0,
-                        0x47 as f32 / 255.0,
-                    );
-                }*/
-
-        // pub mod alt {
-        //     use iced::Color;
-        //
-        //     pub const BACKGROUNDS: [Color; 2] = [
-        //         super::BACKGROUND,
-        //         Color::from_rgb(
-        //             0x30 as f32 / 255.0,
-        //             0x33 as f32 / 255.0,
-        //             0x35 as f32 / 255.0,
-        //         )];
-        //
-        //     pub const HOVERED: [Color; 2] = [Color::from_rgb(
-        //         0x41 as f32 / 255.0,
-        //         0x3E as f32 / 255.0,
-        //         0x44 as f32 / 255.0,
-        //     ), Color::from_rgb(
-        //         0x34 as f32 / 255.0,
-        //         0x37 as f32 / 255.0,
-        //         0x39 as f32 / 255.0,
-        //     )];
-        // }
+    pub fn palette(style: &Location) -> Palette {
+        match style {
+            Location::Default => DEFAULT,
+            Location::Transparent => Palette {
+                text: DEFAULT.text,
+                ..Palette::TRANSPARENT
+            },
+            Location::SettingsBar => SETTINGS_BAR,
+            &Location::Alternating { idx, highlight } => alternating(idx, highlight),
+            &Location::AdvancedSearch { enabled } => Palette {
+                text: DEFAULT.text.a(if enabled { 1.0 } else { 0.5 }),
+                ..Palette::TRANSPARENT
+            },
+            Location::Tooltip => Palette {
+                background: DEFAULT.background.a(0.8),
+                ..DEFAULT
+            }
+        }
     }
 
-    // impl button::StyleSheet for SettingsBarStyle {
-    //     fn active(&self) -> button::Style {
-    //         button::Style {
-    //             background: color::tab_bar::BACKGROUND.into(),
-    //             text_color: Color::WHITE,
-    //             ..button::Style::default()
-    //         }
-    //     }
-    // }
-    //
-    // impl container::StyleSheet for SettingsBarStyle {
-    //     fn style(&self) -> container::Style {
-    //         container::Style {
-    //             background: Some(Background::Color(color::tab_bar::BACKGROUND)),
-    //             ..Container.style()
-    //         }
-    //     }
-    // }
-    //
-    // impl progress_bar::StyleSheet for SettingsBarStyle {
-    //     fn style(&self) -> progress_bar::Style {
-    //         progress_bar::Style {
-    //             background: color::settings_bar::PROGRESS_BAR.into(),
-    //             bar: color::ACTIVE.into(),
-    //             border_radius: 5.0,
-    //         }
-    //     }
-    // }
-    //
-    // pub struct TabButton;
-    //
-    // impl button::StyleSheet for TabButton {
-    //     fn active(&self) -> button::Style {
-    //         button::Style {
-    //             background: color::BACKGROUND.into(),
-    //             text_color: Color::WHITE,
-    //             ..button::Style::default()
-    //         }
-    //     }
-    //
-    //     fn hovered(&self) -> button::Style {
-    //         button::Style {
-    //             background: Color::from_rgb8(
-    //                 0x40,
-    //                 0x40,
-    //                 0x48,
-    //             ).into(),
-    //             ..self.active()
-    //         }
-    //     }
-    //
-    //     fn disabled(&self) -> button::Style {
-    //         button::Style {
-    //             background: Color::from_rgb8(
-    //                 0x46,
-    //                 0x46,
-    //                 0x57,
-    //             ).into(),
-    //             ..self.active()
-    //         }
-    //     }
-    // }
+    const DEFAULT: Palette = Palette {
+        text: Color::BLACK,
+        background: color!(0xEF 0xEF 0xEF),
+        surface: color!(0x99 0xa3 0xb5),
+        accent: color!(0x0b 0x15 0x17),
+        active: color!(0x72 0x8b 0xe5),
+        hovered: color!(0x62 0x6f 0xaf),
+        disabled: color!(0x52 0x59 0xa9),
+    };
 
-    // pub mod alt {
-    //     use crate::utils::ColorExt;
-    //
-    //     use super::*;
-    //
-    //     pub struct Container<const N: usize>;
-    //
-    //     impl<const N: usize> container::StyleSheet for Container<N> {
-    //         fn style(&self) -> container::Style {
-    //             container::Style {
-    //                 background: Some(Background::Color(color::alt::BACKGROUNDS[N])),
-    //                 ..super::Container.style()
-    //             }
-    //         }
-    //     }
-    //
-    //     pub struct Button<const N: usize>(pub bool);
-    //
-    //     impl<const N: usize> button::StyleSheet for Button<N> {
-    //         fn active(&self) -> button::Style {
-    //             button::Style {
-    //                 background: Color::TRANSPARENT.into(),
-    //                 text_color: Color::WHITE,
-    //                 border_width: 0.0,
-    //                 border_color: Color::TRANSPARENT,
-    //                 border_radius: 5.0,
-    //                 ..button::Style::default()
-    //             }
-    //         }
-    //
-    //         fn hovered(&self) -> button::Style {
-    //             let mut style = self.active();
-    //             if self.0 {
-    //                 style.background = color::alt::HOVERED[N].into();
-    //             }
-    //             style
-    //         }
-    //
-    //         fn pressed(&self) -> button::Style {
-    //             if self.0 {
-    //                 button::Style {
-    //                     border_width: 1.0,
-    //                     border_radius: 3.0,
-    //                     border_color: Color::WHITE.a(0.3),
-    //                     ..self.active()
-    //                 }
-    //             } else {
-    //                 self.active()
-    //             }
-    //         }
-    //     }
-    //
-    //     pub struct TextInput<const N: usize>(pub bool);
-    //
-    //     impl<const N: usize> text_input::StyleSheet for TextInput<N> {
-    //         fn active(&self) -> text_input::Style {
-    //             text_input::Style {
-    //                 background: Color::TRANSPARENT.into(),
-    //                 border_radius: 2.0,
-    //                 border_width: 0.0,
-    //                 border_color: Color::TRANSPARENT,
-    //             }
-    //         }
-    //
-    //         fn focused(&self) -> text_input::Style {
-    //             text_input::Style {
-    //                 border_width: 1.0,
-    //                 border_color: color::ACTIVE.clearer(0.8),
-    //                 ..self.active()
-    //             }
-    //         }
-    //
-    //         fn placeholder_color(&self) -> Color {
-    //             Color::WHITE.clearer(0.7)
-    //         }
-    //
-    //         fn value_color(&self) -> Color {
-    //             Color::WHITE
-    //         }
-    //
-    //         fn selection_color(&self) -> Color {
-    //             color::ACTIVE
-    //         }
-    //
-    //         fn hovered(&self) -> text_input::Style {
-    //             text_input::Style {
-    //                 border_width: 1.0,
-    //                 border_color: color::ACCENT.a(0.3),
-    //                 ..self.focused()
-    //             }
-    //         }
-    //     }
-    // }
+    const SETTINGS_BAR: Palette = Palette {
+        ..DEFAULT
+    };
+
+    const fn alternating(idx: usize, highlight: bool) -> Palette {
+        const BACKGROUNDS: [Color; 2] = [
+            DEFAULT.background,
+            Color::from_rgb(
+                0x30 as f32 / 255.0,
+                0x33 as f32 / 255.0,
+                0x35 as f32 / 255.0,
+            )];
+        const HOVERED: [Color; 2] = [Color::from_rgb(
+            0x41 as f32 / 255.0,
+            0x3E as f32 / 255.0,
+            0x44 as f32 / 255.0,
+        ), Color::from_rgb(
+            0x34 as f32 / 255.0,
+            0x37 as f32 / 255.0,
+            0x39 as f32 / 255.0,
+        )];
+
+        let background = BACKGROUNDS[idx % 2];
+        Palette {
+            active: background,
+            background,
+            hovered: if highlight { HOVERED[idx % 2] } else { background },
+            ..DEFAULT
+        }
+    }
 }

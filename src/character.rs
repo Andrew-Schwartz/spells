@@ -528,20 +528,16 @@ impl CharacterPage {
                 .into()
         };
 
-        let search_col = col!(search.view(
-            None,
-            move |s| message(Message::Search(search::Message::Search(s))),
-            // move |m| message(Message::Search(search::Message::PickMode(m))),
-            message(Message::Search(search::Message::ResetSearch)),
-            Some(index),
-        )).align_items(Alignment::Center);
+        // let search_col = col![
+        //     search.view(None, Some(index))
+        // ].align_items(Alignment::Center);
 
         container(col![
             10,
             name_text,
             buttons_row,
             tabs_row,
-            search_col,
+            search.view(None, Some(index)),
             page
         ].align_items(Alignment::Center)
             .spacing(6))
@@ -566,7 +562,6 @@ impl SpellButtons for CharacterPageButtons {
         let buttons = [
             (self.left, "Move left", Icon::ArrowLeft, Message::MoveSpell(id.clone(), MoveSpell::Left)),
             (self.up, "Move up", Icon::ArrowUp, Message::MoveSpell(id.clone(), MoveSpell::Up)),
-            // todo data is always true
             (true, if data { "Unprepare" } else { "Prepare" }, if data { Icon::X } else { Icon::Check2 }, Message::Prepare(id.clone())),
             (true, "Remove", Icon::Trash, Message::RemoveSpell(id.clone())),
             (self.down, "Move down", Icon::ArrowDown, Message::MoveSpell(id.clone(), MoveSpell::Down)),

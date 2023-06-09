@@ -520,6 +520,7 @@ impl SearchOptions {
             .map(Spell::Static)
             .chain(custom.iter()
                 // todo not clone them
+                //  could Cow it?
                 .cloned()
                 .map(Spell::Custom))
             .filter(|spell| self.searchers()
@@ -552,22 +553,6 @@ impl SearchOptions {
             Message::Refresh => {
                 true
             }
-            // Message::PickMode(mode) => {
-            //     // most of the time, don't re-search here, because then no spells will match
-            //     // todo
-            //     // match mode {
-            //     //     Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
-            //     //     Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
-            //     //     Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
-            //     //     Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
-            //     //     Mode::Ritual => SearchOptions::toggle_mode(&mut self.search.ritual_search),
-            //     //     Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
-            //     //     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
-            //     //     Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
-            //     // }
-            //     // the default (false) will still match spells, so redo the search
-            //     // mode == Mode::Ritual
-            // }
             Message::ResetSearch => {
                 self.search.clear();
                 self.searchers_mut()
@@ -623,67 +608,37 @@ impl SearchOptions {
                 self.component_search.vsm[vsm].enabled.toggle();
                 true
             }
-            Message::CollapseAll => {
-                // self.collapse = !self.collapse;
-                // todo
-                // self.spells.iter_mut().for_each(|spell| spell.collapse = None);
-                false
-            }
-            Message::Collapse(id) => {
-                // todo
-                // if let Some(spell) = self.spells.iter_mut()
-                //     .find(|spell| spell.spell.id() == id) {
-                //     if let Some(collapse) = &mut spell.collapse {
-                //         *collapse = !*collapse;
-                //     } else {
-                //         spell.collapse = Some(!self.collapse);
-                //     }
-                // }
-                false
-            }
             Message::ToggleAdvanced => {
                 self.show_advanced_search.toggle();
                 false
             }
+            // {Search,Character}Page specific options
+            Message::CollapseAll
+            | Message::Collapse(_) => false,
         }
     }
 
-    pub fn view<'s, 'c: 's, S>(
+    pub fn view<'s, 'c: 's>(
         &'s self,
         before_search_bar: impl Into<Option<Button<'c>>>,
-        search_message: S,
-        reset_message: crate::Message,
         character: Option<usize>,
-    ) -> Container<'c>
-        where S: Fn(String) -> crate::Message + 'static,
-    {
+    ) -> Container<'c> {
         let search = text_input(
             "search for a spell",
             self.search.as_str(),
         )
-            .on_input(search_message)
+            .on_input(move |s| wrap_character(character, Message::Search(s)))
             .width(Length::FillPortion(4))
             .id(self.id.clone());
-        // todo did I do this?
-        // text_input::focus(self.search_id.clone());
         let reset_modes = button(
             text("Reset").size(14),
         ).tap_if(
             !self.search.is_empty() ||
                 !self.searchers()
                     .into_iter()
-                    .all(Searcher::is_empty)
-            ,
-            |b| b.on_press(reset_message),
+                    .all(Searcher::is_empty),
+            |b| b.on_press(wrap_character(character, Message::ResetSearch)),
         );
-
-        // let toggle_advanced_modes = self.searchers()
-        //     .into_iter()
-        //     .map(|s|
-        //              button(text(s.name()).size(15))
-        //                  .padding(2.0)
-        //                  .on_press(wrap_character(character, s.message())),
-        //     ).collect_vec();
 
         let toggle_advanced = button(text("Advanced Search").size(16))
             .on_press(wrap_character(character, Message::ToggleAdvanced));
@@ -722,7 +677,7 @@ impl SearchOptions {
 
 #[derive(Default)]
 pub struct SearchPage {
-    collapse: bool,
+    collapse_all: bool,
     pub search: SearchOptions,
     pub spells: Vec<SearchSpell>,
 }
@@ -732,7 +687,7 @@ impl SearchPage {
         let search = SearchOptions::default();
         let spells = search.search(custom, characters);
         Self {
-            collapse: false,
+            collapse_all: false,
             search,
             spells,
         }
@@ -767,6 +722,23 @@ impl SearchPage {
     pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) -> Command<crate::Message> {
         let searched_text = matches!(message, Message::SearchText(_));
 
+        match &message {
+            Message::CollapseAll => {
+                self.collapse_all.toggle();
+                self.spells.iter_mut().for_each(|spell| spell.collapse = None);
+            }
+            Message::Collapse(id) => {
+                if let Some(spell) = self.spells.iter_mut()
+                    .find(|spell| spell.spell.id() == *id) {
+                    if let Some(collapse) = &mut spell.collapse {
+                        collapse.toggle();
+                    } else {
+                        spell.collapse = Some(!self.collapse_all);
+                    }
+                }
+            }
+            _ => {}
+        };
         let search = self.search.update(message);
 
         if search {
@@ -782,14 +754,13 @@ impl SearchPage {
 
     pub fn view<'s, 'c: 's>(&'s self) -> Container<'c> {
         let collapse_button = button(
-            text_icon(if self.collapse { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
+            text_icon(if self.collapse_all { Icon::ArrowsExpand } else { Icon::ArrowsCollapse })
                 .size(15),
         ).on_press(crate::Message::Search(Message::CollapseAll));
 
         // scroll bar of spells
-        let collapse_all = self.collapse;
+        let collapse_all = self.collapse_all;
         let spells_col = self.spells.iter()
-            // todo is center right? it was Full before
             .fold(col!().align_items(Alignment::Center), |col, spell| {
                 let collapse = match spell.collapse {
                     Some(collapse) => collapse,
@@ -800,21 +771,13 @@ impl SearchPage {
             });
         let scroll: Scrollable<'_> = scrollable::<'_, _, iced::Renderer<Theme>>(spells_col);
 
-        let column = col!()
+        col![
+            10,
+            self.search.view(collapse_button, None),
+            scroll
+        ].spacing(6)
             .align_items(Alignment::Center)
-            .spacing(6)
-            .push_space(10)
-            .push(self.search.view(
-                collapse_button,
-                |s| crate::Message::Search(Message::Search(s)),
-                // |m| crate::Message::Search(m),
-                // |m| crate::Message::Search(Message::PickMode(m)),
-                crate::Message::Search(Message::ResetSearch),
-                None,
-            ))
-            .push(scroll);
-
-        container(column)
+            .tap(container)
     }
 }
 
@@ -844,7 +807,6 @@ impl SpellButtons for SearchPageButtons<'_> {
             text(&*id.name).size(36),
         ).width(Length::FillPortion(18))
             .on_press(crate::Message::Search(Message::Collapse(id)))
-            // todo no highlight
             .style(Location::Transparent)
             .into();
         (buttons, name)

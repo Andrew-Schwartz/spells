@@ -7,8 +7,9 @@
 #![warn(clippy::pedantic)]
 // @formatter:off
 #![allow(
-clippy::cast_sign_loss,
 clippy::cast_possible_truncation,
+clippy::cast_precision_loss
+clippy::cast_sign_loss,
 clippy::default_trait_access,
 clippy::enum_glob_use,
 clippy::items_after_statements,
@@ -63,7 +64,7 @@ use crate::spells::spell::{find_spell, SpellId};
 use crate::style::{Location, Theme};
 // use crate::style::{SettingsBarStyle, Style};
 use crate::tab::Tab;
-use crate::utils::{Tap, TooltipExt, TryRemoveExt};
+use crate::utils::{Tap, Toggle, TooltipExt, TryRemoveExt};
 
 use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use self::spells::spell::{CustomSpell, StaticSpell};
@@ -201,7 +202,7 @@ impl UpdateState {
 pub struct DndSpells {
     update_state: UpdateState,
     update_url: String,
-    // style: Style,
+    theme: Theme,
     tab: Tab,
     width: u16,
     height: u16,
@@ -347,6 +348,7 @@ impl DndSpells {
         let mut window = Self {
             update_state: UpdateState::Checking,
             update_url: String::new(),
+            theme: Default::default(),
             tab: Tab::Search,
             width: width as u16,
             height: height as u16,
@@ -442,7 +444,7 @@ impl Application for DndSpells {
                 }
             }
             Message::ToggleTheme => {
-                todo!();
+                self.theme.toggle();
                 // self.style = match self.style {
                 //     Style::Light => Style::Dark,
                 //     Style::Dark => Style::Light,
@@ -1037,6 +1039,10 @@ impl Application for DndSpells {
             .align_y(Vertical::Top)
             .style(style)
             .into()
+    }
+
+    fn theme(&self) -> Self::Theme {
+        self.theme
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
