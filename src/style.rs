@@ -25,6 +25,7 @@ pub mod types {
     pub type Row<'a> = iced::widget::Row<'a, Message, Renderer>;
     pub type Column<'a> = iced::widget::Column<'a, Message, Renderer>;
     pub type Button<'a> = iced::widget::Button<'a, Message, Renderer>;
+    pub type ClickButton<'a> = crate::click_button::ClickButton<'a, Message, Renderer>;
     pub type Tooltip<'a> = iced::widget::Tooltip<'a, Message, Renderer>;
     pub type Scrollable<'a> = iced::widget::Scrollable<'a, Message, Renderer>;
     pub type TextInput<'a> = iced::widget::TextInput<'a, Message, Renderer>;
@@ -103,6 +104,7 @@ pub enum Location {
     SettingsBar,
     Alternating { idx: usize, highlight: bool },
     AdvancedSearch { enabled: bool },
+    Tooltip,
 }
 
 impl text::StyleSheet for Theme {
@@ -134,6 +136,7 @@ impl container::StyleSheet for Theme {
             text_color: palette.text.into(),
             background: palette.background.into(),
             border_color: Color::TRANSPARENT,
+            border_radius: if *style == Location::Tooltip { 8.0 } else { 0.0 },
             ..Default::default()
         }
     }
@@ -489,6 +492,10 @@ mod dark {
             &Location::AdvancedSearch { enabled } => Palette {
                 text: DEFAULT.text.a(if enabled { 1.0 } else { 0.5 }),
                 ..Palette::TRANSPARENT
+            },
+            Location::Tooltip => Palette {
+                background: DEFAULT.background.a(0.8),
+                ..DEFAULT
             }
         }
     }

@@ -137,7 +137,7 @@ impl CastingTime {
             }
             "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
             "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
-            _ => Err(format!("{} is not a casting time", rest))
+            _ => Err(format!("{rest} is not a casting time"))
         }
     }
 
@@ -196,7 +196,7 @@ impl<'de> Deserialize<'de> for CastingTime {
             }
             "Minute" | "Minutes" => Ok(Self::Minute(get_num()?)),
             "Hour" | "Hours" => Ok(Self::Hour(get_num()?)),
-            _ => Err(D::Error::custom(format!("{} is not a casting time", rest)))
+            _ => Err(D::Error::custom(format!("{rest} is not a casting time")))
         }
     }
 }
@@ -212,12 +212,12 @@ impl Serialize for CastingTime {
             &Self::Minute(n) => if n == 1 {
                 "1 Minute".serialize(s)
             } else {
-                format!("{} Minutes", n).serialize(s)
+                format!("{n} Minutes").serialize(s)
             },
             &Self::Hour(n) => if n == 1 {
                 "1 Hour".serialize(s)
             } else {
-                format!("{} Hours", n).serialize(s)
+                format!("{n} Hours").serialize(s)
             },
         }
     }
@@ -379,12 +379,8 @@ impl Level {
         }
     }
 
-    pub const fn as_u8(self) -> u8 {
-        self as u8
-    }
-
     pub const fn next_checked(self) -> Option<Self> {
-        Self::from_u8(self.as_u8() + 1)
+        Self::from_u8(self as u8 + 1)
     }
 
     pub fn next_saturating(self) -> Self {
@@ -392,7 +388,7 @@ impl Level {
     }
 
     pub fn prev_checked(self) -> Option<Self> {
-        self.as_u8().checked_sub(1)
+        (self as u8).checked_sub(1)
             .and_then(Self::from_u8)
     }
 
@@ -413,7 +409,10 @@ impl Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Cantrip => f.write_str("Cantrip"),
-            &level => (level as u64).fmt(f),
+            Self::L1 => f.write_str("1st"),
+            Self::L2 => f.write_str("2nd"),
+            Self::L3 => f.write_str("3rd"),
+            &level => write!(f, "{}th", level as u8),
         }
     }
 }

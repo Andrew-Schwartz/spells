@@ -7,16 +7,18 @@
 #![warn(clippy::pedantic)]
 // @formatter:off
 #![allow(
-clippy::module_name_repetitions,
-clippy::items_after_statements,
-clippy::too_many_lines,
-clippy::default_trait_access,
 clippy::cast_sign_loss,
-clippy::option_if_let_else,
-clippy::shadow_unrelated,
-clippy::redundant_static_lifetimes,
-clippy::wildcard_imports,
+clippy::cast_possible_truncation,
+clippy::default_trait_access,
 clippy::enum_glob_use,
+clippy::items_after_statements,
+clippy::module_name_repetitions,
+clippy::option_if_let_else,
+clippy::redundant_static_lifetimes,
+clippy::shadow_unrelated,
+clippy::too_many_lines,
+clippy::too_many_arguments,
+clippy::wildcard_imports,
 )]
 // @formatter:on
 #![warn(elided_lifetimes_in_paths)]
@@ -81,6 +83,7 @@ mod hotmouse;
 mod update;
 mod spells;
 mod error;
+mod click_button;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -150,7 +153,7 @@ fn main() {
         default_text_size: 18.0,
         antialiasing: true,
         ..Default::default()
-    }).unwrap()
+    }).unwrap();
 }
 
 #[derive(Debug)]
@@ -185,10 +188,10 @@ impl UpdateState {
                     "Downloaded new version! Restart program to get new features!".to_string()
                 } else {
                     // todo this VER might be the old version still
-                    format!("Running new version v{}!", VER)
+                    format!("Running new version v{VER}!")
                 }),
-                Self::UpToDate => text(format!("Spells v{}", VER)),
-                Self::Errored(e) => text(format!("Error downloading new version: {}. Running v{}", e, VER)),
+                Self::UpToDate => text(format!("Spells v{VER}")),
+                Self::Errored(e) => text(format!("Error downloading new version: {e}. Running v{VER}")),
                 Self::Downloading(_) => unreachable!(),
             }.size(11).tap(container)
         }.style(Location::SettingsBar)
@@ -329,11 +332,11 @@ impl DndSpells {
     }
 
     fn set_spells_characters(&mut self) {
-        self.custom_spells = Self::read_spells(&*SPELL_FILE)
+        self.custom_spells = Self::read_spells(&SPELL_FILE)
             .unwrap_or_default();
-        self.characters = Self::read_characters(&*CHARACTER_FILE, &self.custom_spells)
+        self.characters = Self::read_characters(&CHARACTER_FILE, &self.custom_spells)
             .unwrap_or_default();
-        self.closed_characters = Self::read_characters(&*CLOSED_CHARACTER_FILE, &self.custom_spells)
+        self.closed_characters = Self::read_characters(&CLOSED_CHARACTER_FILE, &self.custom_spells)
             .unwrap_or_default();
         self.settings_page = SettingsPage::new(&self.custom_spells);
         self.search_page = SearchPage::new(&self.custom_spells, &self.characters);
@@ -343,8 +346,7 @@ impl DndSpells {
         let (width, height) = iced::window::Settings::default().size;
         let mut window = Self {
             update_state: UpdateState::Checking,
-            update_url: "".to_string(),
-            // style: Style::default(),
+            update_url: String::new(),
             tab: Tab::Search,
             width: width as u16,
             height: height as u16,
@@ -427,16 +429,13 @@ impl Application for DndSpells {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         let mut commands = Vec::new();
-        let mut focus = |id| {
-            commands.push(text_input::focus(id))
-        };
         match message {
             Message::Update(msg) => {
                 if let update::Message::CheckForUpdate = &msg {
-                    focus(self.search_page.search.id.clone());
+                    commands.push(text_input::focus(self.search_page.search.id.clone()));
                 }
                 if let Err(e) = update::handle(self, msg) {
-                    self.update_state = UpdateState::Errored(e.to_string())
+                    self.update_state = UpdateState::Errored(e.to_string());
                 }
                 if let UpdateState::Downloaded = &self.update_state {
                     self.set_spells_characters();
@@ -464,14 +463,14 @@ impl Application for DndSpells {
                         self.settings_page.character_name = name;
                     }
                     Message::SubmitCharacter => {
-                        focus(self.settings_page.character_name_id.clone());
+                        commands.push(text_input::focus(self.settings_page.character_name_id.clone()));
                         let name = &mut self.settings_page.character_name;
                         if !name.is_empty() && !self.characters.iter().any(|page| &*page.character.name == name) {
                             let name = Arc::<str>::from(mem::take(name));
                             commands.push(self.add_character(name));
                         } else {
                             // todo notify in gui somehow
-                            println!("{} is already a character", name);
+                            println!("{name} is already a character");
                         }
                     }
                     Message::Open(index) => {
@@ -544,7 +543,7 @@ impl Application for DndSpells {
                     Message::EditSpell(edit) => match &mut self.settings_page.spell_editor {
                         SpellEditor::Searching { .. } => unreachable!(),
                         SpellEditor::Editing { spell } => {
-                            let nullify = |s: String| s.is_empty().not().then(|| s);
+                            let nullify = |s: String| s.is_empty().not().then_some(s);
                             match edit {
                                 Edit::School(school) => spell.school = school,
                                 Edit::Level(level) => spell.level = level,
@@ -639,7 +638,7 @@ impl Application for DndSpells {
                 // let must_save = self.character_pages.get_mut(&name)
                 //     .map(|c| c.update(msg, num_cols));
                 if let Some(c) = self.characters.get(index) {
-                    focus(c.search.id.clone());
+                    commands.push(text_input::focus(c.search.id.clone()));
                 }
                 if add {
                     // have to update after adding the spell
@@ -682,21 +681,24 @@ impl Application for DndSpells {
                         match (main_page, self.tab) {
                             (true, _) => {
                                 self.tab = Tab::Search;
-                                let command = self.search_page.update(
-                                    search::Message::Search(String::new()),
-                                    &self.custom_spells,
-                                    &self.characters,
-                                );
-                                commands.push(command);
+                                // let command = self.search_page.update(
+                                //     search::Message::Search(String::new()),
+                                //     &self.custom_spells,
+                                //     &self.characters,
+                                // );
+                                // commands.push(command);
+                                commands.push(text_input::select_all(self.search_page.search.id.clone()));
                             }
                             (false, Tab::Settings | Tab::Search) => {
                                 self.tab = Tab::Search;
-                                commands.push(self.refresh_search())
+                                commands.push(self.refresh_search());
+                                commands.push(text_input::select_all(self.search_page.search.id.clone()));
                             }
                             (false, Tab::Character { index }) => {
                                 if let Some(page) = self.characters.get_mut(index) {
                                     page.tab = None;
-                                    focus(page.search.id.clone());
+                                    commands.push(text_input::focus(page.search.id.clone()));
+                                    commands.push(text_input::select_all(page.search.id.clone()));
                                 }
                             }
                         }
@@ -724,13 +726,13 @@ impl Application for DndSpells {
                             match idx {
                                 0 => {
                                     self.tab = Tab::Search;
-                                    focus(self.search_page.search.id.clone());
+                                    commands.push(text_input::focus(self.search_page.search.id.clone()));
                                 },
                                 new_tab if new_tab == new_tab_idx => self.tab = Tab::Settings,
                                 idx => {
                                     // let character = &self.characters[idx - 1];
                                     self.tab = Tab::Character { index: idx - 1 };
-                                    focus(self.characters[idx - 1].search.id.clone());
+                                    commands.push(text_input::focus(self.characters[idx - 1].search.id.clone()));
                                 }
                             }
                         } else {
@@ -764,7 +766,7 @@ impl Application for DndSpells {
                             match idx {
                                 0 => {
                                     self.tab = Tab::Search;
-                                    focus(self.search_page.search.id.clone());
+                                    commands.push(text_input::focus(self.search_page.search.id.clone()));
                                 },
                                 settings_tab if settings_tab == max_tab_idx => self.tab = Tab::Settings,
                                 mut tab => {
@@ -789,7 +791,7 @@ impl Application for DndSpells {
                                             .0
                                             .tap(Some)
                                     };
-                                    focus(self.characters[character].search.id.clone());
+                                    commands.push(text_input::focus(self.characters[character].search.id.clone()));
                                 }
                             }
                         }
@@ -832,7 +834,7 @@ impl Application for DndSpells {
                             if let Some(character) = self.characters.get_mut(idx) {
                                 let spell = find_spell(&spell.name, &self.custom_spells).unwrap();
                                 character.add_spell(spell);
-                                commands.push(self.refresh_search())
+                                commands.push(self.refresh_search());
                             }
                         }
                     }
@@ -920,14 +922,14 @@ impl Application for DndSpells {
                                 ScrollDelta::Lines { y, .. }
                                 | ScrollDelta::Pixels { y, .. } => y,
                             }.signum() as usize;
-                            println!("delta = {:?}", delta);
+                            println!("delta = {delta:?}");
                             self.num_cols += delta;
                         }
                     }
                 }
             }
             Message::ScrollIGuessHopefully(pt) => {
-                println!("matched: {:?}", pt);
+                println!("matched: {pt:?}");
             }
             Message::SelectTab(index) => {
                 self.tab = match index {
@@ -937,7 +939,7 @@ impl Application for DndSpells {
                 }
             }
             Message::CloseTab(tab) => {
-                println!("close tab = {:?}", tab);
+                println!("close tab = {tab:?}");
             }
         };
         // println!("commands = {:?}", commands);
@@ -981,9 +983,11 @@ impl Application for DndSpells {
 
         // todo monospace font
         let slider_text = text(
-            format!("{} cols", self.num_cols)
+            format!("{} columns", self.num_cols)
         ).size(10)
-            .vertical_alignment(Vertical::Center);
+            .vertical_alignment(Vertical::Center)
+            .tooltip_at(Position::Top, "Applies in level view")
+            .size(10);
 
         let col_slider = slider(
             1_u32..=5,
@@ -1000,7 +1004,7 @@ impl Application for DndSpells {
                 .size(12),
         ).style(Location::Transparent)
             .on_press(Message::ToggleTheme)
-            .tooltip_at(&format!("Switch to {} theme", !self.theme()), Position::Top)
+            .tooltip_at(Position::Top, &format!("Switch to {} theme", !self.theme()))
             .size(10);
 
         let bottom_bar = container(row![

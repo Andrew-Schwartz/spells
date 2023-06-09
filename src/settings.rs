@@ -114,7 +114,7 @@ impl SpellEditor {
     pub fn searching(needle: &str, spells: &[CustomSpell]) -> Self {
         let spells = spells.iter()
             .map(|spell| (&spell.name_lower, spell))
-            .filter(|(name, _)| name.contains(&needle))
+            .filter(|(name, _)| name.contains(needle))
             .sorted_unstable_by_key(|&(name, _)| name)
             // .sorted_unstable_by_key(|(name, _)| levenshtein(name, needle))
             .map(|(_, spell)| spell)

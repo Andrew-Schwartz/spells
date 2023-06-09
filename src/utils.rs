@@ -9,6 +9,7 @@ use iced_native::widget::{horizontal_space, Space, text, vertical_space};
 use palette::{FromColor, Hsl, Srgb};
 
 use crate::{Element, ICON_FONT, Text, Tooltip};
+use crate::style::Location;
 
 // versions that get the spacing easier
 macro_rules! col {
@@ -73,6 +74,7 @@ impl_directional_element! {
     crate::Container<'a>;
     crate::Text<'a>;
     crate::Button<'a>;
+    crate::ClickButton<'a>;
     crate::Row<'a>;
     crate::Column<'a>;
     crate::Tooltip<'a>;
@@ -277,12 +279,14 @@ pub trait IterExt: Iterator + Sized {
 impl<I: Iterator + Sized> IterExt for I {}
 
 pub trait TooltipExt<'a>: Into<Element<'a>> {
-    fn tooltip_at<S: ToString>(self, tooltip: S, position: Position) -> Tooltip<'a> {
+    fn tooltip_at<S: ToString>(self, position: Position, tooltip: S) -> Tooltip<'a> {
         iced::widget::tooltip(self, tooltip, position)
+            .size(16)
+            .style(Location::Tooltip)
     }
 
     fn tooltip<S: ToString>(self, tooltip: S) -> Tooltip<'a> {
-        self.tooltip_at(tooltip, Position::FollowCursor)
+        self.tooltip_at(Position::FollowCursor, tooltip)
     }
 }
 
@@ -298,6 +302,6 @@ pub trait Toggle: Not {
 
 impl Toggle for bool {
     fn toggle(&mut self) {
-        *self = !*self
+        *self = !*self;
     }
 }

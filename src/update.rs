@@ -186,7 +186,7 @@ fn update_extended(bytes: &[u8]) -> error::Result<(), UpdateError> {
         .parent()
         .expect("the current executable is always in a folder")
         .tap(PathBuf::from);
-    let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
+    let tmp_backup_dir_prefix = format!("__{bin_name}_backup");
 
     if cfg!(windows) {
         // Windows executables can not be removed while they are running, which prevents clean up
@@ -202,7 +202,7 @@ fn update_extended(bytes: &[u8]) -> error::Result<(), UpdateError> {
         }
     }
 
-    let tmp_archive_dir_prefix = format!("{}_download", bin_name);
+    let tmp_archive_dir_prefix = format!("{bin_name}_download");
     let tmp_archive_dir = tempfile::Builder::new()
         .prefix(&tmp_archive_dir_prefix)
         .tempdir_in(&tmp_dir_parent)?;
@@ -250,7 +250,7 @@ pub fn delete_backup_temp_directories() -> error::Result<(), UpdateError> {
             .parent()
             .expect("the current executable is always in a folder")
             .tap(PathBuf::from);
-        let tmp_backup_dir_prefix = format!("__{}_backup", bin_name);
+        let tmp_backup_dir_prefix = format!("__{bin_name}_backup");
 
         for entry in fs::read_dir(&tmp_dir_parent)? {
             let _res = cleanup_backup_temp_directories(
@@ -271,7 +271,7 @@ fn cleanup_backup_temp_directories(
 ) -> error::Result<(), UpdateError> {
     let entry = entry?;
     let tmp_dir_name = entry.file_name().into_string()
-        .map_err(|os_string| UpdateError::BadFileName(os_string))?;
+        .map_err(UpdateError::BadFileName)?;
 
     // For safety, check that the temporary directory contains only the expected backup
     // binary file before removing. If subdirectories or other files exist then the user

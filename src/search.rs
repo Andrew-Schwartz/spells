@@ -1,5 +1,5 @@
 use std::convert::identity;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::iter;
 use std::sync::Arc;
 
@@ -12,10 +12,10 @@ use itertools::Itertools;
 
 use crate::{character, Container, Element, ICON_FONT, Location, Row, Scrollable, SpellButtons, SpellId, SPELLS, Theme};
 use crate::character::CharacterPage;
-use crate::spells::data::{CastingTime, Class, Level, School, Source};
+use crate::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use crate::spells::spell::{CustomSpell, Spell};
 use crate::style::types::Button;
-use crate::utils::{IterExt, SpacingExt, Tap, text_icon, Toggle};
+use crate::utils::{IterExt, SpacingExt, Tap, text_icon, Toggle, TooltipExt};
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -25,8 +25,8 @@ pub enum Message {
     Search(String),
     // PickMode(Mode),
     ToggleAdvanced,
-    ResetModes,
-    PickLevel(u8),
+    ResetSearch,
+    PickLevel(Level),
     PickCastingTime(CastingTime),
     PickClass(Class),
     PickSchool(School),
@@ -36,62 +36,42 @@ pub enum Message {
     ToggleConcentration,
     ToggleConcentrationEnabled,
     SearchText(String),
+    ToggleComponent(usize),
+    ToggleComponentEnabled(usize),
 }
 
-pub trait PLNone {
-    fn title() -> &'static str;
+// pub trait PLNone {
+//     fn title() -> &'static str;
+// }
+
+// pub trait Unwrap<T>: Sized {
+//     fn unwrap(self) -> T;
+// }
+//
+// impl<T> Unwrap<T> for Option<T> {
+//     fn unwrap(self) -> T {
+//         self.unwrap()
+//     }
+// }
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Enable<T> {
+    value: T,
+    enabled: bool,
 }
 
-pub trait Unwrap<T>: Sized {
-    fn unwrap(self) -> T;
-}
-
-impl<T> Unwrap<T> for Option<T> {
-    fn unwrap(self) -> T {
-        self.unwrap()
+impl<T: Default> Enable<T> {
+    fn clear(&mut self) {
+        self.value = T::default();
+        self.enabled = false;
     }
 }
 
-// #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash, Ord, PartialOrd)]
-// pub enum Mode {
-//     Level,
-//     Class,
-//     School,
-//     CastingTime,
-//     Ritual,
-//     Concentration,
-//     Text,
-//     Source,
-// }
-// 
-// impl Mode {
-//     pub(crate) const ALL: [Self; 8] = [
-//         Self::Level,
-//         Self::Class,
-//         Self::School,
-//         Self::CastingTime,
-//         Self::Ritual,
-//         Self::Concentration,
-//         Self::Text,
-//         Self::Source,
-//     ];
-// }
-// 
-// impl Display for Mode {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         // not debug
-//         f.write_str(match self {
-//             Mode::Level => "Level",
-//             Mode::Class => "Class",
-//             Mode::School => "School",
-//             Mode::CastingTime => "Casting Time",
-//             Mode::Ritual => "Ritual",
-//             Mode::Concentration => "Concentration",
-//             Mode::Text => "Text",
-//             Mode::Source => "Source",
-//         })
-//     }
-// }
+impl<T: PartialEq> PartialEq<T> for Enable<T> {
+    fn eq(&self, other: &T) -> bool {
+        !self.enabled || self.value == *other
+    }
+}
 
 pub trait Searcher: Debug {
     fn clear(&mut self);
@@ -100,58 +80,7 @@ pub trait Searcher: Debug {
 
     fn matches(&self, spell: &Spell) -> bool;
 
-    fn name(&self) -> &'static str;
-
-    // fn message(&self) -> Message;
-
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c>;
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    //     // style: Style,
-    // ) -> Row<'c>;
-}
-
-fn add_buttons<'s, 'c: 's, T: Display + Clone, F: Fn(T) -> Message + 'static>(
-    vec: &'s [T],
-    on_press: F,
-    character: Option<usize>,
-    row: Row<'c>,
-) -> Row<'c> {
-    let len = vec.len();
-    vec.iter()
-        .enumerate()
-        .map(|(i, t)| {
-            button(
-                text(format!("{}{}", *t, if i + 1 == len { "" } else { ", " })).size(13)
-            ).on_press({
-                let message = on_press(t.clone());
-                match character {
-                    Some(i) => crate::Message::Character(i, character::Message::Search(message)),
-                    None => crate::Message::Search(message),
-                }
-            })
-                // todo turn off highlight
-                .style(Location::Transparent)
-                .padding(0)
-        })
-        .fold(row.push_space(3), Row::push)
-        .push_space(5)
-}
-
-fn on_selected<F, R>(character: Option<usize>, f: F) -> impl Fn(R) -> crate::Message + 'static
-    where
-        F: 'static + Fn(R) -> Message,
-{
-    move |r: R| {
-        let search_message = f(r);
-        match character {
-            Some(i) => crate::Message::Character(i, character::Message::Search(search_message)),
-            None => crate::Message::Search(search_message),
-        }
-    }
 }
 
 fn wrap_character(character: Option<usize>, message: Message) -> crate::Message {
@@ -177,16 +106,7 @@ impl Searcher for LevelSearch {
 
     fn matches(&self, spell: &Spell) -> bool {
         self.levels[spell.level() as usize]
-        // self.levels.iter().any(|&t| t == spell.level() as u8)
     }
-
-    fn name(&self) -> &'static str {
-        "Level"
-    }
-
-    // fn message(&self) -> Message {
-    //     Message::PickMode()
-    // }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
         iter::zip(self.levels, Level::ALL)
@@ -196,30 +116,10 @@ impl Searcher for LevelSearch {
                     button(text(l).size(14))
                         .padding(0)
                         .style(Location::AdvancedSearch { enabled })
-                        .on_press(wrap_character(character, Message::PickLevel(l.as_u8())))
+                        .on_press(wrap_character(character, Message::PickLevel(l)))
                 ),
             )
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     // let levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].into_iter()
-    //     //     .filter(|&lvl| self.levels.iter().none(|&l| l == lvl))
-    //     //     .collect_vec();
-    //     //
-    //     // let pick_list = pick_list(
-    //     //     levels,
-    //     //     None,
-    //     //     on_selected(character, Message::PickLevel),
-    //     // )
-    //     //     .text_size(14)
-    //     //     .placeholder("Level");
-    //     // add_buttons(&self.levels, Message::PickLevel, character, row.push(pick_list))
-    //     todo!()
-    // }
 }
 
 #[derive(Debug, Default)]
@@ -229,7 +129,7 @@ pub struct ClassSearch {
 
 impl Searcher for ClassSearch {
     fn clear(&mut self) {
-        self.classes.clear()
+        self.classes.clear();
     }
 
     fn is_empty(&self) -> bool {
@@ -239,10 +139,6 @@ impl Searcher for ClassSearch {
     fn matches(&self, spell: &Spell) -> bool {
         spell.classes().iter()
             .any(|class| self.classes.iter().any(|t| class == t))
-    }
-
-    fn name(&self) -> &'static str {
-        "Class"
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
@@ -257,25 +153,6 @@ impl Searcher for ClassSearch {
                 ),
             )
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let classes = Class::ALL.into_iter()
-    //         .filter(|&class| self.classes.iter().none(|&c| c == class))
-    //         .collect_vec();
-    //
-    //     let pick_list = pick_list(
-    //         classes,
-    //         None,
-    //         on_selected(character, Message::PickClass),
-    //     )
-    //         .placeholder("Class")
-    //         .text_size(14);
-    //     add_buttons(&self.classes, Message::PickClass, character, row.push(pick_list))
-    // }
 }
 
 #[derive(Debug, Default)]
@@ -285,7 +162,7 @@ pub struct CastingTimeSearch {
 
 impl Searcher for CastingTimeSearch {
     fn clear(&mut self) {
-        self.times.clear()
+        self.times.clear();
     }
 
     fn is_empty(&self) -> bool {
@@ -296,10 +173,6 @@ impl Searcher for CastingTimeSearch {
         self.times.iter().any(|t|
             t.equals_ignore_reaction(spell.casting_time())
         )
-    }
-
-    fn name(&self) -> &'static str {
-        "Casting Time"
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
@@ -327,36 +200,6 @@ impl Searcher for CastingTimeSearch {
                 ),
             )
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let durations = [
-    //         CastingTime::Action,
-    //         CastingTime::BonusAction,
-    //         CastingTime::Reaction(None),
-    //         CastingTime::Minute(1),
-    //         CastingTime::Minute(10),
-    //         CastingTime::Hour(1),
-    //         CastingTime::Hour(8),
-    //         CastingTime::Hour(12),
-    //         CastingTime::Hour(24),
-    //         CastingTime::Special,
-    //     ].into_iter()
-    //         .filter(|ct| self.times.iter().none(|t| t == ct))
-    //         .collect_vec();
-    //
-    //     let pick_list = pick_list(
-    //         durations,
-    //         None,
-    //         on_selected(character, Message::PickCastingTime),
-    //     )
-    //         .placeholder("Casting Time")
-    //         .text_size(14);
-    //     add_buttons(&self.times, Message::PickCastingTime, character, row.push(pick_list))
-    // }
 }
 
 #[derive(Debug, Default)]
@@ -366,7 +209,7 @@ pub struct SchoolSearch {
 
 impl Searcher for SchoolSearch {
     fn clear(&mut self) {
-        self.schools.clear()
+        self.schools.clear();
     }
 
     fn is_empty(&self) -> bool {
@@ -375,10 +218,6 @@ impl Searcher for SchoolSearch {
 
     fn matches(&self, spell: &Spell) -> bool {
         self.schools.iter().any(|t| *t == spell.school())
-    }
-
-    fn name(&self) -> &'static str {
-        "School"
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
@@ -393,143 +232,90 @@ impl Searcher for SchoolSearch {
                 ),
             )
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let schools = School::ALL.into_iter()
-    //         .filter(|&school| self.schools.iter().none(|&s| s == school))
-    //         .collect_vec();
-    //
-    //     let pick_list = pick_list(
-    //         schools,
-    //         None,
-    //         on_selected(character, Message::PickSchool),
-    //     )
-    //         .placeholder("School")
-    //         .text_size(14);
-    //     add_buttons(&self.schools, Message::PickSchool, character, row.push(pick_list))
-    // }
 }
 
 #[derive(Debug, Default)]
 pub struct RitualSearch {
-    pub ritual: bool,
-    pub enabled: bool,
+    pub ritual: Enable<bool>,
 }
 
 impl Searcher for RitualSearch {
     fn clear(&mut self) {
-        self.ritual = false;
-        self.enabled = false;
+        self.ritual.clear();
     }
 
     fn is_empty(&self) -> bool {
-        !self.enabled
+        !self.ritual.enabled
     }
 
     fn matches(&self, spell: &Spell) -> bool {
-        !self.enabled || spell.ritual() == self.ritual
-    }
-
-    fn name(&self) -> &'static str {
-        "Ritual"
+        self.ritual == spell.ritual()
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
+        let Enable { value: ritual, enabled } = self.ritual;
         row![
             button(
                 text("Ritual:")
             ).padding(0)
-                .style(Location::AdvancedSearch { enabled: self.enabled })
-                .on_press(wrap_character(character, Message::ToggleRitualEnabled)),
+                .style(Location::AdvancedSearch { enabled })
+                .on_press(wrap_character(character, Message::ToggleRitualEnabled))
+                .tooltip("Enable ritual filtering"),
             button(
-                text(if self.ritual { Icon::Check } else { Icon::X })
+                text(if ritual { Icon::Check } else { Icon::X })
                     .font(ICON_FONT)
                     .size(15)
                     // .vertical_alignment(alignment::Vertical::Center)
             ).padding(0)
-                .style(Location::AdvancedSearch { enabled: self.enabled })
-                .tap_if(self.enabled, |b|
+                .style(Location::AdvancedSearch { enabled })
+                .tap_if(enabled, |b|
                     b.on_press(wrap_character(character, Message::ToggleRitual))
                 )
         ].align_items(Alignment::Center)
             .spacing(4)
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let checkbox = checkbox(
-    //         "Ritual",
-    //         self.ritual,
-    //         on_selected(character, Message::ToggleRitual),
-    //     );
-    //     row.push(checkbox).push_space(5)
-    // }
 }
 
 #[derive(Debug, Default)]
 pub struct ConcentrationSearch {
-    pub concentration: bool,
-    pub enabled: bool,
+    pub concentration: Enable<bool>,
 }
 
 impl Searcher for ConcentrationSearch {
     fn clear(&mut self) {
-        self.concentration = false;
-        self.enabled = false
+        self.concentration.clear();
     }
 
     fn is_empty(&self) -> bool {
-        !self.enabled
+        !self.concentration.enabled
     }
 
     fn matches(&self, spell: &Spell) -> bool {
-        !self.enabled || spell.concentration() == self.concentration
-    }
-
-    fn name(&self) -> &'static str {
-        "Concentration"
+        self.concentration == spell.concentration()
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
+        let Enable { value: concentration, enabled } = self.concentration;
         row![
             button(
                 text("Concentration:")
             ).padding(0)
-                .style(Location::AdvancedSearch { enabled: self.enabled })
-                .on_press(wrap_character(character, Message::ToggleConcentrationEnabled)),
+                .style(Location::AdvancedSearch { enabled })
+                .on_press(wrap_character(character, Message::ToggleConcentrationEnabled))
+                .tooltip("Enable concentration filtering"),
             button(
-                text(if self.concentration { Icon::Check } else { Icon::X })
+                text(if concentration { Icon::Check } else { Icon::X })
                     .font(ICON_FONT)
                     .size(15)
                     // .vertical_alignment(alignment::Vertical::Center)
             ).padding(0)
-                .style(Location::AdvancedSearch { enabled: self.enabled })
-                .tap_if(self.enabled, |b|
+                .style(Location::AdvancedSearch { enabled })
+                .tap_if(enabled, |b|
                     b.on_press(wrap_character(character, Message::ToggleConcentration))
                 )
         ].align_items(Alignment::End)
             .spacing(4)
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let checkbox = checkbox(
-    //         "Concentration",
-    //         self.concentration,
-    //         on_selected(character, Message::ToggleConcentration),
-    //     );
-    //     row.push(checkbox).push_space(5)
-    // }
 }
 
 #[derive(Debug)]
@@ -549,7 +335,7 @@ impl Default for TextSearch {
 
 impl Searcher for TextSearch {
     fn clear(&mut self) {
-        self.text.clear()
+        self.text.clear();
     }
 
     fn is_empty(&self) -> bool {
@@ -567,10 +353,6 @@ impl Searcher for TextSearch {
             )
     }
 
-    fn name(&self) -> &'static str {
-        "Text"
-    }
-
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
         row![
             "Spell Text:",
@@ -581,19 +363,6 @@ impl Searcher for TextSearch {
         ].align_items(Alignment::Center)
             .spacing(4)
     }
-
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let text = "Spell Text:";
-    //     let input = text_input(
-    //         "int|wis",
-    //         &self.text,
-    //     ).on_input(on_selected(character, Message::SearchText));
-    //     row.push(text).push_space(4).push(input)
-    // }
 }
 
 #[derive(Debug, Default)]
@@ -603,7 +372,7 @@ pub struct SourceSearch {
 
 impl Searcher for SourceSearch {
     fn clear(&mut self) {
-        self.sources.clear()
+        self.sources.clear();
     }
 
     fn is_empty(&self) -> bool {
@@ -612,10 +381,6 @@ impl Searcher for SourceSearch {
 
     fn matches(&self, spell: &Spell) -> bool {
         self.sources.iter().any(|&t| t == spell.source())
-    }
-
-    fn name(&self) -> &'static str {
-        "Source"
     }
 
     fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
@@ -630,25 +395,60 @@ impl Searcher for SourceSearch {
                 ),
             )
     }
+}
 
-    // fn add_to_row<'s, 'c: 's>(
-    //     &'s self,
-    //     row: Row<'c>,
-    //     character: Option<usize>,
-    // ) -> Row<'c> {
-    //     let sources = Source::ALL.into_iter()
-    //         .filter(|&source| self.sources.iter().none(|&s| s == source))
-    //         .collect_vec();
-    //
-    //     let pick_list = pick_list(
-    //         sources,
-    //         None,
-    //         on_selected(character, Message::PickSource),
-    //     )
-    //         .placeholder("Source Book")
-    //         .text_size(14);
-    //     add_buttons(&self.sources, Message::PickSource, character, row.push(pick_list))
-    // }
+#[derive(Debug, Default)]
+pub struct ComponentSearch {
+    vsm: [Enable<bool>; 3],
+}
+
+impl Searcher for ComponentSearch {
+    fn clear(&mut self) {
+        self.vsm.iter_mut()
+            .for_each(Enable::clear);
+    }
+
+    fn is_empty(&self) -> bool {
+        self.vsm.iter()
+            .none(|e| e.enabled)
+    }
+
+    fn matches(&self, spell: &Spell) -> bool {
+        let vsm = match spell.components() {
+            Some(Components { v, s, m }) => [*v, *s, m.is_some()],
+            None => Default::default(),
+        };
+        iter::zip(self.vsm, vsm)
+            .all(|(e, b)| e == b)
+    }
+
+    fn view<'s, 'c: 's>(&'s self, character: Option<usize>) -> Row<'c> {
+        iter::zip(self.vsm, ["Verbal", "Somatic", "Material"])
+            .enumerate()
+            .fold(
+                row!["Components:"].spacing(4).align_items(Alignment::Center),
+                |row, (i, (Enable { value, enabled }, label))| row
+                    .push_space(2)
+                    .push(
+                        button(text(label).size(15))
+                            .padding(0)
+                            .style(Location::AdvancedSearch { enabled })
+                            .on_press(wrap_character(character, Message::ToggleComponentEnabled(i)))
+                            .tooltip(format!("Enable {} filtering", label.to_ascii_lowercase()))
+                    )
+                    .push(
+                        button(
+                            text(if value { Icon::Check } else { Icon::X })
+                                .font(ICON_FONT)
+                                .size(15)
+                        ).padding(0)
+                            .style(Location::AdvancedSearch { enabled })
+                            .tap_if(enabled, |b|
+                                b.on_press(wrap_character(character, Message::ToggleComponent(i))),
+                            )
+                    ),
+            )
+    }
 }
 
 pub struct SearchOptions {
@@ -661,9 +461,9 @@ pub struct SearchOptions {
     pub school_search: SchoolSearch,
     pub ritual_search: RitualSearch,
     pub concentration_search: ConcentrationSearch,
-    pub text_search: TextSearch,
     pub source_search: SourceSearch,
-    // todo VSM search
+    pub text_search: TextSearch,
+    pub component_search: ComponentSearch,
 }
 
 impl Default for SearchOptions {
@@ -680,12 +480,13 @@ impl Default for SearchOptions {
             concentration_search: Default::default(),
             text_search: Default::default(),
             source_search: Default::default(),
+            component_search: Default::default(),
         }
     }
 }
 
 impl SearchOptions {
-    pub fn searchers(&self) -> [&dyn Searcher; 8] {
+    pub fn searchers(&self) -> [&dyn Searcher; 9] {
         [
             &self.level_search as &dyn Searcher,
             &self.class_search as &dyn Searcher,
@@ -693,8 +494,23 @@ impl SearchOptions {
             &self.casting_time_search as &dyn Searcher,
             &self.ritual_search as &dyn Searcher,
             &self.concentration_search as &dyn Searcher,
+            &self.component_search as &dyn Searcher,
             &self.source_search as &dyn Searcher,
             &self.text_search as &dyn Searcher,
+        ]
+    }
+
+    pub fn searchers_mut(&mut self) -> [&mut dyn Searcher; 9] {
+        [
+            &mut self.level_search as &mut dyn Searcher,
+            &mut self.class_search as &mut dyn Searcher,
+            &mut self.school_search as &mut dyn Searcher,
+            &mut self.casting_time_search as &mut dyn Searcher,
+            &mut self.ritual_search as &mut dyn Searcher,
+            &mut self.concentration_search as &mut dyn Searcher,
+            &mut self.component_search as &mut dyn Searcher,
+            &mut self.source_search as &mut dyn Searcher,
+            &mut self.text_search as &mut dyn Searcher,
         ]
     }
 
@@ -718,6 +534,120 @@ impl SearchOptions {
             .collect()
     }
 
+    pub fn update(&mut self, message: Message) -> bool {
+        fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) {
+            if let Some(idx) = vec.iter().position(|t| *t == entry) {
+                vec.remove(idx);
+            } else {
+                vec.push(entry);
+                vec.sort();
+            }
+        }
+
+        match message {
+            Message::Search(needle) => {
+                self.search = needle.to_lowercase();
+                true
+            }
+            Message::Refresh => {
+                true
+            }
+            // Message::PickMode(mode) => {
+            //     // most of the time, don't re-search here, because then no spells will match
+            //     // todo
+            //     // match mode {
+            //     //     Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
+            //     //     Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
+            //     //     Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
+            //     //     Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
+            //     //     Mode::Ritual => SearchOptions::toggle_mode(&mut self.search.ritual_search),
+            //     //     Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
+            //     //     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
+            //     //     Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
+            //     // }
+            //     // the default (false) will still match spells, so redo the search
+            //     // mode == Mode::Ritual
+            // }
+            Message::ResetSearch => {
+                self.search.clear();
+                self.searchers_mut()
+                    .into_iter()
+                    .for_each(Searcher::clear);
+                true
+            }
+            Message::PickLevel(level) => {
+                self.level_search.levels[level as usize].toggle();
+                true
+            }
+            Message::PickClass(class) => {
+                toggle(&mut self.class_search.classes, class);
+                true
+            }
+            Message::PickSchool(school) => {
+                toggle(&mut self.school_search.schools, school);
+                true
+            }
+            Message::PickCastingTime(casting_time) => {
+                toggle(&mut self.casting_time_search.times, casting_time);
+                true
+            }
+            Message::PickSource(source) => {
+                toggle(&mut self.source_search.sources, source);
+                true
+            }
+            Message::ToggleRitual => {
+                self.ritual_search.ritual.value.toggle();
+                true
+            }
+            Message::ToggleRitualEnabled => {
+                self.ritual_search.ritual.enabled.toggle();
+                true
+            }
+            Message::ToggleConcentration => {
+                self.concentration_search.concentration.value.toggle();
+                true
+            }
+            Message::ToggleConcentrationEnabled => {
+                self.concentration_search.concentration.enabled.toggle();
+                true
+            }
+            Message::SearchText(text) => {
+                self.text_search.text = text.to_lowercase();
+                true
+            }
+            Message::ToggleComponent(vsm) => {
+                self.component_search.vsm[vsm].value.toggle();
+                true
+            }
+            Message::ToggleComponentEnabled(vsm) => {
+                self.component_search.vsm[vsm].enabled.toggle();
+                true
+            }
+            Message::CollapseAll => {
+                // self.collapse = !self.collapse;
+                // todo
+                // self.spells.iter_mut().for_each(|spell| spell.collapse = None);
+                false
+            }
+            Message::Collapse(id) => {
+                // todo
+                // if let Some(spell) = self.spells.iter_mut()
+                //     .find(|spell| spell.spell.id() == id) {
+                //     if let Some(collapse) = &mut spell.collapse {
+                //         *collapse = !*collapse;
+                //     } else {
+                //         spell.collapse = Some(!self.collapse);
+                //     }
+                // }
+                false
+            }
+            Message::ToggleAdvanced => {
+                self.show_advanced_search.toggle();
+                false
+            }
+        }
+    }
+
     pub fn view<'s, 'c: 's, S>(
         &'s self,
         before_search_bar: impl Into<Option<Button<'c>>>,
@@ -738,9 +668,14 @@ impl SearchOptions {
         // text_input::focus(self.search_id.clone());
         let reset_modes = button(
             text("Reset").size(14),
-        )
-            // todo make this only enable if there's anything to reset
-            .on_press(reset_message);
+        ).tap_if(
+            !self.search.is_empty() ||
+                !self.searchers()
+                    .into_iter()
+                    .all(Searcher::is_empty)
+            ,
+            |b| b.on_press(reset_message),
+        );
 
         // let toggle_advanced_modes = self.searchers()
         //     .into_iter()
@@ -773,10 +708,7 @@ impl SearchOptions {
                     reset_modes,
                 ].align_items(Alignment::Center)
                  .spacing(8)
-                 .tap_if_some(
-                    before_search_bar.into(),
-                    |row, btn| row.push(btn)
-                 )
+                 .tap_if_some(before_search_bar.into(), Row::push)
                  .push_space(Length::Fill),
                 row![
                     Length::Fill,
@@ -833,112 +765,19 @@ impl SearchSpell {
 
 impl SearchPage {
     pub fn update(&mut self, message: Message, custom: &[CustomSpell], characters: &[CharacterPage]) -> Command<crate::Message> {
-        fn toggle<T: Ord>(vec: &mut Vec<T>, entry: T) -> bool {
-            if let Some(idx) = vec.iter().position(|t| *t == entry) {
-                vec.remove(idx);
-            } else {
-                vec.push(entry);
-                vec.sort();
-            }
-            // !vec.is_empty()
-            true
-        }
+        let searched_text = matches!(message, Message::SearchText(_));
 
-        let search = match message {
-            Message::Search(needle) => {
-                self.search.search = needle.to_lowercase();
-                true
-            }
-            Message::Refresh => {
-                self.spells = self.search.search(custom, characters);
-                false
-            }
-            // Message::PickMode(mode) => {
-            //     // most of the time, don't re-search here, because then no spells will match
-            //     // todo
-            //     // match mode {
-            //     //     Mode::Level => SearchOptions::toggle_mode(&mut self.search.level_search),
-            //     //     Mode::Class => SearchOptions::toggle_mode(&mut self.search.class_search),
-            //     //     Mode::School => SearchOptions::toggle_mode(&mut self.search.school_search),
-            //     //     Mode::CastingTime => SearchOptions::toggle_mode(&mut self.search.casting_time_search),
-            //     //     Mode::Ritual => SearchOptions::toggle_mode(&mut self.search.ritual_search),
-            //     //     Mode::Concentration => SearchOptions::toggle_mode(&mut self.search.concentration_search),
-            //     //     Mode::Text => SearchOptions::toggle_mode(&mut self.search.text_search),
-            //     //     Mode::Source => SearchOptions::toggle_mode(&mut self.search.source_search),
-            //     // }
-            //     // the default (false) will still match spells, so redo the search
-            //     // mode == Mode::Ritual
-            // }
-            Message::ResetModes => {
-                self.search.level_search.clear();
-                self.search.class_search.clear();
-                self.search.casting_time_search.clear();
-                self.search.school_search.clear();
-                self.search.ritual_search.clear();
-                self.search.concentration_search.clear();
-                self.search.text_search.clear();
-                self.search.source_search.clear();
-                true
-            }
-            Message::PickLevel(level) => {
-                self.search.level_search.levels[level as usize].toggle();
-                true
-            }
-            Message::PickClass(class) => toggle(&mut self.search.class_search.classes, class),
-            Message::PickSchool(school) => toggle(&mut self.search.school_search.schools, school),
-            Message::PickCastingTime(casting_time) => toggle(&mut self.search.casting_time_search.times, casting_time),
-            Message::PickSource(source) => toggle(&mut self.search.source_search.sources, source),
-            Message::ToggleRitual => {
-                self.search.ritual_search.ritual.toggle();
-                true
-            }
-            Message::ToggleRitualEnabled => {
-                todo!()
-            }
-            Message::ToggleConcentration => {
-                self.search.concentration_search.concentration.toggle();
-                true
-            }
-            Message::ToggleConcentrationEnabled => {
-                self.search.concentration_search.enabled.toggle();
-                true
-            }
-            Message::SearchText(text) => {
-                self.search.text_search.text = text.to_lowercase();
-                !self.search.text_search.text.is_empty()
-            }
-            Message::CollapseAll => {
-                self.collapse = !self.collapse;
-                self.spells.iter_mut().for_each(|spell| spell.collapse = None);
-                false
-            }
-            Message::Collapse(id) => {
-                if let Some(spell) = self.spells.iter_mut()
-                    .find(|spell| spell.spell.id() == id) {
-                    if let Some(collapse) = &mut spell.collapse {
-                        *collapse = !*collapse;
-                    } else {
-                        spell.collapse = Some(!self.collapse);
-                    }
-                }
-                false
-            }
-            Message::ToggleAdvanced => {
-                self.search.show_advanced_search = !self.search.show_advanced_search;
-                false
-            }
-        };
+        let search = self.search.update(message);
+
         if search {
             self.spells = self.search.search(custom, characters);
         }
 
-        // todo focus
-        // if !matches!(&self.search.text_search, Some(ts) if ts.id.is_focused()) {
-        //     text_input::focus(self.search.search_id.clone())
-        // } else {
-        text_input::focus(self.search.id.clone())
-        // Command::none()
-        // }
+        if searched_text {
+            Command::none()
+        } else {
+            text_input::focus(self.search.id.clone())
+        }
     }
 
     pub fn view<'s, 'c: 's>(&'s self) -> Container<'c> {
@@ -970,7 +809,7 @@ impl SearchPage {
                 |s| crate::Message::Search(Message::Search(s)),
                 // |m| crate::Message::Search(m),
                 // |m| crate::Message::Search(Message::PickMode(m)),
-                crate::Message::Search(Message::ResetModes),
+                crate::Message::Search(Message::ResetSearch),
                 None,
             ))
             .push(scroll);

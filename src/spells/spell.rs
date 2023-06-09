@@ -166,6 +166,7 @@ impl StaticSpell {
     }
 }
 
+// todo consider boxing custom spell
 #[derive(PartialEq, Clone, Debug)]
 pub enum Spell {
     Static(&'static StaticSpell),
