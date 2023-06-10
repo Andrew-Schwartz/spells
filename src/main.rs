@@ -41,7 +41,7 @@ use iced::{Alignment, alignment::Vertical, Application, Command, Length, mouse::
     progress_bar,
     text,
     tooltip::Position,
-}, widget, window::Icon};
+}, widget};
 use iced::widget::text_input;
 use iced_aw::TabLabel;
 use iced_native::{Event, Font, Subscription, window};
@@ -52,19 +52,20 @@ use self_update::cargo_crate_version;
 use serde::Deserialize;
 
 use search::SearchPage;
-pub use style::types::*;
+pub use theme::types::*;
 use utils::ListGrammaticallyExt;
 
 use crate::character::{Character, CharacterPage, SerializeCharacter};
 use crate::hotkey::Move;
 use crate::hotmouse::{ButtonPress, Pt};
+use crate::icon::Icon;
 use crate::settings::{ClosedCharacter, Edit, SettingsPage, SpellEditor};
 use crate::spells::data::GetLevel;
 use crate::spells::spell::{find_spell, SpellId};
-use crate::style::{Location, Theme};
 // use crate::style::{SettingsBarStyle, Style};
 use crate::tab::Tab;
-use crate::utils::{Tap, Toggle, TooltipExt, TryRemoveExt};
+use crate::theme::{Location, Theme};
+use crate::utils::{Tap, text_icon, Toggle, TooltipExt, TryRemoveExt};
 
 use self::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use self::spells::spell::{CustomSpell, StaticSpell};
@@ -74,7 +75,7 @@ use self::spells::static_arc::StArc;
 mod utils;
 
 mod fetch;
-mod style;
+mod theme;
 mod search;
 mod tab;
 mod settings;
@@ -84,7 +85,8 @@ mod hotmouse;
 mod update;
 mod spells;
 mod error;
-mod click_button;
+mod widgets;
+mod icon;
 
 const JSON: &str = include_str!("../resources/spells.json");
 
@@ -111,7 +113,7 @@ static SPELL_FILE: Lazy<PathBuf> = Lazy::new(|| get_file("custom-spells.json"));
 // static SEARCH_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
 
 // static ICON: Lazy<Icon> = Lazy::new(|| );
-fn icon() -> Icon {
+fn icon() -> window::Icon {
     const LOGO: &[u8] = include_bytes!("../resources/logo.png");
     const WIDTH: u32 = 1500;
     const HEIGHT: u32 = 1500;
@@ -122,9 +124,14 @@ fn icon() -> Icon {
 
 const WIDTH: u32 = 1100;
 
-pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
-    Font::External { name, bytes } => Font::External { name, bytes },
-    Font::Default => unreachable!(),
+// pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
+//     Font::External { name, bytes } => Font::External { name, bytes },
+//     Font::Default => unreachable!(),
+// };
+
+pub const ICON_FONT: Font = Font::External {
+    name: "DnD Spells Icons",
+    bytes: include_bytes!("../resources/SpellsIcons.ttf"),
 };
 
 // const CONSOLAS: Font = Font::External {
@@ -133,10 +140,11 @@ pub const ICON_FONT: Font = match iced_aw::ICON_FONT {
 // };
 
 // /// want two columns for starting window size with a bit of room to expand
-// #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 // const COLUMN_WIDTH: f32 = WIDTH as f32 * 1.1 / 2.0;
 
 fn main() {
+    println!("std::env::current_exe() = {:?}", std::env::current_exe());
+
     if let Some("TARGET") = std::env::args().nth(1).as_deref() {
         println!("{}", self_update::get_target());
         return
@@ -186,6 +194,7 @@ impl UpdateState {
                 Self::Checking => text("Checking for updates..."),
                 Self::Ready => text("Preparing to download..."),
                 Self::Downloaded => text(if cfg!(windows) {
+                    // todo button to restart program
                     "Downloaded new version! Restart program to get new features!".to_string()
                 } else {
                     // todo this VER might be the old version still
@@ -202,6 +211,8 @@ impl UpdateState {
 pub struct DndSpells {
     update_state: UpdateState,
     update_url: String,
+    spell_tooltips: bool,
+    num_cols: usize,
     theme: Theme,
     tab: Tab,
     width: u16,
@@ -215,7 +226,6 @@ pub struct DndSpells {
     save_states: Vec<(Vec<SerializeCharacter>, Vec<SerializeCharacter>)>,
     state: Option<usize>,
     custom_spells: Vec<CustomSpell>,
-    num_cols: usize,
     mouse: hotmouse::State,
 }
 
@@ -235,7 +245,7 @@ pub enum Message {
     ScrollIGuessHopefully(Pt),
     Resize(u16, u16),
     SelectTab(usize),
-    CloseTab(usize),
+    ToggleSpellTooltip,
 }
 
 impl DndSpells {
@@ -260,7 +270,7 @@ impl DndSpells {
             },
             tab => tab,
         };
-        self.closed_characters.push(character.character.into());
+        self.closed_characters.insert(0, character.character.into());
         self.save().expect("waa haa");
         self.refresh_search()
     }
@@ -348,6 +358,8 @@ impl DndSpells {
         let mut window = Self {
             update_state: UpdateState::Checking,
             update_url: String::new(),
+            spell_tooltips: false,
+            num_cols: 2,
             theme: Default::default(),
             tab: Tab::Search,
             width: width as u16,
@@ -360,7 +372,6 @@ impl DndSpells {
             save_states: Default::default(),
             state: None,
             custom_spells: vec![],
-            num_cols: 2,
             mouse: Default::default(),
         };
         window.set_spells_characters();
@@ -940,9 +951,7 @@ impl Application for DndSpells {
                     index => Tab::Character { index: index - 1 }
                 }
             }
-            Message::CloseTab(tab) => {
-                println!("close tab = {tab:?}");
-            }
+            Message::ToggleSpellTooltip => self.spell_tooltips.toggle(),
         };
         // println!("commands = {:?}", commands);
         commands.try_remove(0)
@@ -950,7 +959,6 @@ impl Application for DndSpells {
     }
 
     fn view(&self) -> Element<'_> {
-        let style = self.style();
         let num_cols = self.num_cols;
         let num_characters = self.characters.len();
 
@@ -964,23 +972,33 @@ impl Application for DndSpells {
             .enumerate()
             .map(|(index, page)| (
                 TabLabel::Text(page.character.name.to_string()),
-                page.view(index, num_cols).max_height(height)
+                page.view(index, num_cols, self.spell_tooltips).max_height(height)
             )).fold(
             tabs,
             |tabs, (label, tab)| tabs.push(label, tab),
         ).push(TabLabel::Text("Settings".into()), self.settings_page.view(&self.closed_characters, self.width).max_height(height))
-            .tab_bar_style(style)
             .icon_size(10.0)
-            .icon_font(iced_aw::ICON_FONT)
-            // .on_close(Message::CloseTab)
+            .icon_font(ICON_FONT)
+            .on_close(move |i| if i == 0 || i == num_characters + 1 { None } else { Some(Message::CloseCharacter(i - 1)) })
             ;
 
-        #[allow(clippy::float_cmp)]
-            let col_slider_reset = button(
+        let toggle_spell_tooltip = button(
+            text_icon(Icon::InfoCircle)
+                .size(14)
+        ).style(Location::SettingsBar)
+            .padding(0)
+            .on_press(Message::ToggleSpellTooltip)
+            .tooltip_at(
+                Position::Top,
+                format!("Turn {} character page spell tooltips", if self.spell_tooltips { "off" } else { "on" }),
+            ).size(10);
+
+        let col_slider_reset = button(
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
-        ).style(Location::Transparent)
+        ).style(Location::SettingsBar)
+            .padding(0)
             .tap_if(self.num_cols != 2, |reset| reset.on_press(Message::SetNCols(2)));
 
         // todo monospace font
@@ -996,28 +1014,32 @@ impl Application for DndSpells {
             self.num_cols as u32,
             Message::SetNCols,
         )
-            .width(Length::Fixed(120.0))
+            .width(Length::Fixed(80.0))
             .step(1)
-            .style(style);
+            .style(Location::SettingsBar);
 
         let toggle_style = button(
-            text(iced_aw::Icon::BrightnessHigh)
-                .font(ICON_FONT)
+            text_icon(if self.theme == Theme::Dark { Icon::Moon } else { Icon::BrightnessHigh })
                 .size(12),
-        ).style(Location::Transparent)
+        ).style(Location::SettingsBar)
+            .padding(0)
             .on_press(Message::ToggleTheme)
             .tooltip_at(Position::Top, &format!("Switch to {} theme", !self.theme()))
             .size(10);
 
         let bottom_bar = container(row![
-            4,
+            2,
             self.update_state.view(),
             Length::Fill,
+            toggle_spell_tooltip,
+            3,
             col_slider_reset,
             col_slider,
             slider_text,
+            3,
             toggle_style,
-        ].spacing(2)
+            2,
+        ].spacing(4)
             .height(Length::Fixed(20.0))
             .align_items(Alignment::Center)
         ).style(Location::SettingsBar)
@@ -1037,7 +1059,6 @@ impl Application for DndSpells {
             .height(Length::Fill)
             .center_x()
             .align_y(Vertical::Top)
-            .style(style)
             .into()
     }
 

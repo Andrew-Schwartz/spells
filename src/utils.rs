@@ -3,13 +3,13 @@ use std::ops::Not;
 
 use iced::{Length, widget::tooltip::Position};
 use iced::widget::{Column, Row};
-use iced_aw::Icon;
 use iced_core::Color;
 use iced_native::widget::{horizontal_space, Space, text, vertical_space};
 use palette::{FromColor, Hsl, Srgb};
 
 use crate::{Element, ICON_FONT, Text, Tooltip};
-use crate::style::Location;
+use crate::icon::Icon;
+use crate::theme::Location;
 
 // versions that get the spacing easier
 macro_rules! col {
@@ -252,6 +252,19 @@ pub trait Tap {
             f(self)
         } else {
             self
+        }
+    }
+
+    fn tap_if_else<T, I, E>(self, condition: bool, r#if: I, r#else: E) -> T
+        where
+            Self: Sized,
+            I: FnOnce(Self) -> T,
+            E: FnOnce(Self) -> T,
+    {
+        if condition {
+            r#if(self)
+        } else {
+            r#else(self)
         }
     }
 

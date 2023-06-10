@@ -5,16 +5,16 @@ use std::sync::Arc;
 
 use iced::{Alignment, Length};
 use iced::widget::{button, container, scrollable, text, text_input};
-use iced_aw::Icon;
 use iced_native::Command;
 use iced_native::widget::column;
 use itertools::Itertools;
 
 use crate::{character, Container, Element, ICON_FONT, Location, Row, Scrollable, SpellButtons, SpellId, SPELLS, Theme};
 use crate::character::CharacterPage;
+use crate::icon::Icon;
 use crate::spells::data::{CastingTime, Class, Components, Level, School, Source};
 use crate::spells::spell::{CustomSpell, Spell};
-use crate::style::types::Button;
+use crate::theme::types::Button;
 use crate::utils::{IterExt, SpacingExt, Tap, text_icon, Toggle, TooltipExt};
 
 #[derive(Clone, Debug)]

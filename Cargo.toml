@@ -15,10 +15,10 @@ features = ["glow", "palette"]
 #features = ["glow", "debug"]
 
 [dependencies.iced_aw]
-version = "0.5"
+#version = "0.5"
 #git = "https://github.com/iced-rs/iced_aw"
 #branch = "main"
-#path = "../iced_aw"
+path = "../iced_aw"
 default-features = false
 features = ["tabs", "icons"]
 

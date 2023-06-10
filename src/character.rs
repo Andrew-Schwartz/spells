@@ -5,18 +5,18 @@ use std::sync::Arc;
 use iced::{Alignment, Length};
 use iced::alignment::Vertical;
 use iced::widget::{button, Column, container, horizontal_rule, scrollable, text};
-use iced_aw::{Icon, ICON_FONT};
 use iced_core::Color;
+use iced_native::widget::tooltip::Position;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{Container, Element, Level, Location, Row, search, SpellButtons, SpellId, Tap};
-use crate::click_button::ClickButton;
+use crate::{Container, Element, ICON_FONT, Level, Location, Row, search, SpellButtons, SpellId, Tap};
+use crate::icon::Icon;
 use crate::search::SearchOptions;
 use crate::spells::spell::{CustomSpell, find_spell, Spell};
 use crate::spells::static_arc::StArc;
-// use crate::style::Style;
 use crate::utils::{SpacingExt, text_icon, TooltipExt};
+use crate::widgets::click_button::ClickButton;
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveSpell {
@@ -298,7 +298,7 @@ impl CharacterPage {
         }
     }
 
-    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize) -> Container<'c> {
+    pub fn view<'s, 'c: 's>(&'s self, index: usize, num_cols: usize, summary_tooltip: bool) -> Container<'c> {
         let message = move |message: Message| crate::Message::Character(index, message);
 
         let Self {
@@ -341,10 +341,10 @@ impl CharacterPage {
             button(text_icon(Icon::ArrowLeft))
                 .on_press(crate::Message::MoveCharacter(index, -1))
                 .tooltip("Move character left"),
-            button(text(Icon::ArrowRight))
+            button(text_icon(Icon::ArrowRight))
                 .on_press(crate::Message::MoveCharacter(index, 1))
                 .tooltip("Move character right"),
-            button(text(Icon::Archive))
+            button(text_icon(Icon::Archive))
                 .on_press(crate::Message::CloseCharacter(index))
                 .tooltip("Close character"),
             Length::Fill
@@ -419,24 +419,32 @@ impl CharacterPage {
                         .fold(
                             Column::new(),
                             |col, (spell, prepped)| {
-                                col.push(row!(text(&*spell.name())
-                                        .size(18)
-                                        .style({
-                                            let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
-                                            let selected_highlight = if selected { 0.8 } else { 1.0 };
-                                            let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
-                                            Color {
-                                                r: selected_highlight,
-                                                g: selected_highlight,
-                                                b: 1.0,
-                                                a: prepared_opacity,
-                                            }
-                                        })
-                                        .tap(button)
-                                        .style(Location::Transparent)
-                                        .padding(0)
-                                        .on_press(message(Message::ViewSpell(spell.id())))
-                                ))
+                                col.push(text(&*spell.name())
+                                    .size(18)
+                                    .style({
+                                        let selected = view_spell.as_ref().filter(|s| s.name == spell.name()).is_some();
+                                        let selected_highlight = if selected { 0.8 } else { 1.0 };
+                                        let prepared_opacity = if *prepped { 1.0 } else { 0.5 };
+                                        Color {
+                                            r: selected_highlight,
+                                            g: selected_highlight,
+                                            b: 1.0,
+                                            a: prepared_opacity,
+                                        }
+                                    })
+                                    .tap(|text| button(text))
+                                    .style(Location::Transparent)
+                                    .padding(0)
+                                    .on_press(message(Message::ViewSpell(spell.id())))
+                                    .tap_if_else(
+                                        summary_tooltip,
+                                        |b| b.tooltip_at(
+                                            Position::Right,
+                                            format!("{}     {}", spell.casting_time(), spell.duration().unwrap_or("")),
+                                        ).into(),
+                                        Element::from,
+                                    )
+                                )
                             },
                         )))
                 .fold(
@@ -449,23 +457,34 @@ impl CharacterPage {
                         } else {
                             let slot_max_picker = Column::new().align_items(Alignment::Center)
                                 .push(button(
-                                    text(Icon::ArrowUp)
-                                        .font(ICON_FONT)
-                                        .size(10),
-                                )
+                                    text_icon(Icon::ArrowUp)
+                                        .size(10))
                                     .style(Location::Transparent)
                                     .padding(0)
-                                    .on_press(message(Message::ChangeNumSlots(level, 1)))
-                                    .tooltip("Gain a spell slot"))
+                                    .tap_if_else(
+                                        *total != Slots::MAX_BY_LEVEL[level],
+                                        |b| b
+                                            .on_press(message(Message::ChangeNumSlots(level, 1)))
+                                            .tooltip("Gain a spell slot")
+                                            .into(),
+                                        Element::from,
+                                    )
+                                )
                                 .push(button(
                                     text(Icon::ArrowDown)
                                         .font(ICON_FONT)
-                                        .size(10),
-                                )
+                                        .size(10))
                                     .style(Location::Transparent)
                                     .padding(0)
-                                    .on_press(message(Message::ChangeNumSlots(level, -1)))
-                                    .tooltip("Lose a spell slot"));
+                                    .tap_if_else(
+                                        *total != 0,
+                                        |b| b
+                                            .on_press(message(Message::ChangeNumSlots(level, -1)))
+                                            .tooltip("Lose a spell slot")
+                                            .into(),
+                                        Element::from,
+                                    )
+                                );
                             let slots_text = format!(
                                 "{empty}{filled}",
                                 filled = Icon::DiamondFill.to_string().repeat(*used as usize),
@@ -497,8 +516,9 @@ impl CharacterPage {
                                     slot_max_picker,
                                     Length::Fill,
                                     slots,
-                                    uncast
-                                ].align_items(Alignment::Center));
+                                ].align_items(Alignment::Center)
+                                    .tap_if(*total != 0, |r| r.push(uncast))
+                                );
                         }
                         col.push(horizontal_rule(0))
                             .push(slots_row)
@@ -569,7 +589,7 @@ impl SpellButtons for CharacterPageButtons {
         ].into_iter()
             .fold(row!().spacing(2), |row, (enable, tooltip, icon, msg)|
                 if enable {
-                    row.push(button(text(icon).size(12).font(ICON_FONT))
+                    row.push(button(text_icon(icon).size(12))
                         .on_press(crate::Message::Character(character, msg))
                         .tooltip(tooltip))
                 } else {

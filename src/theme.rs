@@ -25,7 +25,7 @@ pub mod types {
     pub type Row<'a> = iced::widget::Row<'a, Message, Renderer>;
     pub type Column<'a> = iced::widget::Column<'a, Message, Renderer>;
     pub type Button<'a> = iced::widget::Button<'a, Message, Renderer>;
-    pub type ClickButton<'a> = crate::click_button::ClickButton<'a, Message, Renderer>;
+    pub type ClickButton<'a> = crate::widgets::click_button::ClickButton<'a, Message, Renderer>;
     pub type Tooltip<'a> = iced::widget::Tooltip<'a, Message, Renderer>;
     pub type Scrollable<'a> = iced::widget::Scrollable<'a, Message, Renderer>;
     pub type TextInput<'a> = iced::widget::TextInput<'a, Message, Renderer>;
@@ -86,8 +86,9 @@ pub struct Palette {
 
 pub struct Palette2 {
     text: Color,
+    disabled_text: Color,
     background: Color,
-
+    button: Color,
 }
 
 impl Palette {
@@ -481,7 +482,7 @@ macro_rules! color {
 mod dark {
     use iced::Color;
 
-    use crate::style::{Location, Palette};
+    use crate::theme::{Location, Palette};
     use crate::utils::ColorExt;
 
     pub fn palette(style: &Location) -> Palette {
@@ -538,8 +539,8 @@ mod dark {
         ),
     };
 
-    // todo
     const SETTINGS_BAR: Palette = Palette {
+        text: Color::WHITE,
         background: Color::from_rgb(
             0x2E as f32 / 255.0,
             0x2F as f32 / 255.0,
@@ -550,7 +551,7 @@ mod dark {
             0x3F as f32 / 255.0,
             0x47 as f32 / 255.0,
         ),
-        ..DEFAULT
+        ..Palette::TRANSPARENT
     };
 
     const fn alternating(idx: usize, highlight: bool) -> Palette {
@@ -584,7 +585,7 @@ mod dark {
 mod light {
     use iced::Color;
 
-    use crate::style::{Location, Palette};
+    use crate::theme::{Location, Palette};
     use crate::utils::ColorExt;
 
     pub fn palette(style: &Location) -> Palette {
