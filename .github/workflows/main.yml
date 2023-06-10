@@ -67,8 +67,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1.5.0
-          release_name: D&D Spells v1.5.0 Advanced search!
+          tag_name: v1.5.1
+          release_name: D&D Spells v1.5.1 Icons improved
           draft: true
           prerelease: false
       - name: Get Names

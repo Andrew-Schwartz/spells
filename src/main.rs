@@ -985,7 +985,7 @@ impl Application for DndSpells {
         let toggle_spell_tooltip = button(
             text_icon(Icon::InfoCircle)
                 .size(14)
-        ).style(Location::SettingsBar)
+        ).style(Location::Transparent)
             .padding(0)
             .on_press(Message::ToggleSpellTooltip)
             .tooltip_at(
@@ -997,7 +997,7 @@ impl Application for DndSpells {
             text("Reset")
                 .vertical_alignment(Vertical::Center)
                 .size(12),
-        ).style(Location::SettingsBar)
+        ).style(Location::Transparent)
             .padding(0)
             .tap_if(self.num_cols != 2, |reset| reset.on_press(Message::SetNCols(2)));
 
@@ -1016,12 +1016,12 @@ impl Application for DndSpells {
         )
             .width(Length::Fixed(80.0))
             .step(1)
-            .style(Location::SettingsBar);
+            .style(Location::Default);
 
         let toggle_style = button(
             text_icon(if self.theme == Theme::Dark { Icon::Moon } else { Icon::BrightnessHigh })
                 .size(12),
-        ).style(Location::SettingsBar)
+        ).style(Location::Transparent)
             .padding(0)
             .on_press(Message::ToggleTheme)
             .tooltip_at(Position::Top, &format!("Switch to {} theme", !self.theme()))
