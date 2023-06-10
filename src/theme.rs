@@ -5,7 +5,6 @@ use iced::{application, Color};
 use iced::widget::{button, checkbox, container, pick_list, progress_bar, scrollable, slider, text, text_input};
 use iced::widget::scrollable::{Scrollbar, Scroller};
 use iced_aw::style::tab_bar;
-use iced_aw::tabs;
 use iced_style::{menu, rule};
 use iced_style::rule::FillMode;
 use iced_style::slider::{Handle, HandleShape, Rail};
@@ -429,7 +428,7 @@ impl progress_bar::StyleSheet for Theme {
     }
 }
 
-impl tabs::StyleSheet for Theme {
+impl tab_bar::StyleSheet for Theme {
     type Style = Location;
 
     fn active(&self, _style: Self::Style, is_active: bool) -> tab_bar::Appearance {
