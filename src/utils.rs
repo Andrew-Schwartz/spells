@@ -184,22 +184,24 @@ impl ColorExt for Color {
 
     /// amount from 0 to 1
     fn darken(self, amount: f32) -> Self {
+        let a = self.a;
         let amount = amount.clamp(0.0, 1.0);
         let mut hsl = to_hsl(self);
 
         hsl.lightness -= hsl.lightness * amount;
 
-        from_hsl(hsl)
+        from_hsl(hsl).a(a)
     }
 
     /// amount from 0 to 1
     fn lighten(self, amount: f32) -> Self {
+        let a = self.a;
         let amount = amount.clamp(0.0, 1.0);
         let mut hsl = to_hsl(self);
 
         hsl.lightness += hsl.lightness * amount;
 
-        from_hsl(hsl)
+        from_hsl(hsl).a(a)
     }
 }
 

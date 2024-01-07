@@ -201,7 +201,7 @@ impl UpdateState {
                     format!("Running new version v{VER}!")
                 }),
                 Self::UpToDate => text(format!("Spells v{VER}")),
-                Self::Errored(e) => text(format!("Error downloading new version: {e}. Running v{VER}")),
+                Self::Errored(_) => text(format!("Error downloading new version. Running v{VER}")),
                 Self::Downloading(_) => unreachable!(),
             }.size(11).tap(container)
         }.style(Location::SettingsBar)

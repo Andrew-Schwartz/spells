@@ -232,7 +232,9 @@ impl SettingsPage {
             ].align_items(Alignment::Center),
             14,
             closed_character_buttons,
-        ].spacing(4);
+        ].spacing(4)
+            // for some reason the scrollbar was overlapping?
+            .padding([0, 8]);
 
         let spells_label = row![
             Length::Fill,

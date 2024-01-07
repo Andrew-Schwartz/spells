@@ -69,6 +69,35 @@ impl Theme {
             Self::Light => light::palette(style),
         }
     }
+
+    fn palette2(self, style: Location) -> Palette2 {
+        match self {
+            Self::Dark => dark::palette2(style),
+            Self::Light => light::palette2(style),
+        }
+    }
+
+    fn disable_by(self, color: Color, amount: f32) -> Color {
+        match self {
+            Theme::Dark => color.darken(amount),
+            Theme::Light => color.lighten(amount),
+        }
+    }
+
+    fn disable(self, color: Color) -> Color {
+        self.disable_by(color, 0.2)
+    }
+
+    fn hover_by(self, color: Color, amount: f32) -> Color {
+        match self {
+            Theme::Dark => color.lighten(amount),
+            Theme::Light => color.darken(amount),
+        }
+    }
+
+    fn hover(self, color: Color) -> Color {
+        self.hover_by(color, 0.1)
+    }
 }
 
 // todo clean this up - background vs surface, accent vs active?
@@ -83,13 +112,6 @@ pub struct Palette {
     disabled: Color,
 }
 
-pub struct Palette2 {
-    text: Color,
-    disabled_text: Color,
-    background: Color,
-    button: Color,
-}
-
 impl Palette {
     const TRANSPARENT: Self = Palette {
         text: Color::TRANSPARENT,
@@ -100,6 +122,14 @@ impl Palette {
         hovered: Color::TRANSPARENT,
         disabled: Color::TRANSPARENT,
     };
+}
+
+pub struct Palette2 {
+    text: Color,
+    background: Color,
+    button: Color,
+    // todo is this how I want to do?
+    outline: Color,
 }
 
 #[derive(Default, Copy, Clone, PartialEq)]
@@ -125,7 +155,7 @@ impl application::StyleSheet for Theme {
     type Style = Location;
 
     fn appearance(&self, style: &Self::Style) -> application::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         application::Appearance {
             background_color: palette.background,
             text_color: palette.text,
@@ -137,7 +167,7 @@ impl container::StyleSheet for Theme {
     type Style = Location;
 
     fn appearance(&self, style: &Self::Style) -> container::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         container::Appearance {
             text_color: palette.text.into(),
             background: palette.background.into(),
@@ -148,16 +178,45 @@ impl container::StyleSheet for Theme {
     }
 }
 
+pub enum RuleStyle {
+    Location(Location),
+    FillMode(FillMode),
+    Both(Location, FillMode),
+}
+
+impl Default for RuleStyle {
+    fn default() -> Self {
+        Self::Both(Location::Default, FillMode::Full)
+    }
+}
+
+impl From<Location> for RuleStyle {
+    fn from(value: Location) -> Self {
+        Self::Location(value)
+    }
+}
+
+impl From<FillMode> for RuleStyle {
+    fn from(value: FillMode) -> Self {
+        Self::FillMode(value)
+    }
+}
+
 impl rule::StyleSheet for Theme {
-    type Style = Location;
+    type Style = RuleStyle;
 
     fn appearance(&self, style: &Self::Style) -> rule::Appearance {
-        let palette = self.palette(style);
+        let (style, fill_mode) = match *style {
+            RuleStyle::Location(style) => (style, FillMode::Full),
+            RuleStyle::FillMode(mode) => (Location::Default, mode),
+            RuleStyle::Both(style, mode) => (style, mode),
+        };
+        let palette = self.palette2(style);
         rule::Appearance {
             color: palette.text.a(0.3),
             width: 1,
             radius: 0.0,
-            fill_mode: FillMode::Full,
+            fill_mode,
         }
     }
 }
@@ -166,9 +225,9 @@ impl button::StyleSheet for Theme {
     type Style = Location;
 
     fn active(&self, style: &Self::Style) -> button::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         button::Appearance {
-            background: palette.active.into(),
+            background: palette.button.into(),
             border_color: Color::TRANSPARENT,
             text_color: palette.text,
             border_radius: 4.0,
@@ -177,32 +236,28 @@ impl button::StyleSheet for Theme {
     }
 
     // todo this is the
+    //  the what??
     fn hovered(&self, style: &Self::Style) -> button::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         button::Appearance {
-            background: palette.hovered.into(),
+            background: self.hover(palette.button).into(),
             ..self.active(style)
         }
     }
 
     fn pressed(&self, style: &Self::Style) -> button::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         button::Appearance {
             border_width: 1.0,
-            // todo better way to do this than edge case handling
-            border_color: if matches!(style, Location::Transparent | Location::AdvancedSearch { .. }) {
-                Color::TRANSPARENT
-            } else {
-                palette.text
-            },
+            border_color: palette.outline,
             ..self.hovered(style)
         }
     }
 
     fn disabled(&self, style: &Self::Style) -> button::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         button::Appearance {
-            background: palette.disabled.into(),
+            background: self.disable(palette.button).into(),
             ..self.active(style)
         }
     }
@@ -212,9 +267,10 @@ impl text_input::StyleSheet for Theme {
     type Style = Location;
 
     fn active(&self, style: &Self::Style) -> text_input::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         text_input::Appearance {
-            background: palette.surface.into(),
+            background: self.hover_by(palette.background, 0.3).into(),
+            // background: palette.surface.into(),
             border_radius: 4.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
@@ -223,24 +279,25 @@ impl text_input::StyleSheet for Theme {
     }
 
     fn focused(&self, style: &Self::Style) -> text_input::Appearance {
-        let palette = self.palette(style);
+        let palette = self.palette2(*style);
         text_input::Appearance {
             border_width: 1.0,
-            border_color: palette.active,
+            border_color: palette.button,
             ..self.active(style)
         }
     }
 
     fn placeholder_color(&self, style: &Self::Style) -> Color {
-        match style {
-            // todo is this always good
-            Location::Transparent => Color::TRANSPARENT,
-            _ => Color::from_rgb(0.4, 0.4, 0.4),
-        }
+        self.disable(self.palette2(*style).text)
+        // match style {
+        //     // todo is this always good
+        //     Location::Transparent => Color::TRANSPARENT,
+        //     _ => Color::from_rgb(0.4, 0.4, 0.4),
+        // }
     }
 
     fn value_color(&self, style: &Self::Style) -> Color {
-        self.palette(style).text
+        self.palette2(*style).text
     }
 
     fn disabled_color(&self, style: &Self::Style) -> Color {
@@ -469,6 +526,13 @@ impl tab_bar::StyleSheet for Theme {
 }
 
 macro_rules! color {
+    ($c:literal) => {
+        Color::from_rgb(
+            (($c >> 16) & 0xff) as f32 / 255.0,
+            (($c >> 8)  & 0xff) as f32 / 255.0,
+            ($c         & 0xff) as f32 / 255.0,
+        )
+    };
     ($r:literal $g:literal $b:literal) => {
         Color::from_rgb(
             $r as f32 / 255.0,
@@ -481,8 +545,66 @@ macro_rules! color {
 mod dark {
     use iced::Color;
 
-    use crate::theme::{Location, Palette};
+    use crate::theme::{Location, Palette, Palette2};
     use crate::utils::ColorExt;
+
+    pub fn palette2(style: Location) -> Palette2 {
+        match style {
+            Location::Default => DEFAULT2,
+            Location::Transparent => TRANSPARENT2,
+            Location::SettingsBar => SETTINGS_BAR2,
+            Location::Tooltip => TOOLTIP2,
+            // todo
+            Location::AdvancedSearch { enabled } => Palette2 {
+                text: DEFAULT2.text.a(if enabled { 1.0 } else { 0.5 }),
+                ..TRANSPARENT2
+            },
+            Location::Alternating { idx, highlight } => alternating2(idx, highlight),
+        }
+    }
+
+    const DEFAULT2: Palette2 = Palette2 {
+        text: Color::WHITE,
+        background: color!(0x36393f),
+        button: color!(0x6279ca),
+        outline: Color::WHITE,
+    };
+
+    const TRANSPARENT2: Palette2 = Palette2 {
+        text: Color::WHITE,
+        background: Color::TRANSPARENT,
+        button: Color::TRANSPARENT,
+        outline: Color::TRANSPARENT,
+    };
+
+    const SETTINGS_BAR2: Palette2 = Palette2 {
+        text: Color::WHITE,
+        background: color!(0x2e2f37),
+        button: Color::TRANSPARENT,
+        outline: Color::TRANSPARENT,
+    };
+
+    const TOOLTIP2: Palette2 = Palette2 {
+        background: Color {
+            a: 0.8,
+            ..DEFAULT2.background
+        },
+        ..DEFAULT2
+    };
+
+    fn alternating2(idx: usize, highlight: bool) -> Palette2 {
+        let idx = idx % 2;
+        let background = [
+            DEFAULT2.background,
+            color!(0x303335)
+        ][idx];
+        Palette2 {
+            text: Color::WHITE,
+            background,
+            button: if highlight { background } else { Color::TRANSPARENT },
+            outline: Color::TRANSPARENT,
+        }
+    }
 
     pub fn palette(style: &Location) -> Palette {
         match style {
@@ -584,8 +706,67 @@ mod dark {
 mod light {
     use iced::Color;
 
-    use crate::theme::{Location, Palette};
+    use crate::theme::{Location, Palette, Palette2};
     use crate::utils::ColorExt;
+
+    pub fn palette2(style: Location) -> Palette2 {
+        match style {
+            Location::Default => DEFAULT2,
+            Location::Transparent => TRANSPARENT2,
+            Location::SettingsBar => SETTINGS_BAR2,
+            Location::Tooltip => TOOLTIP2,
+            // todo
+            Location::AdvancedSearch { enabled } => Palette2 {
+                text: DEFAULT2.text.a(if enabled { 1.0 } else { 0.5 }),
+                ..TRANSPARENT2
+            },
+            Location::Alternating { idx, highlight } => alternating2(idx, highlight),
+        }
+    }
+
+    const DEFAULT2: Palette2 = Palette2 {
+        text: Color::BLACK,
+        background: color!(0xefefef),
+        button: color!(0x728be5),
+        outline: Color::BLACK,
+    };
+
+    const TRANSPARENT2: Palette2 = Palette2 {
+        text: Color::BLACK,
+        background: Color::TRANSPARENT,
+        button: Color::TRANSPARENT,
+        outline: Color::TRANSPARENT,
+    };
+
+    const SETTINGS_BAR2: Palette2 = Palette2 {
+        text: Color::BLACK,
+        background: color!(0xa5b0b0),
+        button: Color::TRANSPARENT,
+        outline: Color::TRANSPARENT,
+    };
+
+    const TOOLTIP2: Palette2 = Palette2 {
+        background: Color {
+            a: 0.8,
+            ..DEFAULT2.background
+        },
+        ..DEFAULT2
+    };
+
+    fn alternating2(idx: usize, highlight: bool) -> Palette2 {
+        let idx = idx % 2;
+        let background = [
+            DEFAULT2.background,
+            color!(0xa5b0b0)
+        ][idx];
+        Palette2 {
+            text: Color::BLACK,
+            background,
+            button: if highlight { background } else { Color::TRANSPARENT },
+            outline: Color::TRANSPARENT,
+        }
+    }
+
 
     pub fn palette(style: &Location) -> Palette {
         match style {
